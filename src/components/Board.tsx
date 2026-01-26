@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Box, Button, Paper } from '@mui/material';
+import { Box, Button, Paper, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import type { DropResult } from '@hello-pangea/dnd';
 import CardList from './CardList';
 
 export default function Board() {
@@ -12,6 +14,27 @@ export default function Board() {
         setListIds([...listIds, newId]);
     };
 
+    const onDragEnd = (result: DropResult) => {
+        const { destination, source } = result;
+
+        if (!destination) {
+            return;
+        }
+
+        if (
+            destination.droppableId === source.droppableId &&
+            destination.index === source.index
+        ) {
+            return;
+        }
+
+        const newLists = Array.from(listIds);
+        const [removed] = newLists.splice(source.index, 1);
+        newLists.splice(destination.index, 0, removed);
+
+        setListIds(newLists);
+    };
+
     return (
         <Paper
             elevation={0}
@@ -19,6 +42,8 @@ export default function Board() {
                 display: 'flex',
                 gap: 2,
                 overflowX: 'auto',
+                flexWrap: 'nowrap', // Ensure lists don't wrap
+                alignItems: 'flex-start', // Align lists to the top
                 p: 2,
                 height: '80vh', // Fixed height, not full screen
                 maxWidth: '1200px', // Constrained width
@@ -29,13 +54,35 @@ export default function Board() {
                 bgcolor: 'rgba(255,255,255,0.1)' // Slight tint to show the "board" area
             }}
         >
-            {listIds.map((id) => (
-                <Box key={id} sx={{ minWidth: 280 }}>
-                    <CardList />
-                </Box>
-            ))}
+            <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="board" direction="horizontal" type="list">
+                    {(provided) => (
+                        <Box
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}
+                        >
+                            {listIds.map((id, index) => (
+                                <Draggable key={id} draggableId={id.toString()} index={index}>
+                                    {(provided) => (
+                                        <Box
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            {...provided.dragHandleProps}
+                                            sx={{ minWidth: 280, flexShrink: 0, ...provided.draggableProps.style }}
+                                        >
+                                            <CardList />
+                                        </Box>
+                                    )}
+                                </Draggable>
+                            ))}
+                            {provided.placeholder}
+                        </Box>
+                    )}
+                </Droppable>
+            </DragDropContext>
 
-            <Box sx={{ minWidth: 280 }}>
+            <Box sx={{ minWidth: 280, flexShrink: 0 }}>
                 <Button
                     variant="contained"
                     startIcon={<AddIcon />}
@@ -46,10 +93,11 @@ export default function Board() {
                         bgcolor: 'rgba(255,255,255,0.24)',
                         color: 'white',
                         '&:hover': { bgcolor: 'rgba(255,255,255,0.32)' },
-                        backdropFilter: 'blur(4px)'
+                        backdropFilter: 'blur(4px)',
+                        textTransform: 'none'
                     }}
                 >
-                    Add another list
+                    <Typography>Add another list</Typography>
                 </Button>
             </Box>
         </Paper>
