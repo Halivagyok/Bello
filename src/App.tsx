@@ -1,7 +1,7 @@
-// frontend/src/App.tsx
 import { useState } from 'react';
-import { Button, Typography, Paper, Box } from '@mui/material';
+import { Button, Typography, Box } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import Board from './components/Board';
 
 function App() {
   const [status, setStatus] = useState<string>("Waiting for server...");
@@ -21,30 +21,27 @@ function App() {
     <Box sx={{
       height: '100vh',
       display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      bgcolor: '#f5f5f5'
+      flexDirection: 'column',
+      bgcolor: '#0079bf', // Trello-like blue background
+      overflow: 'hidden' // Board scrolls internally
     }}>
-      <Paper elevation={3} sx={{ p: 4, textAlign: 'center', minWidth: 300 }}>
-        <Typography variant="h4" gutterBottom color="primary">
-          Bello testing
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2, color: 'white' }}>
+        <Typography variant="h5" color="inherit" fontWeight="bold">
+          Bello
         </Typography>
-
-        <Typography variant="body1" sx={{ mb: 3, fontWeight: 'bold' }}>
-          Status: {status}
-        </Typography>
-
         <Button
           variant="contained"
           color="success"
+          size="small"
           startIcon={<CheckCircleIcon />}
           onClick={checkBackend}
         >
-          Test Connection
+          Test Conn: {status}
         </Button>
-      </Paper>
+      </Box>
+
+      <Board />
     </Box>
   );
 }
-
 export default App;
