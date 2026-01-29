@@ -5,8 +5,8 @@ import AddIcon from '@mui/icons-material/Add';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { useStore } from '../store';
-import TopBar from './TopBar';
-import CardList from './CardList';
+import TopBar from '../components/TopBar';
+import CardList from '../components/CardList';
 import { useParams, useNavigate } from 'react-router-dom';
 
 export default function Board() {

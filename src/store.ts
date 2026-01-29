@@ -19,6 +19,16 @@ export interface Board {
     id: string;
     title: string;
     ownerId: string;
+    projectId?: string;
+    lastViewed?: number;
+}
+
+export interface Project {
+    id: string;
+    title: string;
+    description?: string;
+    ownerId: string;
+    boardIds: string[];
 }
 
 export interface Card {
@@ -39,6 +49,8 @@ export interface List {
 interface BoardState {
     user: User | null;
     boards: Board[];
+    projects: Project[];
+    recentBoards: Board[];
     activeBoardId: string | null;
     lists: List[];
     status: string;
@@ -53,7 +65,7 @@ interface BoardState {
 
     // Board Actions
     fetchBoards: () => Promise<void>;
-    createBoard: (title: string) => Promise<Board | null>;
+    createBoard: (title: string, projectId?: string) => Promise<Board | null>;
     fetchBoard: (boardId: string) => Promise<void>;
     inviteUser: (email: string) => Promise<void>;
 
@@ -71,12 +83,20 @@ interface BoardState {
         destIndex: number
     ) => void;
     checkBackend: () => Promise<void>;
+
+    // Project Actions
+    fetchProjects: () => Promise<void>;
+    createProject: (title: string, description?: string) => Promise<void>;
+    assignBoardToProject: (boardId: string, projectId: string) => Promise<void>;
+    updateRecentBoards: (boardId: string) => void;
 }
 
 // 3. Create Store
 export const useStore = create<BoardState>((set, get) => ({
     user: null,
     boards: [],
+    projects: [],
+    recentBoards: [],
     activeBoardId: null,
     lists: [],
     status: 'Connecting...',
@@ -89,6 +109,8 @@ export const useStore = create<BoardState>((set, get) => ({
             const { data } = await client.auth.me.get();
             if (data?.user) {
                 set({ user: data.user });
+                // Load projects from local storage on auth check
+                get().fetchProjects();
             } else {
                 set({ user: null });
             }
@@ -105,7 +127,10 @@ export const useStore = create<BoardState>((set, get) => ({
         try {
             const { data, error } = await client.auth.login.post({ email, password });
             if (error) throw new Error(error.value as any);
-            if (data?.user) set({ user: data.user });
+            if (data?.user) {
+                set({ user: data.user });
+                get().fetchProjects();
+            }
         } catch (e) {
             throw e;
         } finally {
@@ -118,7 +143,10 @@ export const useStore = create<BoardState>((set, get) => ({
         try {
             const { data, error } = await client.auth.signup.post({ email, password, name });
             if (error) throw new Error(error.value as any);
-            if (data?.user) set({ user: data.user });
+            if (data?.user) {
+                set({ user: data.user });
+                get().fetchProjects();
+            }
         } catch (e) {
             throw e;
         } finally {
@@ -132,28 +160,42 @@ export const useStore = create<BoardState>((set, get) => ({
         } catch (e) {
             console.error('Logout failed:', e);
         }
-        set({ user: null, activeBoardId: null, lists: [], boards: [], boardName: 'Loading...' });
+        set({ user: null, activeBoardId: null, lists: [], boards: [], projects: [], recentBoards: [], boardName: 'Loading...' });
     },
 
     fetchBoards: async () => {
         try {
             const { data, error } = await client.boards.get();
             if (error) throw error;
-            if (data) set({ boards: data as Board[] });
+            if (data) {
+                const fetchedBoards = data as Board[];
+                set({ boards: fetchedBoards });
+
+                // Update: Use local storage only for recent history tracking
+                const recentIds = JSON.parse(localStorage.getItem('recent_boards') || '[]');
+                const recent = fetchedBoards
+                    .filter(b => recentIds.includes(b.id))
+                    .sort((a, b) => recentIds.indexOf(a.id) - recentIds.indexOf(b.id))
+                    .map(b => ({ ...b, lastViewed: Date.now() })) // Add dummy lastViewed for UI if needed
+                    .slice(0, 4);
+
+                set({ recentBoards: recent });
+            }
         } catch (e) {
             console.error('Fetch Boards Error', e);
         }
     },
 
-    createBoard: async (title) => {
+    createBoard: async (title, projectId) => {
         try {
-            const { data, error } = await client.boards.post({ title });
+            const { data, error } = await client.boards.post({ title, projectId });
             if (error) throw error;
             if (data) {
+                const newBoard = data as Board;
                 set(state => ({
-                    boards: [...state.boards, data as Board],
+                    boards: [...state.boards, newBoard],
                 }));
-                return data as Board;
+                return newBoard;
             }
         } catch (e: any) {
             console.error(e);
@@ -164,6 +206,9 @@ export const useStore = create<BoardState>((set, get) => ({
 
     fetchBoard: async (boardId) => {
         set({ activeBoardId: boardId, boardName: 'Loading...', lists: [] });
+        // Update recently viewed
+        get().updateRecentBoards(boardId);
+
         try {
             const { data, error } = await client.boards[boardId].get();
             if (error) throw error;
@@ -380,5 +425,60 @@ export const useStore = create<BoardState>((set, get) => ({
         } catch (e) {
             set({ status: '❌ Backend Disconnected' });
         }
+    },
+
+    // --- Project Implementation (Real) ---
+
+    fetchProjects: async () => {
+        try {
+            const { data, error } = await client.projects.get();
+            if (error) throw error;
+            if (data) {
+                set({ projects: data as Project[] });
+            }
+        } catch (e) {
+            console.error('Fetch Projects failed:', e);
+        }
+    },
+
+    createProject: async (title, description) => {
+        try {
+            const { data, error } = await client.projects.post({ title, description });
+            if (error) throw error;
+            if (data) {
+                set(state => ({
+                    projects: [...state.projects, data as Project]
+                }));
+            }
+        } catch (e) {
+            console.error('Create Project failed:', e);
+        }
+    },
+
+    assignBoardToProject: async (boardId, projectId) => {
+        console.warn("Moving boards between projects not yet fully supported on backend");
+        // Future: await client.boards[boardId].patch({ projectId });
+    },
+
+    updateRecentBoards: (boardId) => {
+        const recent = JSON.parse(localStorage.getItem('recent_boards') || '[]');
+        // Remove if exists
+        const newRecent = recent.filter((id: string) => id !== boardId);
+        // Add to front
+        newRecent.unshift(boardId);
+        // Keep 10
+        if (newRecent.length > 10) newRecent.pop();
+
+        localStorage.setItem('recent_boards', JSON.stringify(newRecent));
+
+        // Refresh recent lists from current boards state
+        const boards = get().boards;
+        const recentBoards = boards
+            .filter(b => newRecent.includes(b.id))
+            // Sort by index in recent array
+            .sort((a, b) => newRecent.indexOf(a.id) - newRecent.indexOf(b.id))
+            .slice(0, 4);
+
+        set({ recentBoards });
     }
 }));

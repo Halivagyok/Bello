@@ -1,52 +1,55 @@
+
 import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Grid, Paper, Card, CardActionArea, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import LogoutIcon from '@mui/icons-material/Logout';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useStore } from '../store';
-import { useNavigate } from 'react-router-dom';
 
-export default function Dashboard() {
-    const user = useStore(state => state.user);
-    const boards = useStore(state => state.boards);
-    const fetchBoards = useStore(state => state.fetchBoards);
-    const createBoard = useStore(state => state.createBoard);
-    const logout = useStore(state => state.logout);
+export default function ProjectDetails() {
+    const { projectId } = useParams();
     const navigate = useNavigate();
-
-    const handleLogout = async () => {
-        await logout();
-        navigate('/login');
-    };
+    const boards = useStore(state => state.boards);
+    const projects = useStore(state => state.projects);
+    const createBoard = useStore(state => state.createBoard);
+    const fetchBoards = useStore(state => state.fetchBoards);
+    const fetchProjects = useStore(state => state.fetchProjects);
 
     const [open, setOpen] = useState(false);
     const [newTitle, setNewTitle] = useState('');
 
     useEffect(() => {
         fetchBoards();
-    }, [fetchBoards]);
+        fetchProjects();
+    }, [fetchBoards, fetchProjects]);
 
-    const handleCreate = async () => {
-        if (!newTitle.trim()) return;
-        await createBoard(newTitle);
+    const project = projects.find(p => p.id === projectId);
+    const projectBoards = boards.filter(b => b.projectId === projectId);
+
+    const handleCreateBoard = async () => {
+        if (!newTitle.trim() || !projectId) return;
+        await createBoard(newTitle, projectId);
         setNewTitle('');
         setOpen(false);
     };
 
+    if (!project) {
+        return <Box sx={{ p: 4 }}>Loading or Project Not Found...</Box>;
+    }
+
     return (
-        <Box sx={{ minHeight: '100vh', bgcolor: '#f4f5f7' }}>
-            {/* Top Bar */}
-            <Box sx={{ p: 2, bgcolor: '#026aa7', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h6" fontWeight="bold">Bello Dashboard</Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography>Welcome, {user?.name || user?.email}</Typography>
-                    <Button variant="contained" color="secondary" size="small" startIcon={<LogoutIcon />} onClick={handleLogout}>
-                        Logout
-                    </Button>
-                </Box>
+        <Box>
+            {/* Header */}
+            <Box sx={{ p: 2, bgcolor: '#026aa7', color: 'white', display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Button startIcon={<ArrowBackIcon />} color="inherit" onClick={() => navigate('/boards')}>
+                    Dashboard
+                </Button>
+                <Typography variant="h6" fontWeight="bold">{project.title}</Typography>
             </Box>
 
-            {/* Content */}
             <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
-                <Typography variant="h5" sx={{ mb: 3 }} fontWeight="bold">My Boards</Typography>
+                <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary' }}>
+                    {project.description || 'No description provided.'}
+                </Typography>
 
                 <Grid container spacing={3}>
                     {/* Create New Board Card */}
@@ -69,7 +72,7 @@ export default function Dashboard() {
                     </Grid>
 
                     {/* Existing Boards */}
-                    {boards.map(board => (
+                    {projectBoards.map(board => (
                         <Grid size={{ xs: 12, sm: 6, md: 3 }} key={board.id}>
                             <Card sx={{ height: 120, bgcolor: '#0079bf', color: 'white' }}>
                                 <CardActionArea
@@ -84,9 +87,9 @@ export default function Dashboard() {
                 </Grid>
             </Box>
 
-            {/* Create Dialog */}
+            {/* Create Board Dialog */}
             <Dialog open={open} onClose={() => { setOpen(false); setNewTitle(''); }}>
-                <DialogTitle>Create Board</DialogTitle>
+                <DialogTitle>Create Board in {project.title}</DialogTitle>
                 <DialogContent>
                     <TextField
                         autoFocus
@@ -99,9 +102,10 @@ export default function Dashboard() {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => { setOpen(false); setNewTitle(''); }}>Cancel</Button>
-                    <Button onClick={handleCreate} variant="contained">Create</Button>
+                    <Button onClick={handleCreateBoard} variant="contained">Create</Button>
                 </DialogActions>
             </Dialog>
         </Box>
     );
+
 }

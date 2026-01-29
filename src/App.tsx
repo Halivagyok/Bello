@@ -2,9 +2,12 @@ import React, { useEffect } from 'react';
 import { CssBaseline } from '@mui/material';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './store';
-import Auth from './components/Auth';
-import Dashboard from './components/Dashboard';
-import Board from './components/Board';
+
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import BoardPage from './pages/BoardPage';
+import ProjectPage from './pages/ProjectPage';
+import MainLayout from './layouts/MainLayout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const user = useStore(state => state.user);
@@ -16,7 +19,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
         display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh',
         backgroundColor: '#f4f5f7', color: '#026aa7'
       }}>
-        {/* Simple loading text or spinner, matching app style roughly */}
         Loading...
       </div>
     );
@@ -52,9 +54,15 @@ function App() {
     <>
       <CssBaseline />
       <Routes>
-        <Route path="/login" element={!user ? <Auth /> : <Navigate to="/boards" />} />
-        <Route path="/boards" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/boards/:boardId" element={<ProtectedRoute><Board /></ProtectedRoute>} />
+        <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/boards" />} />
+
+        <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+          <Route path="/boards" element={<DashboardPage />} />
+          <Route path="/projects/:projectId" element={<ProjectPage />} />
+        </Route>
+
+        <Route path="/boards/:boardId" element={<ProtectedRoute><BoardPage /></ProtectedRoute>} />
+
         <Route path="/" element={<Navigate to={user ? "/boards" : "/login"} />} />
       </Routes>
     </>
