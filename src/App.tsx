@@ -30,7 +30,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return children;
 }
 
-function App() {
+export const App = () => {
   const checkAuth = useStore((state) => state.checkAuth);
   const user = useStore((state) => state.user);
   const authLoading = useStore((state) => state.authLoading);
@@ -68,4 +68,3 @@ function App() {
     </>
   );
 }
-export default App;

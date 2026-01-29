@@ -28,7 +28,7 @@ export default function Auth() {
     };
 
     return (
-        <Box sx={{
+        <Box  sx={{
             height: '100vh',
             display: 'flex',
             justifyContent: 'center',
