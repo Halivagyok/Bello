@@ -1,14 +1,29 @@
-import { Avatar, AvatarGroup, Box, Button, IconButton, Typography, useTheme } from '@mui/material';
+import { Box, Button, IconButton, Typography, useTheme } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ShareIcon from '@mui/icons-material/Share';
 import SettingsIcon from '@mui/icons-material/Settings';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { useStore } from '../store';
+import { useState } from 'react';
+import { Dialog, DialogTitle, DialogContent, TextField, DialogActions } from '@mui/material';
 
 export default function TopBar() {
     const boardName = useStore((state) => state.boardName);
-    const members = useStore((state) => state.members);
+    const inviteUser = useStore((state) => state.inviteUser);
     const theme = useTheme();
+
+    const [inviteOpen, setInviteOpen] = useState(false);
+    const [email, setEmail] = useState('');
+
+    const handleInvite = async () => {
+        if (!email) return;
+        try {
+            await inviteUser(email);
+            setEmail('');
+            setInviteOpen(false);
+        } catch (e) {
+            alert('Failed to invite');
+        }
+    };
 
     return (
         <Box sx={{ width: '100%', mb: 2 }}>
@@ -31,18 +46,6 @@ export default function TopBar() {
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <AvatarGroup max={4} sx={{
-                        '& .MuiAvatar-root': {
-                            width: 32,
-                            height: 32,
-                            fontSize: '0.875rem',
-                            border: '2px solid rgba(255,255,255,0.2)'
-                        }
-                    }}>
-                        {members.map((m, i) => (
-                            <Avatar key={i} sx={{ bgcolor: theme.palette.primary.main }}>{m}</Avatar>
-                        ))}
-                    </AvatarGroup>
 
                     <Button
                         startIcon={<FilterListIcon />}
@@ -52,6 +55,7 @@ export default function TopBar() {
                     <Button
                         variant="contained"
                         startIcon={<ShareIcon />}
+                        onClick={() => setInviteOpen(true)}
                         sx={{
                             bgcolor: 'white',
                             color: theme.palette.text.primary,
@@ -66,6 +70,26 @@ export default function TopBar() {
                     </IconButton>
                 </Box>
             </Box>
+
+            <Dialog open={inviteOpen} onClose={() => setInviteOpen(false)}>
+                <DialogTitle>Invite Member</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Email Address"
+                        type="email"
+                        fullWidth
+                        variant="outlined"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setInviteOpen(false)}>Cancel</Button>
+                    <Button onClick={handleInvite} variant="contained">Invite</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

@@ -1,4 +1,5 @@
 
+import { useEffect } from 'react';
 import { Box, Button, Paper, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -6,12 +7,23 @@ import type { DropResult } from '@hello-pangea/dnd';
 import { useStore } from '../store';
 import TopBar from './TopBar';
 import CardList from './CardList';
+import { useParams, useNavigate } from 'react-router-dom';
 
 export default function Board() {
+    const { boardId } = useParams<{ boardId: string }>();
+    const navigate = useNavigate();
+
     const lists = useStore((state) => state.lists);
     const moveList = useStore((state) => state.moveList);
     const moveCard = useStore((state) => state.moveCard);
     const addList = useStore((state) => state.addList);
+    const fetchBoard = useStore((state) => state.fetchBoard);
+
+    useEffect(() => {
+        if (boardId) {
+            fetchBoard(boardId);
+        }
+    }, [boardId, fetchBoard]);
 
     const onDragEnd = (result: DropResult) => {
         const { destination, source, type } = result;
@@ -55,9 +67,18 @@ export default function Board() {
                 borderRight: '1px solid rgba(255,255,255,0.1)',
                 bgcolor: 'rgba(0,0,0,0.15)',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                flexDirection: 'column',
+                p: 2
             }}>
+                <Typography variant="h6" fontWeight="bold" sx={{ color: 'white', mb: 2, px: 1 }}>Bello</Typography>
+
+                <Button
+                    variant="text"
+                    sx={{ color: 'white', justifyContent: 'flex-start' }}
+                    onClick={() => navigate('/boards')}
+                >
+                    Back to Boards
+                </Button>
             </Box>
 
             {/* Main Content */}
