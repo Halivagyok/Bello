@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Paper, Typography, Button, TextField, Box, IconButton } from '@mui/material';
+import { Paper, Typography, Button, TextField, Box, IconButton, Menu, MenuItem } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { Droppable } from '@hello-pangea/dnd';
 import { useStore, type List } from '../store';
 import Card from './Card';
@@ -16,9 +17,11 @@ export default function CardList({ list }: CardListProps) {
     const [title, setTitle] = useState(list.title);
     const [isAddingCard, setIsAddingCard] = useState(false);
     const [newCardContent, setNewCardContent] = useState("");
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
     const addCard = useStore((state) => state.addCard);
     const updateListTitle = useStore((state) => state.updateListTitle);
+    const deleteList = useStore((state) => state.deleteList);
 
     const handleTitleClick = () => {
         setIsEditingTitle(true);
@@ -33,6 +36,19 @@ export default function CardList({ list }: CardListProps) {
         if (title !== list.title) {
             updateListTitle(list.id, title);
         }
+    };
+
+    const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleDeleteList = () => {
+        deleteList(list.id);
+        handleMenuClose();
     };
 
     const handleConfirmAddCard = () => {
@@ -61,7 +77,7 @@ export default function CardList({ list }: CardListProps) {
             }}
         >
             {/* List Header / Title */}
-            <Box sx={{ p: 1, mb: 1 }}>
+            <Box sx={{ p: 1, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 {isEditingTitle ? (
                     <TextField
                         fullWidth
@@ -80,12 +96,23 @@ export default function CardList({ list }: CardListProps) {
                         sx={{
                             cursor: 'pointer',
                             fontWeight: 600,
-                            '&:hover': { cursor: 'pointer' }
+                            '&:hover': { cursor: 'pointer' },
+                            flexGrow: 1
                         }}
                     >
                         {list.title}
                     </Typography>
                 )}
+                <IconButton size="small" onClick={handleMenuClick}>
+                    <MoreHorizIcon />
+                </IconButton>
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
+                >
+                    <MenuItem onClick={handleDeleteList} sx={{ color: 'error.main' }}>Delete List</MenuItem>
+                </Menu>
             </Box>
 
             {/* Cards Area - Droppable Zone */}

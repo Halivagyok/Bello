@@ -7,10 +7,12 @@ import { useStore } from './store';
 function App() {
   const status = useStore((state) => state.status);
   const checkBackend = useStore((state) => state.checkBackend);
+  const fetchData = useStore((state) => state.fetchData);
 
   useEffect(() => {
     checkBackend();
-  }, [checkBackend]);
+    fetchData();
+  }, [checkBackend, fetchData]);
 
   return (
     <Box sx={{
