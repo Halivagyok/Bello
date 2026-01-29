@@ -4,6 +4,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { useStore } from '../store';
+import TopBar from './TopBar';
 import CardList from './CardList';
 
 export default function Board() {
@@ -40,78 +41,114 @@ export default function Board() {
     };
 
     return (
-        <Paper
-            elevation={0}
-            sx={{
-                display: 'flex',
-                gap: 2,
-                overflowX: 'auto',
-                flexWrap: 'nowrap',
-                alignItems: 'flex-start',
-                p: 2,
-                height: '80vh',
-                maxWidth: '1200px',
-                width: '100%',
-                mx: 'auto',
-                my: 4,
-                borderRadius: 4,
-                bgcolor: 'rgba(255,255,255,0.1)'
-            }}
-        >
-            <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="board" direction="horizontal" type="list">
-                    {(provided) => (
-                        <Box
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', height: '100%' }}
-                        >
-                            {lists.map((list, index) => (
-                                <Draggable key={list.id} draggableId={list.id} index={index}>
-                                    {(provided) => (
-                                        <Box
-                                            ref={provided.innerRef}
-                                            {...provided.draggableProps}
-                                            {...provided.dragHandleProps}
-                                            sx={{
-                                                minWidth: 280,
-                                                flexShrink: 0,
-                                                ...provided.draggableProps.style,
-                                                maxHeight: '100%',
-                                                display: 'flex',
-                                                flexDirection: 'column'
-                                            }}
-                                        >
-                                            <CardList list={list} index={index} />
-                                        </Box>
-                                    )}
-                                </Draggable>
-                            ))}
-                            {provided.placeholder}
-                        </Box>
-                    )}
-                </Droppable>
-            </DragDropContext>
 
-            <Box sx={{ minWidth: 280, flexShrink: 0 }}>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => addList("New List")}
+        <Box sx={{
+            height: '100vh',
+            display: 'flex',
+            backgroundImage: 'linear-gradient(135deg, #0079bf 0%, #5067c5 100%)', // Trello-like gradient
+            overflow: 'hidden'
+        }}>
+            {/* Sidebar Placeholder */}
+            <Box sx={{
+                width: 260,
+                flexShrink: 0,
+                borderRight: '1px solid rgba(255,255,255,0.1)',
+                bgcolor: 'rgba(0,0,0,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+            </Box>
+
+            {/* Main Content */}
+            <Box sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden'
+            }}>
+                <TopBar />
+                <Paper
+                    elevation={0}
                     sx={{
+                        display: 'flex',
+                        flex: 1,
+                        gap: 2,
+                        overflowX: 'auto',
+                        flexWrap: 'nowrap',
+                        alignItems: 'flex-start',
+                        p: 2,
+                        maxWidth: '100%',
                         width: '100%',
-                        justifyContent: 'flex-start',
-                        bgcolor: 'rgba(255,255,255,0.24)',
-                        color: 'white',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.32)' },
-                        backdropFilter: 'blur(4px)',
-                        textTransform: 'none'
+                        bgcolor: 'transparent',
+                        '&::-webkit-scrollbar': {
+                            height: '12px'
+                        },
+                        '&::-webkit-scrollbar-track': {
+                            bgcolor: 'rgba(0,0,0,0.1)'
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                            bgcolor: 'rgba(255,255,255,0.3)',
+                            borderRadius: '6px'
+                        }
                     }}
                 >
-                    <Typography>Add another list</Typography>
-                </Button>
+                    <DragDropContext onDragEnd={onDragEnd}>
+                        <Droppable droppableId="board" direction="horizontal" type="list">
+                            {(provided) => (
+                                <Box
+                                    ref={provided.innerRef}
+                                    {...provided.droppableProps}
+                                    sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', height: '100%' }}
+                                >
+                                    {lists.map((list, index) => (
+                                        <Draggable key={list.id} draggableId={list.id} index={index}>
+                                            {(provided) => (
+                                                <Box
+                                                    ref={provided.innerRef}
+                                                    {...provided.draggableProps}
+                                                    {...provided.dragHandleProps}
+                                                    sx={{
+                                                        minWidth: 280,
+                                                        flexShrink: 0,
+                                                        ...provided.draggableProps.style,
+                                                        maxHeight: '100%',
+                                                        display: 'flex',
+                                                        flexDirection: 'column'
+                                                    }}
+                                                >
+                                                    <CardList list={list} index={index} />
+                                                </Box>
+                                            )}
+                                        </Draggable>
+                                    ))}
+                                    {provided.placeholder}
+                                </Box>
+                            )}
+                        </Droppable>
+                    </DragDropContext>
+
+                    <Box sx={{ minWidth: 280, flexShrink: 0 }}>
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => addList("New List")}
+                            sx={{
+                                width: '100%',
+                                justifyContent: 'flex-start',
+                                bgcolor: 'rgba(255,255,255,0.24)',
+                                color: 'white',
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.32)' },
+                                backdropFilter: 'blur(4px)',
+                                textTransform: 'none'
+                            }}
+                        >
+                            <Typography>Add another list</Typography>
+                        </Button>
+                    </Box>
+                </Paper>
             </Box>
-        </Paper>
+        </Box>
     );
 }
 

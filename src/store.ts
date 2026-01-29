@@ -37,12 +37,21 @@ interface BoardState {
         destIndex: number
     ) => void;
     checkBackend: () => Promise<void>;
+
+    // Board Info
+    boardName: string;
+    members: string[]; // URLs or Initials
+    setBoardName: (name: string) => void;
 }
 
 // 3. Create Store
 export const useStore = create<BoardState>((set, get) => ({
     lists: [],
     status: 'Connecting...',
+    boardName: 'My Project Board',
+    members: ['JD', 'AN', 'RK'], // Dummy members for now
+
+    setBoardName: (name) => set({ boardName: name }),
 
     fetchData: async () => {
         try {
@@ -218,8 +227,8 @@ export const useStore = create<BoardState>((set, get) => ({
             return { lists: newLists };
         });
 
-        const currentState = get();
-        const sourceList = currentState.lists.find(l => l.id === sourceListId); // Refind in new state? No need, we just need the moved card ID and new pos.
+
+        // We just need to sync the move with backend
         // But we need the ID of the moved card.
         // It's a bit tricky to find the moved card instance if we rely on indices.
         // But we know the logic.
