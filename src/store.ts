@@ -59,8 +59,8 @@ interface BoardState {
 
     // Data Actions
     fetchData: () => Promise<void>;
-    addList: (title: string) => void;
-    updateListTitle: (listId: string, title: string) => void;
+    addList: (title: string) => Promise<void>;
+    updateListTitle: (listId: string, title: string) => Promise<void>;
     addCard: (listId: string, content: string) => void;
     deleteList: (listId: string) => void;
     moveList: (fromIndex: number, toIndex: number) => void;
@@ -101,20 +101,38 @@ export const useStore = create<BoardState>((set, get) => ({
     },
 
     login: async (email, password) => {
-        const { data, error } = await client.auth.login.post({ email, password });
-        if (error) throw new Error(error.value as any);
-        if (data?.user) set({ user: data.user });
+        set({ authLoading: true });
+        try {
+            const { data, error } = await client.auth.login.post({ email, password });
+            if (error) throw new Error(error.value as any);
+            if (data?.user) set({ user: data.user });
+        } catch (e) {
+            throw e;
+        } finally {
+            set({ authLoading: false });
+        }
     },
 
     signup: async (email, password, name) => {
-        const { data, error } = await client.auth.signup.post({ email, password, name });
-        if (error) throw new Error(error.value as any);
-        if (data?.user) set({ user: data.user });
+        set({ authLoading: true });
+        try {
+            const { data, error } = await client.auth.signup.post({ email, password, name });
+            if (error) throw new Error(error.value as any);
+            if (data?.user) set({ user: data.user });
+        } catch (e) {
+            throw e;
+        } finally {
+            set({ authLoading: false });
+        }
     },
 
     logout: async () => {
-        await client.auth.logout.post();
-        set({ user: null, activeBoardId: null, lists: [] });
+        try {
+            await client.auth.logout.post();
+        } catch (e) {
+            console.error('Logout failed:', e);
+        }
+        set({ user: null, activeBoardId: null, lists: [], boards: [], boardName: 'Loading...' });
     },
 
     fetchBoards: async () => {

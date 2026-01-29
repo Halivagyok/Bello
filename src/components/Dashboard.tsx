@@ -12,6 +12,11 @@ export default function Dashboard() {
     const logout = useStore(state => state.logout);
     const navigate = useNavigate();
 
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login');
+    };
+
     const [open, setOpen] = useState(false);
     const [newTitle, setNewTitle] = useState('');
 
@@ -21,12 +26,9 @@ export default function Dashboard() {
 
     const handleCreate = async () => {
         if (!newTitle.trim()) return;
-        const newBoard = await createBoard(newTitle);
+        await createBoard(newTitle);
         setNewTitle('');
         setOpen(false);
-        if (newBoard) {
-            navigate(`/boards/${newBoard.id}`);
-        }
     };
 
     return (
@@ -36,7 +38,7 @@ export default function Dashboard() {
                 <Typography variant="h6" fontWeight="bold">Bello Dashboard</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Typography>Welcome, {user?.name || user?.email}</Typography>
-                    <Button variant="contained" color="secondary" size="small" startIcon={<LogoutIcon />} onClick={logout}>
+                    <Button variant="contained" color="secondary" size="small" startIcon={<LogoutIcon />} onClick={handleLogout}>
                         Logout
                     </Button>
                 </Box>
@@ -83,7 +85,7 @@ export default function Dashboard() {
             </Box>
 
             {/* Create Dialog */}
-            <Dialog open={open} onClose={() => setOpen(false)}>
+            <Dialog open={open} onClose={() => { setOpen(false); setNewTitle(''); }}>
                 <DialogTitle>Create Board</DialogTitle>
                 <DialogContent>
                     <TextField
@@ -96,7 +98,7 @@ export default function Dashboard() {
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpen(false)}>Cancel</Button>
+                    <Button onClick={() => { setOpen(false); setNewTitle(''); }}>Cancel</Button>
                     <Button onClick={handleCreate} variant="contained">Create</Button>
                 </DialogActions>
             </Dialog>

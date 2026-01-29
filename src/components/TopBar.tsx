@@ -71,7 +71,7 @@ export default function TopBar() {
                 </Box>
             </Box>
 
-            <Dialog open={inviteOpen} onClose={() => setInviteOpen(false)}>
+            <Dialog open={inviteOpen} onClose={() => { setInviteOpen(false); setEmail(''); }}>
                 <DialogTitle>Invite Member</DialogTitle>
                 <DialogContent>
                     <TextField
@@ -86,7 +86,7 @@ export default function TopBar() {
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setInviteOpen(false)}>Cancel</Button>
+                    <Button onClick={() => { setInviteOpen(false); setEmail(''); }}>Cancel</Button>
                     <Button onClick={handleInvite} variant="contained">Invite</Button>
                 </DialogActions>
             </Dialog>
