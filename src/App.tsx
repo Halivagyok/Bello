@@ -1,21 +1,16 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { Button, Typography, Box } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Board from './components/Board';
+import { useStore } from './store';
 
 function App() {
-  const [status, setStatus] = useState<string>("Waiting for server...");
+  const status = useStore((state) => state.status);
+  const checkBackend = useStore((state) => state.checkBackend);
 
-  const checkBackend = async () => {
-    try {
-      // Fetch from your Bun backend
-      const res = await fetch('http://localhost:3000/api/ping');
-      const data = await res.json();
-      setStatus(data.message);
-    } catch (err) {
-      setStatus("❌ Error: Could not connect to backend");
-    }
-  };
+  useEffect(() => {
+    checkBackend();
+  }, [checkBackend]);
 
   return (
     <Box sx={{
@@ -36,7 +31,7 @@ function App() {
           startIcon={<CheckCircleIcon />}
           onClick={checkBackend}
         >
-          Test Conn: {status}
+          Status: {status}
         </Button>
       </Box>
 
