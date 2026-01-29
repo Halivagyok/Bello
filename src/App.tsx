@@ -1,44 +1,45 @@
-import { useEffect } from 'react';
-import { Button, Typography, Box } from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import Board from './components/Board';
+import React, { useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './store';
+import Auth from './components/Auth';
+import Dashboard from './components/Dashboard';
+import Board from './components/Board';
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const user = useStore(state => state.user);
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
 
 function App() {
-  const status = useStore((state) => state.status);
-  const checkBackend = useStore((state) => state.checkBackend);
-  const fetchData = useStore((state) => state.fetchData);
+  const checkAuth = useStore((state) => state.checkAuth);
+  const user = useStore((state) => state.user);
+  const authLoading = useStore((state) => state.authLoading);
 
   useEffect(() => {
-    checkBackend();
-    fetchData();
-  }, [checkBackend, fetchData]);
+    checkAuth();
+  }, [checkAuth]);
+
+  if (authLoading) {
+    return (
+      <div style={{
+        display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh',
+        backgroundColor: '#0079bf', color: 'white', fontSize: '1.5rem'
+      }}>
+        Loading Bello...
+      </div>
+    );
+  }
 
   return (
-    <Box sx={{
-      height: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      bgcolor: '#0079bf', // Trello-like blue background
-      overflow: 'hidden' // Board scrolls internally
-    }}>
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2, color: 'white' }}>
-        <Typography variant="h5" color="inherit" fontWeight="bold">
-          Bello
-        </Typography>
-        <Button
-          variant="contained"
-          color="success"
-          size="small"
-          startIcon={<CheckCircleIcon />}
-          onClick={checkBackend}
-        >
-          Status: {status}
-        </Button>
-      </Box>
-
-      <Board />
-    </Box>
+    <Routes>
+      <Route path="/login" element={!user ? <Auth /> : <Navigate to="/boards" />} />
+      <Route path="/boards" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/boards/:boardId" element={<ProtectedRoute><Board /></ProtectedRoute>} />
+      <Route path="/" element={<Navigate to={user ? "/boards" : "/login"} />} />
+    </Routes>
   );
 }
 export default App;
