@@ -23,6 +23,11 @@ export default function Board() {
         if (boardId) {
             fetchBoard(boardId);
         }
+        return () => {
+            // Cleanup if we had unsubscribe
+            const store = useStore.getState();
+            if (boardId) store.unsubscribeFromBoard(boardId);
+        }
     }, [boardId, fetchBoard]);
 
     const onDragEnd = (result: DropResult) => {

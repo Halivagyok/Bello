@@ -21,6 +21,7 @@ export interface Board {
     ownerId: string;
     projectId?: string;
     lastViewed?: number;
+    members?: { id: string; name: string; email: string; role: string }[];
 }
 
 export interface Project {
@@ -55,10 +56,15 @@ interface BoardState {
     lists: List[];
     status: string;
     boardName: string; // Current board name
+    activeMembers: { id: string; name: string; email: string; role: string }[];
     authLoading: boolean;
+    socket: WebSocket | null;
 
     // Auth Actions
     checkAuth: () => Promise<void>;
+    connectSocket: () => void;
+    subscribeToBoard: (boardId: string) => void;
+    unsubscribeFromBoard: (boardId: string) => void;
     login: (email: string, pass: string) => Promise<void>;
     signup: (email: string, pass: string, name?: string) => Promise<void>;
     logout: () => Promise<void>;
@@ -66,7 +72,7 @@ interface BoardState {
     // Board Actions
     fetchBoards: () => Promise<void>;
     createBoard: (title: string, projectId?: string) => Promise<Board | null>;
-    fetchBoard: (boardId: string) => Promise<void>;
+    fetchBoard: (boardId: string, silent?: boolean) => Promise<void>;
     inviteUser: (email: string) => Promise<void>;
 
     // Data Actions
@@ -101,7 +107,57 @@ export const useStore = create<BoardState>((set, get) => ({
     lists: [],
     status: 'Connecting...',
     boardName: 'Loading...',
+    activeMembers: [],
     authLoading: true,
+    socket: null,
+
+    connectSocket: () => {
+        if (get().socket) return;
+
+        const socket = new WebSocket('ws://localhost:3000/ws');
+
+        socket.onopen = () => {
+            console.log('Connected to WS');
+            // If we are already on a board, subscribe?
+            const activeBoardId = get().activeBoardId;
+            if (activeBoardId) {
+                get().subscribeToBoard(activeBoardId);
+            }
+        };
+
+        socket.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            if (message.type === 'update') {
+                const activeBoardId = get().activeBoardId;
+                if (activeBoardId) {
+                    get().fetchBoard(activeBoardId, true);
+                }
+            }
+        };
+
+        socket.onclose = () => {
+            console.log('Disconnected from WS');
+            set({ socket: null });
+            // Retry?
+            setTimeout(() => get().connectSocket(), 3000);
+        };
+
+        set({ socket });
+    },
+
+    subscribeToBoard: (boardId) => {
+        const socket = get().socket;
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'subscribe', boardId }));
+        }
+    },
+
+    unsubscribeFromBoard: (boardId) => {
+        const socket = get().socket;
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'unsubscribe', boardId }));
+        }
+    },
 
     checkAuth: async () => {
         set({ authLoading: true });
@@ -204,19 +260,30 @@ export const useStore = create<BoardState>((set, get) => ({
         return null;
     },
 
-    fetchBoard: async (boardId) => {
-        set({ activeBoardId: boardId, boardName: 'Loading...', lists: [] });
-        // Update recently viewed
-        get().updateRecentBoards(boardId);
+    fetchBoard: async (boardId, silent = false) => {
+        if (!silent) {
+            set({ activeBoardId: boardId, boardName: 'Loading...', lists: [], activeMembers: [] });
+            // Update recently viewed
+            get().updateRecentBoards(boardId);
+            // Connect/Subscribe
+            get().connectSocket(); // Ensure connected
+            get().subscribeToBoard(boardId);
+        }
 
         try {
             const { data, error } = await client.boards[boardId].get();
             if (error) throw error;
             if (data) {
-                set({ lists: data.lists as List[], boardName: data.title });
+                set({
+                    lists: data.lists as List[],
+                    boardName: data.title,
+                    activeMembers: data.members // Now we set this!
+                });
             }
         } catch (e) {
-            set({ status: '❌ Failed to load data' });
+            if (!silent) {
+                set({ status: '❌ Failed to load data' });
+            }
             console.error('Fetch error:', e);
         }
     },

@@ -1,4 +1,4 @@
-import { Box, Button, IconButton, Typography, useTheme } from '@mui/material';
+import { Box, Button, IconButton, Typography, useTheme, Avatar, AvatarGroup, Tooltip } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ShareIcon from '@mui/icons-material/Share';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -8,6 +8,7 @@ import { Dialog, DialogTitle, DialogContent, TextField, DialogActions } from '@m
 
 export default function TopBar() {
     const boardName = useStore((state) => state.boardName);
+    const activeMembers = useStore((state) => state.activeMembers);
     const inviteUser = useStore((state) => state.inviteUser);
     const theme = useTheme();
 
@@ -23,6 +24,21 @@ export default function TopBar() {
         } catch (e) {
             alert('Failed to invite');
         }
+    };
+
+
+    // Helper to generate consistent color from string
+    const stringToColor = (string: string) => {
+        let hash = 0;
+        for (let i = 0; i < string.length; i++) {
+            hash = string.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        let color = '#';
+        for (let i = 0; i < 3; i++) {
+            const value = (hash >> (i * 8)) & 0xff;
+            color += `00${value.toString(16)}`.slice(-2);
+        }
+        return color;
     };
 
     return (
@@ -47,10 +63,28 @@ export default function TopBar() {
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 
-                    <Button
-                        startIcon={<FilterListIcon />}
+                    {/* Avatars */}
+                    <AvatarGroup max={4} sx={{ '& .MuiAvatar-root': { width: 32, height: 32, fontSize: '0.875rem' } }}>
+                        {activeMembers.map((member) => (
+                            <Tooltip key={member.id} title={member.name || member.email}>
+                                <Avatar
+                                    alt={member.name}
+                                    // src={member.avatarUrl} // Future: Add avatarUrl to member
+                                    sx={{ bgcolor: stringToColor(member.name || member.email) }}
+                                >
+                                    {member.name ? member.name[0].toUpperCase() : member.email[0].toUpperCase()}
+                                </Avatar>
+                            </Tooltip>
+                        ))}
+                    </AvatarGroup>
+
+                    <Box sx={{ width: '1px', height: '24px', bgcolor: 'rgba(255,255,255,0.3)', mx: 1 }} />
+
+                    <IconButton
                         sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}
-                    />
+                    >
+                        <FilterListIcon />
+                    </IconButton>
 
                     <Button
                         variant="contained"
