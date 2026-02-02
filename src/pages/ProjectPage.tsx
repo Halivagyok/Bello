@@ -21,7 +21,11 @@ export default function ProjectDetails() {
     const fetchBoards = useStore(state => state.fetchBoards);
     const fetchProjects = useStore(state => state.fetchProjects);
     const fetchProject = useStore(state => state.fetchProject);
+
     const inviteUserToProject = useStore(state => state.inviteUserToProject);
+    const subscribeToProject = useStore(state => state.subscribeToProject);
+    const unsubscribeFromProject = useStore(state => state.unsubscribeFromProject);
+    const connectSocket = useStore(state => state.connectSocket);
     const user = useStore(state => state.user);
 
     const [open, setOpen] = useState(false);
@@ -33,8 +37,18 @@ export default function ProjectDetails() {
     useEffect(() => {
         fetchBoards();
         fetchProjects();
-        if (projectId) fetchProject(projectId);
-    }, [fetchBoards, fetchProjects, fetchProject, projectId]);
+        // Connect socket and subscribe
+        connectSocket();
+
+        if (projectId) {
+            fetchProject(projectId);
+            subscribeToProject(projectId);
+
+            return () => {
+                unsubscribeFromProject(projectId);
+            };
+        }
+    }, [fetchBoards, fetchProjects, fetchProject, projectId, subscribeToProject, unsubscribeFromProject, connectSocket]);
 
     const project = projects.find(p => p.id === projectId);
     const projectBoards = boards.filter(b => b.projectId === projectId);

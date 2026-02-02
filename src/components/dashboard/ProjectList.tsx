@@ -7,8 +7,11 @@ import ProjectDialog from '../ProjectDialog';
 export default function ProjectList() {
     const projects = useStore(state => state.projects);
     const boards = useStore(state => state.boards);
+    const user = useStore(state => state.user);
     const navigate = useNavigate();
     const [openProjectDialog, setOpenProjectDialog] = useState(false);
+
+    const myProjects = projects.filter(p => p.ownerId === user?.id);
 
     return (
         <>
@@ -36,7 +39,7 @@ export default function ProjectList() {
                     </Paper>
                 </Grid>
 
-                {projects.map(project => (
+                {myProjects.map(project => (
                     <Grid size={{ xs: 12, sm: 6, md: 3 }} key={project.id}>
                         <Card sx={{ height: 120 }}>
                             <CardActionArea

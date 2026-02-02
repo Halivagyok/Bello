@@ -69,6 +69,9 @@ interface BoardState {
     connectSocket: () => void;
     subscribeToBoard: (boardId: string) => void;
     unsubscribeFromBoard: (boardId: string) => void;
+    subscribeToProject: (projectId: string) => void;
+    unsubscribeFromProject: (projectId: string) => void;
+    subscribeToUser: () => void;
     login: (email: string, pass: string) => Promise<void>;
     signup: (email: string, pass: string, name?: string) => Promise<void>;
     logout: () => Promise<void>;
@@ -118,37 +121,84 @@ export const useStore = create<BoardState>((set, get) => ({
     socket: null,
 
     connectSocket: () => {
-        if (get().socket) return;
+        const socket = get().socket;
+        if (socket) {
+            // If already connected, ensure we are subscribed to user
+            if (socket.readyState === WebSocket.OPEN) {
+                get().subscribeToUser();
+            }
+            return;
+        }
 
-        const socket = new WebSocket('ws://localhost:3000/ws');
+        const newSocket = new WebSocket('ws://localhost:3000/ws');
 
-        socket.onopen = () => {
+        newSocket.onopen = () => {
             console.log('Connected to WS');
             // If we are already on a board, subscribe?
             const activeBoardId = get().activeBoardId;
             if (activeBoardId) {
                 get().subscribeToBoard(activeBoardId);
             }
+            get().subscribeToUser();
         };
 
-        socket.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            if (message.type === 'update') {
-                const activeBoardId = get().activeBoardId;
-                if (activeBoardId) {
-                    get().fetchBoard(activeBoardId, true);
+        newSocket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'update') {
+                    // Refresh current board if it matches activeBoard
+                    const activeId = get().activeBoardId;
+                    if (activeId) {
+                        get().fetchBoard(activeId, true).catch(() => {
+                            // If fetch fails (e.g. 403 Forbidden because removed), redirect
+                            console.log("Access lost or board deleted");
+                            set({ activeBoardId: null, lists: [], activeMembers: [] });
+                            window.location.href = '/boards'; // Force redirect
+                        });
+                    }
                 }
+                if (data.type === 'project-update') {
+                    // Check if we are viewing a project
+                    const paths = window.location.pathname.split('/');
+                    if (paths[1] === 'projects' && paths[2]) {
+                        const projectId = paths[2];
+                        get().fetchProject(projectId).catch(() => {
+                            // If access lost
+                            console.log("Access lost to project");
+                            window.location.href = '/boards';
+                        });
+                    }
+                }
+                if (data.type === 'user-update') {
+                    get().fetchProjects();
+                    // Check active board access if needed
+                    const activeId = get().activeBoardId;
+                    if (activeId) {
+                        get().fetchBoard(activeId, true).catch(() => {
+                            window.location.href = '/boards';
+                        });
+                    }
+                    // Check active project access
+                    const paths = window.location.pathname.split('/');
+                    if (paths[1] === 'projects' && paths[2]) {
+                        get().fetchProject(paths[2]).catch(() => {
+                            window.location.href = '/boards';
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error('WS Parse Error', e);
             }
         };
 
-        socket.onclose = () => {
+        newSocket.onclose = () => {
             console.log('Disconnected from WS');
             set({ socket: null });
             // Retry?
             setTimeout(() => get().connectSocket(), 3000);
         };
 
-        set({ socket });
+        set({ socket: newSocket });
     },
 
     subscribeToBoard: (boardId) => {
@@ -165,6 +215,28 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
+    subscribeToProject: (projectId) => {
+        const socket = get().socket;
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'subscribe-project', projectId }));
+        }
+    },
+
+    unsubscribeFromProject: (projectId) => {
+        const socket = get().socket;
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'unsubscribe-project', projectId }));
+        }
+    },
+
+    subscribeToUser: () => {
+        const socket = get().socket;
+        const user = get().user;
+        if (socket && socket.readyState === WebSocket.OPEN && user) {
+            socket.send(JSON.stringify({ type: 'subscribe-user', userId: user.id }));
+        }
+    },
+
     checkAuth: async () => {
         set({ authLoading: true });
         try {
@@ -173,6 +245,7 @@ export const useStore = create<BoardState>((set, get) => ({
                 set({ user: data.user });
                 // Load projects from local storage on auth check
                 get().fetchProjects();
+                get().connectSocket();
             } else {
                 set({ user: null });
             }
@@ -192,6 +265,7 @@ export const useStore = create<BoardState>((set, get) => ({
             if (data?.user) {
                 set({ user: data.user });
                 get().fetchProjects();
+                get().connectSocket();
             }
         } catch (e) {
             throw e;
@@ -208,6 +282,7 @@ export const useStore = create<BoardState>((set, get) => ({
             if (data?.user) {
                 set({ user: data.user });
                 get().fetchProjects();
+                get().connectSocket();
             }
         } catch (e) {
             throw e;
@@ -292,6 +367,7 @@ export const useStore = create<BoardState>((set, get) => ({
                 set({ status: '❌ Failed to load data' });
             }
             console.error('Fetch error:', e);
+            throw e;
         }
     },
 
@@ -533,6 +609,7 @@ export const useStore = create<BoardState>((set, get) => ({
             }
         } catch (e) {
             console.error('Fetch Project failed:', e);
+            throw e;
         }
     },
 
