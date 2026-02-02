@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import BoardPage from './pages/BoardPage';
 import ProjectPage from './pages/ProjectPage';
+import AdminPage from './pages/AdminPage';
 import MainLayout from './layouts/MainLayout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -59,6 +60,7 @@ export const App = () => {
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/boards" element={<DashboardPage />} />
           <Route path="/projects/:projectId" element={<ProjectPage />} />
+          <Route path="/admin" element={user?.isAdmin ? <AdminPage /> : <Navigate to="/" />} />
         </Route>
 
         <Route path="/boards/:boardId" element={<ProtectedRoute><BoardPage /></ProtectedRoute>} />

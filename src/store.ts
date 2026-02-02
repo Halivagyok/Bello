@@ -13,6 +13,8 @@ export interface User {
     id: string;
     email: string;
     name: string;
+    isAdmin?: boolean;
+    isBanned?: boolean;
 }
 
 export interface Board {
@@ -21,7 +23,7 @@ export interface Board {
     ownerId: string;
     projectId?: string;
     lastViewed?: number;
-    members?: { id: string; name: string; email: string; role: string }[];
+    members?: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[];
 }
 
 export interface Project {
@@ -30,6 +32,7 @@ export interface Project {
     description?: string;
     ownerId: string;
     boardIds: string[];
+    members?: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[];
 }
 
 export interface Card {
@@ -56,7 +59,8 @@ interface BoardState {
     lists: List[];
     status: string;
     boardName: string; // Current board name
-    activeMembers: { id: string; name: string; email: string; role: string }[];
+    activeMembers: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[];
+    activeBoardOwnerId?: string;
     authLoading: boolean;
     socket: WebSocket | null;
 
@@ -92,7 +96,9 @@ interface BoardState {
 
     // Project Actions
     fetchProjects: () => Promise<void>;
+    fetchProject: (projectId: string) => Promise<void>;
     createProject: (title: string, description?: string) => Promise<void>;
+    inviteUserToProject: (projectId: string, email: string) => Promise<void>;
     assignBoardToProject: (boardId: string, projectId: string) => Promise<void>;
     updateRecentBoards: (boardId: string) => void;
 }
@@ -277,7 +283,8 @@ export const useStore = create<BoardState>((set, get) => ({
                 set({
                     lists: data.lists as List[],
                     boardName: data.title,
-                    activeMembers: data.members // Now we set this!
+                    activeMembers: data.members, // Now we set this!
+                    activeBoardOwnerId: data.ownerId
                 });
             }
         } catch (e) {
@@ -508,6 +515,27 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
+    fetchProject: async (projectId: string) => {
+        try {
+            const { data, error } = await client.projects[projectId].get();
+            if (error) throw error;
+            if (data) {
+                set((state) => ({
+                    projects: state.projects.map(p => p.id === projectId ? { ...p, ...data } : p)
+                }));
+                // If project wasn't in list (e.g. direct link), maybe add it?
+                // For now assuming list is loaded or we append it
+                set((state) => {
+                    const exists = state.projects.find(p => p.id === projectId);
+                    if (!exists) return { projects: [...state.projects, data as Project] };
+                    return {};
+                });
+            }
+        } catch (e) {
+            console.error('Fetch Project failed:', e);
+        }
+    },
+
     createProject: async (title, description) => {
         try {
             const { data, error } = await client.projects.post({ title, description });
@@ -519,6 +547,16 @@ export const useStore = create<BoardState>((set, get) => ({
             }
         } catch (e) {
             console.error('Create Project failed:', e);
+        }
+    },
+
+    inviteUserToProject: async (projectId, email) => {
+        try {
+            const { error } = await client.projects[projectId].invite.post({ email });
+            if (error) throw error;
+        } catch (e) {
+            console.error('Invite to project failed:', e);
+            throw e;
         }
     },
 
