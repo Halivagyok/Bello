@@ -61,6 +61,7 @@ interface BoardState {
     boardName: string; // Current board name
     activeMembers: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[];
     activeBoardOwnerId?: string;
+    activeProjectId: string | null;
     authLoading: boolean;
     socket: WebSocket | null;
 
@@ -72,6 +73,8 @@ interface BoardState {
     subscribeToProject: (projectId: string) => void;
     unsubscribeFromProject: (projectId: string) => void;
     subscribeToUser: () => void;
+    handleUserUpdate: () => void;
+    navigateToBoards: () => void;
     login: (email: string, pass: string) => Promise<void>;
     signup: (email: string, pass: string, name?: string) => Promise<void>;
     logout: () => Promise<void>;
@@ -120,6 +123,16 @@ export const useStore = create<BoardState>((set, get) => ({
     authLoading: true,
     socket: null,
 
+    activeProjectId: null, // Track active project for WS updates
+
+    // Helper for navigation
+    navigateToBoards: () => {
+        window.history.pushState({}, '', '/boards');
+        window.dispatchEvent(new Event('popstate')); // Trigger standard navigation event
+        // Also dispatch custom event for components listening explicitly
+        window.dispatchEvent(new CustomEvent('app-navigate', { detail: '/boards' }));
+    },
+
     connectSocket: () => {
         const socket = get().socket;
         if (socket) {
@@ -139,6 +152,10 @@ export const useStore = create<BoardState>((set, get) => ({
             if (activeBoardId) {
                 get().subscribeToBoard(activeBoardId);
             }
+            const activeProjectId = get().activeProjectId;
+            if (activeProjectId) {
+                get().subscribeToProject(activeProjectId);
+            }
             get().subscribeToUser();
         };
 
@@ -153,38 +170,24 @@ export const useStore = create<BoardState>((set, get) => ({
                             // If fetch fails (e.g. 403 Forbidden because removed), redirect
                             console.log("Access lost or board deleted");
                             set({ activeBoardId: null, lists: [], activeMembers: [] });
-                            window.location.href = '/boards'; // Force redirect
+                            get().navigateToBoards();
                         });
                     }
                 }
                 if (data.type === 'project-update') {
-                    // Check if we are viewing a project
-                    const paths = window.location.pathname.split('/');
-                    if (paths[1] === 'projects' && paths[2]) {
-                        const projectId = paths[2];
-                        get().fetchProject(projectId).catch(() => {
+                    // Check if we are viewing a project using store state
+                    const activeProjectId = get().activeProjectId;
+                    if (activeProjectId) {
+                        get().fetchProject(activeProjectId).catch(() => {
                             // If access lost
                             console.log("Access lost to project");
-                            window.location.href = '/boards';
+                            set({ activeProjectId: null });
+                            get().navigateToBoards();
                         });
                     }
                 }
                 if (data.type === 'user-update') {
-                    get().fetchProjects();
-                    // Check active board access if needed
-                    const activeId = get().activeBoardId;
-                    if (activeId) {
-                        get().fetchBoard(activeId, true).catch(() => {
-                            window.location.href = '/boards';
-                        });
-                    }
-                    // Check active project access
-                    const paths = window.location.pathname.split('/');
-                    if (paths[1] === 'projects' && paths[2]) {
-                        get().fetchProject(paths[2]).catch(() => {
-                            window.location.href = '/boards';
-                        });
-                    }
+                    get().handleUserUpdate();
                 }
             } catch (e) {
                 console.error('WS Parse Error', e);
@@ -199,6 +202,24 @@ export const useStore = create<BoardState>((set, get) => ({
         };
 
         set({ socket: newSocket });
+    },
+
+    handleUserUpdate: () => {
+        get().fetchProjects();
+        // Check active board access
+        const activeId = get().activeBoardId;
+        if (activeId) {
+            get().fetchBoard(activeId, true).catch(() => {
+                get().navigateToBoards();
+            });
+        }
+        // Check active project access
+        const activeProjectId = get().activeProjectId;
+        if (activeProjectId) {
+            get().fetchProject(activeProjectId).catch(() => {
+                get().navigateToBoards();
+            });
+        }
     },
 
     subscribeToBoard: (boardId) => {
@@ -365,8 +386,12 @@ export const useStore = create<BoardState>((set, get) => ({
         } catch (e) {
             if (!silent) {
                 set({ status: '❌ Failed to load data' });
+                // If we failed to load the board (e.g. 403 or 404), redirect back to dashboard
+                console.error('Fetch error:', e);
+                get().navigateToBoards();
+            } else {
+                console.error('Fetch error (silent):', e);
             }
-            console.error('Fetch error:', e);
             throw e;
         }
     },
@@ -596,16 +621,20 @@ export const useStore = create<BoardState>((set, get) => ({
             const { data, error } = await client.projects[projectId].get();
             if (error) throw error;
             if (data) {
-                set((state) => ({
-                    projects: state.projects.map(p => p.id === projectId ? { ...p, ...data } : p)
-                }));
-                // If project wasn't in list (e.g. direct link), maybe add it?
-                // For now assuming list is loaded or we append it
-                set((state) => {
-                    const exists = state.projects.find(p => p.id === projectId);
-                    if (!exists) return { projects: [...state.projects, data as Project] };
-                    return {};
-                });
+                if (data) {
+                    set((state) => {
+                        // Update lists and set active project
+                        const projectIndex = state.projects.findIndex(p => p.id === projectId);
+                        let newProjects;
+                        if (projectIndex !== -1) {
+                            newProjects = [...state.projects];
+                            newProjects[projectIndex] = { ...newProjects[projectIndex], ...data };
+                        } else {
+                            newProjects = [...state.projects, data as Project];
+                        }
+                        return { projects: newProjects, activeProjectId: projectId };
+                    });
+                }
             }
         } catch (e) {
             console.error('Fetch Project failed:', e);
@@ -637,7 +666,7 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
-    assignBoardToProject: async (boardId, projectId) => {
+    assignBoardToProject: async (_boardId, _projectId) => {
         console.warn("Moving boards between projects not yet fully supported on backend");
         // Future: await client.boards[boardId].patch({ projectId });
     },

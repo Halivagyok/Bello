@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { CssBaseline } from '@mui/material';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useStore } from './store';
 
 import LoginPage from './pages/LoginPage';
@@ -39,6 +39,16 @@ export const App = () => {
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  const navigate = useNavigate();
+  useEffect(() => {
+    const handleNavigation = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      navigate(customEvent.detail);
+    };
+    window.addEventListener('app-navigate', handleNavigation);
+    return () => window.removeEventListener('app-navigate', handleNavigation);
+  }, [navigate]);
 
   if (authLoading) {
     return (

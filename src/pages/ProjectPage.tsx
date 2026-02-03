@@ -205,7 +205,7 @@ export default function ProjectDetails() {
                                     secondary={member.email}
                                 />
                                 <ListItemSecondaryAction>
-                                    {isOwnerOrAdmin && member.id !== user?.id && (
+                                    {isOwnerOrAdmin && member.id !== user?.id && member.id !== project.ownerId && (
                                         <IconButton edge="end" onClick={() => handleRemoveMember(member.id)} color="error">
                                             <DeleteIcon />
                                         </IconButton>

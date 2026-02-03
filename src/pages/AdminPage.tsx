@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box, Typography, Table, TableBody, TableCell, TableHead, TableRow, Paper,
@@ -11,7 +11,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { client } from '../store';
+import { client, useStore } from '../store';
 
 interface AdminUser {
     id: string;
@@ -39,6 +39,16 @@ export default function AdminPage() {
     const [userAccess, setUserAccess] = useState<{ projects: any[], boards: any[] }>({ projects: [], boards: [] });
     const [accessLoading, setAccessLoading] = useState(false);
 
+
+    // Admin Check
+    const user = useStore(state => state.user);
+
+    useEffect(() => {
+        if (!loading && user && !user.isAdmin) {
+            navigate('/boards');
+        }
+    }, [user, loading, navigate]);
+
     useEffect(() => {
         fetchUsers();
     }, []);
@@ -64,8 +74,13 @@ export default function AdminPage() {
         try {
             const { data, error } = await client.admin.users[userId].ban.post();
             if (error) throw error;
-            // Update local state
-            setUsers(users.map(u => u.id === userId ? { ...u, isBanned: data.isBanned } : u));
+            if (error) throw error;
+            // Update local state if data exists
+            if (data?.isBanned !== undefined) {
+                setUsers(users.map(u => u.id === userId ? { ...u, isBanned: data.isBanned } : u));
+            } else {
+                fetchUsers(); // Fallback
+            }
         } catch (e) {
             alert('Failed to ban/unban user');
             console.error(e);

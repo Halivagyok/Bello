@@ -45,7 +45,7 @@ export default function TopBar() {
         }
     };
 
-    const isOwnerOrAdmin = (user?.id === activeBoardOwnerId) || user?.isAdmin;
+    const isOwnerOrAdmin = (activeBoardOwnerId && user?.id === activeBoardOwnerId) || user?.isAdmin;
 
 
     // Helper to generate consistent color from string
@@ -165,7 +165,7 @@ export default function TopBar() {
                                     secondary={member.email}
                                 />
                                 <ListItemSecondaryAction>
-                                    {isOwnerOrAdmin && member.id !== user?.id && (
+                                    {isOwnerOrAdmin && member.id !== user?.id && member.id !== activeBoardOwnerId && (
                                         <IconButton edge="end" onClick={() => handleRemoveMember(member.id)} color="error">
                                             <DeleteIcon />
                                         </IconButton>
