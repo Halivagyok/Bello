@@ -20,6 +20,11 @@ export default function MainLayout() {
                 <Typography variant="h6" fontWeight="bold">Bello Dashboard</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Typography>Welcome, {user?.name || user?.email}</Typography>
+                    {user?.isAdmin && (
+                        <Button variant="contained" color="error" size="small" onClick={() => navigate('/admin')}>
+                            Admin
+                        </Button>
+                    )}
                     <Button variant="contained" color="secondary" size="small" startIcon={<LogoutIcon />} onClick={handleLogout}>
                         Logout
                     </Button>

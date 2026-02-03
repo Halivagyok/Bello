@@ -1,12 +1,13 @@
 import React, { useEffect } from 'react';
 import { CssBaseline } from '@mui/material';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useStore } from './store';
 
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import BoardPage from './pages/BoardPage';
 import ProjectPage from './pages/ProjectPage';
+import AdminPage from './pages/AdminPage';
 import MainLayout from './layouts/MainLayout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -39,6 +40,16 @@ export const App = () => {
     checkAuth();
   }, [checkAuth]);
 
+  const navigate = useNavigate();
+  useEffect(() => {
+    const handleNavigation = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      navigate(customEvent.detail);
+    };
+    window.addEventListener('app-navigate', handleNavigation);
+    return () => window.removeEventListener('app-navigate', handleNavigation);
+  }, [navigate]);
+
   if (authLoading) {
     return (
       <div style={{
@@ -59,6 +70,7 @@ export const App = () => {
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
           <Route path="/boards" element={<DashboardPage />} />
           <Route path="/projects/:projectId" element={<ProjectPage />} />
+          <Route path="/admin" element={user?.isAdmin ? <AdminPage /> : <Navigate to="/" />} />
         </Route>
 
         <Route path="/boards/:boardId" element={<ProtectedRoute><BoardPage /></ProtectedRoute>} />

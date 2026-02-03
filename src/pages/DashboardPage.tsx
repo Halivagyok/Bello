@@ -4,6 +4,7 @@ import { useStore } from '../store';
 import RecentBoards from '../components/dashboard/RecentBoards';
 import ProjectList from '../components/dashboard/ProjectList';
 import SharedProjects from '../components/dashboard/SharedProjects';
+import SharedBoards from '../components/dashboard/SharedBoards';
 
 export default function DashboardPage() {
     const fetchBoards = useStore(state => state.fetchBoards);
@@ -19,6 +20,7 @@ export default function DashboardPage() {
             <RecentBoards />
             <ProjectList />
             <SharedProjects />
+            <SharedBoards />
         </Box>
     );
 }
