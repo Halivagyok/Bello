@@ -50,6 +50,7 @@ export interface List {
     position: number;
     cards: Card[];
     boardId: string;
+    color?: string;
 }
 
 interface BoardState {
@@ -94,6 +95,11 @@ interface BoardState {
     updateListTitle: (listId: string, title: string) => Promise<void>;
     addCard: (listId: string, content: string) => void;
     deleteList: (listId: string) => void;
+    duplicateList: (listId: string, title?: string) => Promise<void>;
+    moveAllCards: (sourceListId: string, targetListId: string) => void;
+    sortCards: (listId: string, sortBy: 'oldest' | 'newest' | 'abc') => void;
+    updateListColor: (listId: string, color: string) => void;
+    moveListToBoard: (listId: string, boardId: string) => void;
     moveList: (fromIndex: number, toIndex: number) => void;
     moveCard: (
         sourceListId: string,
@@ -613,6 +619,100 @@ export const useStore = create<BoardState>((set, get) => ({
                 set({ lists: oldLists });
                 console.error('Move Card failed:', e);
             }
+        }
+    },
+
+    duplicateList: async (listId, title) => {
+        const list = get().lists.find(l => l.id === listId);
+        if (!list) return;
+
+        try {
+            // For now, no optimistic update as complex ID generation/cards needed
+            const { error } = await client.lists[listId].duplicate.post({ title });
+            // Note: using client.lists[id].duplicate.post based on my backend impl
+            if (error) throw error;
+
+            // Refresh board to get new list
+            get().fetchBoard(get().activeBoardId!, true);
+        } catch (e) {
+            console.error('Duplicate List Error', e);
+        }
+    },
+
+    moveAllCards: async (sourceListId, targetListId) => {
+        const oldLists = get().lists; // backup
+
+        // Optimistic
+        set(state => {
+            const newLists = state.lists.map(l => ({ ...l, cards: [...l.cards] }));
+            const source = newLists.find(l => l.id === sourceListId);
+            const target = newLists.find(l => l.id === targetListId);
+
+            if (source && target) {
+                target.cards = [...target.cards, ...source.cards];
+                source.cards = [];
+                // Update listIds handling handled by store refresh or fetch
+            }
+            return { lists: newLists };
+        });
+
+        try {
+            await client.lists[sourceListId]['move-cards'].post({ targetListId });
+        } catch (e) {
+            set({ lists: oldLists });
+            console.error('Move All Cards Error', e);
+        }
+    },
+
+    sortCards: async (listId, sortBy) => {
+        // Optimistic Sort
+        set(state => {
+            const listFn = (l: List) => {
+                if (l.id !== listId) return l;
+                const newCards = [...l.cards];
+                // Note: we might not have createdAt in frontend Card type, 
+                // store.ts Card interface might need update if we want purely local optimistic sort,
+                // but assuming backend does the heavy lifting, we might just wait or fuzzy sort.
+                // let's rely on backend for correct sort, but we can try basic ABC optimistically.
+                if (sortBy === 'abc') {
+                    newCards.sort((a, b) => a.content.localeCompare(b.content));
+                }
+                return { ...l, cards: newCards };
+            };
+            return { lists: state.lists.map(listFn) }
+        });
+
+        try {
+            await client.lists[listId].sort.post({ sortBy });
+            get().fetchBoard(get().activeBoardId!, true); // Refresh to be safe IDs/Positions
+        } catch (e) {
+            console.error('Sort Error', e);
+        }
+    },
+
+    updateListColor: async (listId, color) => {
+        set(state => ({
+            lists: state.lists.map(l => l.id === listId ? { ...l, color } : l)
+        }));
+        try {
+            await client.lists[listId].patch({ color });
+        } catch (e) {
+            console.error('Update Color Error', e);
+        }
+    },
+
+    moveListToBoard: async (listId, boardId) => {
+        // Optimistic: Remove from current board
+        const oldLists = get().lists;
+        set(state => ({
+            lists: state.lists.filter(l => l.id !== listId)
+        }));
+
+        try {
+            await client.lists[listId].patch({ boardId });
+        } catch (e) {
+            set({ lists: oldLists });
+            console.error('Move to Board Error', e);
         }
     },
 
