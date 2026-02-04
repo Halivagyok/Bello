@@ -42,6 +42,7 @@ export interface Card {
     content: string;
     listId: string;
     position: number;
+    completed?: boolean;
 }
 
 export interface List {
@@ -107,6 +108,7 @@ interface BoardState {
         sourceIndex: number,
         destIndex: number
     ) => void;
+    toggleCardCompletion: (cardId: string, completed: boolean) => void;
     checkBackend: () => Promise<void>;
 
     // Project Actions
@@ -619,6 +621,27 @@ export const useStore = create<BoardState>((set, get) => ({
                 set({ lists: oldLists });
                 console.error('Move Card failed:', e);
             }
+        }
+    },
+
+    toggleCardCompletion: async (cardId, completed) => {
+        const oldLists = get().lists;
+
+        // Optimistic Update
+        set(state => ({
+            lists: state.lists.map(list => ({
+                ...list,
+                cards: list.cards.map(card =>
+                    card.id === cardId ? { ...card, completed } : card
+                )
+            }))
+        }));
+
+        try {
+            await client.cards[cardId].patch({ completed });
+        } catch (e) {
+            set({ lists: oldLists });
+            console.error('Toggle Completion failed:', e);
         }
     },
 
