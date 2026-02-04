@@ -1,6 +1,29 @@
 import { useState } from 'react';
-import { Box, Button, TextField, Typography, Paper, Tab, Tabs, Alert } from '@mui/material';
 import { useStore } from '../store';
+
+
+interface textinput {text: string, setValue : any}
+
+const TextInput = ({text, setValue}: textinput) => {
+    
+    
+    let type: string = ""
+    if(text === "Email") type = "email"
+    else if(text === "Password") type = "password"
+    else type = "text"
+
+    const changeValue = () => {
+        let val = document.getElementById(text).value
+        setValue(val)
+    }
+
+    return(
+        <div className="">
+            <div className="mx-auto w-fit rounded-lg bg-t2 text-xl text-t4 px-4 py-1 relative top-[10px] ">{text}</div>
+            <input id={text} className={`p-2 border-3 border-t1 w-full rounded-lg`} type={type} onChange={() => changeValue()} required />
+        </div>
+    )
+}
 
 export default function Auth() {
     const [isLogin, setIsLogin] = useState(true);
@@ -12,87 +35,31 @@ export default function Auth() {
     const login = useStore((state) => state.login);
     const signup = useStore((state) => state.signup);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-
+    const sendData = async () => {
         try {
-            if (isLogin) {
-                await login(email, password);
-            } else {
-                await signup(email, password, name);
-            }
-        } catch (err: any) {
+            if (isLogin) await login(email, password);
+            else await signup(email, password, name);
+        } 
+        catch (err: any) {
             setError(err.message || 'Authentication failed');
         }
     };
 
     return (
-        <Box  sx={{
-            height: '100vh',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            bgcolor: '#f5f5f5' // Light grey background
-        }}>
-            <Paper elevation={3} sx={{ p: 4, width: 400, borderRadius: 2 }}>
-                <Typography variant="h4" align="center" gutterBottom fontWeight="bold" color="primary">
-                    Bello
-                </Typography>
-
-                <Tabs
-                    value={isLogin ? 0 : 1}
-                    onChange={(_, val) => setIsLogin(val === 0)}
-                    variant="fullWidth"
-                    sx={{ mb: 3 }}
-                >
-                    <Tab label="Login" />
-                    <Tab label="Sign Up" />
-                </Tabs>
-
-                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
-                <form onSubmit={handleSubmit}>
-                    <TextField
-                        label="Email"
-                        type="email"
-                        fullWidth
-                        margin="normal"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
-                    <TextField
-                        label="Password"
-                        type="password"
-                        fullWidth
-                        margin="normal"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-                    {!isLogin && (
-                        <TextField
-                            label="Name"
-                            fullWidth
-                            margin="normal"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                        />
-                    )}
-
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        fullWidth
-                        size="large"
-                        sx={{ mt: 3, mb: 2 }}
-                    >
-                        {isLogin ? 'Login' : 'Sign Up'}
-                    </Button>
-                </form>
-            </Paper>
-        </Box>
+        <div className="h-screen flex justify-center items-center ">    
+            <div className="w-100 mx-10">
+                <div className=' text-6xl text-center text-t2'>Bello</div>
+                <div className="flex justify-between py-4">    
+                    <input className={`text-center justify-center p-2 w-full ${isLogin ? "border-b-4 border-t3 " : ""}`} onClick={() => setIsLogin(true)} type="button" value="Login" />
+                    <input className={`text-center justify-center p-2 w-full ${isLogin ? " " : "border-b-4 border-t3"}`} onClick={() => setIsLogin(false)} type="button" value="Sign Up" />           
+                </div>
+                <div className="flex flex-col">
+                    {isLogin ? "" : <TextInput text={"Name"} setValue={setName}/>} 
+                    <TextInput text={"Email"} setValue={setEmail}/>    
+                    <TextInput text={"Password"} setValue={setPassword}/>    
+                    <input className='mx-auto w-full rounded-lg py-2 my-8 bg-t2 text-xl text-t4' type="button" value={isLogin ? "Login" : "Sign Up"} onClick={() => sendData()}/>
+                </div>
+            </div>
+        </div>
     );
 }
