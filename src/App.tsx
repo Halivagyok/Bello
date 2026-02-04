@@ -1,50 +1,82 @@
-// frontend/src/App.tsx
-import { useState } from 'react';
-import { Button, Typography, Paper, Box } from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import React, { useEffect } from 'react';
+import { CssBaseline } from '@mui/material';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useStore } from './store';
 
-function App() {
-  const [status, setStatus] = useState<string>("Waiting for server...");
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import BoardPage from './pages/BoardPage';
+import ProjectPage from './pages/ProjectPage';
+import AdminPage from './pages/AdminPage';
+import MainLayout from './layouts/MainLayout';
 
-  const checkBackend = async () => {
-    try {
-      // Fetch from your Bun backend
-      const res = await fetch('http://localhost:3000/api/ping');
-      const data = await res.json();
-      setStatus(data.message);
-    } catch (err) {
-      setStatus("❌ Error: Could not connect to backend");
-    }
-  };
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const user = useStore(state => state.user);
+  const authLoading = useStore(state => state.authLoading);
 
-  return (
-    <Box sx={{
-      height: '100vh',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      bgcolor: '#f5f5f5'
-    }}>
-      <Paper elevation={3} sx={{ p: 4, textAlign: 'center', minWidth: 300 }}>
-        <Typography variant="h4" gutterBottom color="primary">
-          Bello testing
-        </Typography>
+  if (authLoading) {
+    return (
+      <div style={{
+        display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh',
+        backgroundColor: '#f4f5f7', color: '#026aa7'
+      }}>
+        Loading...
+      </div>
+    );
+  }
 
-        <Typography variant="body1" sx={{ mb: 3, fontWeight: 'bold' }}>
-          Status: {status}
-        </Typography>
-
-        <Button
-          variant="contained"
-          color="success"
-          startIcon={<CheckCircleIcon />}
-          onClick={checkBackend}
-        >
-          Test Connection
-        </Button>
-      </Paper>
-    </Box>
-  );
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
 }
 
-export default App;
+export const App = () => {
+  const checkAuth = useStore((state) => state.checkAuth);
+  const user = useStore((state) => state.user);
+  const authLoading = useStore((state) => state.authLoading);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  const navigate = useNavigate();
+  useEffect(() => {
+    const handleNavigation = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      navigate(customEvent.detail);
+    };
+    window.addEventListener('app-navigate', handleNavigation);
+    return () => window.removeEventListener('app-navigate', handleNavigation);
+  }, [navigate]);
+
+  if (authLoading) {
+    return (
+      <div style={{
+        display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh',
+        backgroundColor: '#0079bf', color: 'white', fontSize: '1.5rem'
+      }}>
+        Loading Bello...
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <CssBaseline />
+      <Routes>
+        <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/boards" />} />
+
+        <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+          <Route path="/boards" element={<DashboardPage />} />
+          <Route path="/projects/:projectId" element={<ProjectPage />} />
+          <Route path="/admin" element={user?.isAdmin ? <AdminPage /> : <Navigate to="/" />} />
+        </Route>
+
+        <Route path="/boards/:boardId" element={<ProtectedRoute><BoardPage /></ProtectedRoute>} />
+
+        <Route path="/" element={<Navigate to={user ? "/boards" : "/login"} />} />
+      </Routes>
+    </>
+  );
+}
