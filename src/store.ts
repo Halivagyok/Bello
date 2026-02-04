@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { edenTreaty } from '@elysiajs/eden';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 // 1. Initialize Eden Client
-export const client = edenTreaty<any>('http://localhost:3000', {
+export const client = edenTreaty<any>(API_URL, {
     $fetch: {
         credentials: 'include'
     }
@@ -64,6 +66,7 @@ interface BoardState {
     activeProjectId: string | null;
     authLoading: boolean;
     socket: WebSocket | null;
+    socketRetryCount: number;
 
     // Auth Actions
     checkAuth: () => Promise<void>;
@@ -75,8 +78,8 @@ interface BoardState {
     subscribeToUser: () => void;
     handleUserUpdate: () => void;
     navigateToBoards: () => void;
-    login: (email: string, pass: string) => Promise<void>;
-    signup: (email: string, pass: string, name?: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<void>;
+    signup: (email: string, password: string, name?: string) => Promise<void>;
     logout: () => Promise<void>;
 
     // Board Actions
@@ -122,6 +125,7 @@ export const useStore = create<BoardState>((set, get) => ({
     activeMembers: [],
     authLoading: true,
     socket: null,
+    socketRetryCount: 0,
 
     activeProjectId: null, // Track active project for WS updates
 
@@ -143,10 +147,13 @@ export const useStore = create<BoardState>((set, get) => ({
             return;
         }
 
-        const newSocket = new WebSocket('ws://localhost:3000/ws');
+        const API_HOST = new URL(API_URL).host;
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const newSocket = new WebSocket(`${wsProtocol}//${API_HOST}/ws`);
 
         newSocket.onopen = () => {
             console.log('Connected to WS');
+            set({ socketRetryCount: 0 }); // Reset retry count on successful connection
             // If we are already on a board, subscribe?
             const activeBoardId = get().activeBoardId;
             if (activeBoardId) {
@@ -194,11 +201,22 @@ export const useStore = create<BoardState>((set, get) => ({
             }
         };
 
+        newSocket.onerror = (error) => {
+            console.error('WebSocket Error:', error);
+        };
+
         newSocket.onclose = () => {
             console.log('Disconnected from WS');
             set({ socket: null });
-            // Retry?
-            setTimeout(() => get().connectSocket(), 3000);
+
+            // Exponential backoff
+            const retryCount = get().socketRetryCount;
+            const delay = Math.min(1000 * Math.pow(2, retryCount), 30000); // Max 30s
+
+            console.log(`Reconnecting in ${delay}ms... (Attempt ${retryCount + 1})`);
+            set({ socketRetryCount: retryCount + 1 });
+
+            setTimeout(() => get().connectSocket(), delay);
         };
 
         set({ socket: newSocket });
@@ -330,7 +348,13 @@ export const useStore = create<BoardState>((set, get) => ({
                 set({ boards: fetchedBoards });
 
                 // Update: Use local storage only for recent history tracking
-                const recentIds = JSON.parse(localStorage.getItem('recent_boards') || '[]');
+                let recentIds: string[] = [];
+                try {
+                    recentIds = JSON.parse(localStorage.getItem('recent_boards') || '[]');
+                } catch (e) {
+                    console.error("Failed to parse recent_boards from localStorage", e);
+                    recentIds = [];
+                }
                 const recent = fetchedBoards
                     .filter(b => recentIds.includes(b.id))
                     .sort((a, b) => recentIds.indexOf(a.id) - recentIds.indexOf(b.id))
@@ -357,7 +381,7 @@ export const useStore = create<BoardState>((set, get) => ({
             }
         } catch (e: any) {
             console.error(e);
-            alert(`Failed to create board: ${e.message || JSON.stringify(e)}`);
+            console.error(`Failed to create board: ${e.message || JSON.stringify(e)}`);
         }
         return null;
     },
@@ -621,20 +645,18 @@ export const useStore = create<BoardState>((set, get) => ({
             const { data, error } = await client.projects[projectId].get();
             if (error) throw error;
             if (data) {
-                if (data) {
-                    set((state) => {
-                        // Update lists and set active project
-                        const projectIndex = state.projects.findIndex(p => p.id === projectId);
-                        let newProjects;
-                        if (projectIndex !== -1) {
-                            newProjects = [...state.projects];
-                            newProjects[projectIndex] = { ...newProjects[projectIndex], ...data };
-                        } else {
-                            newProjects = [...state.projects, data as Project];
-                        }
-                        return { projects: newProjects, activeProjectId: projectId };
-                    });
-                }
+                set((state) => {
+                    // Update lists and set active project
+                    const projectIndex = state.projects.findIndex(p => p.id === projectId);
+                    let newProjects;
+                    if (projectIndex !== -1) {
+                        newProjects = [...state.projects];
+                        newProjects[projectIndex] = { ...newProjects[projectIndex], ...data };
+                    } else {
+                        newProjects = [...state.projects, data as Project];
+                    }
+                    return { projects: newProjects, activeProjectId: projectId };
+                });
             }
         } catch (e) {
             console.error('Fetch Project failed:', e);
@@ -672,7 +694,12 @@ export const useStore = create<BoardState>((set, get) => ({
     },
 
     updateRecentBoards: (boardId) => {
-        const recent = JSON.parse(localStorage.getItem('recent_boards') || '[]');
+        let recent: string[] = [];
+        try {
+            recent = JSON.parse(localStorage.getItem('recent_boards') || '[]');
+        } catch {
+            recent = [];
+        }
         // Remove if exists
         const newRecent = recent.filter((id: string) => id !== boardId);
         // Add to front
@@ -680,7 +707,11 @@ export const useStore = create<BoardState>((set, get) => ({
         // Keep 10
         if (newRecent.length > 10) newRecent.pop();
 
-        localStorage.setItem('recent_boards', JSON.stringify(newRecent));
+        try {
+            localStorage.setItem('recent_boards', JSON.stringify(newRecent));
+        } catch (e) {
+            console.error("Failed to save to localStorage", e);
+        }
 
         // Refresh recent lists from current boards state
         const boards = get().boards;
