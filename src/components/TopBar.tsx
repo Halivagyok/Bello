@@ -6,20 +6,43 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useStore, client } from '../store';
 import { useState } from 'react';
 import { Dialog, DialogTitle, DialogContent, TextField, DialogActions } from '@mui/material';
+import ProjectTabs from './ProjectTabs';
 
 export default function TopBar() {
     const boardName = useStore((state) => state.boardName);
     const activeMembers = useStore((state) => state.activeMembers);
     const inviteUser = useStore((state) => state.inviteUser);
-    const activeBoardId = useStore((state) => state.activeBoardId); // Need board ID
-    const activeBoardOwnerId = useStore((state) => state.activeBoardOwnerId); // Need owner ID
-    const user = useStore((state) => state.user); // Need current user
-    const fetchBoard = useStore((state) => state.fetchBoard); // Reload after kick
+    const activeBoardId = useStore((state) => state.activeBoardId);
+    const activeBoardOwnerId = useStore((state) => state.activeBoardOwnerId);
+    const user = useStore(state => state.user);
+    const fetchBoard = useStore((state) => state.fetchBoard);
+    const activeProjectId = useStore((state) => state.activeProjectId);
+    const projects = useStore((state) => state.projects);
+    const boards = useStore((state) => state.boards);
+    const createBoard = useStore((state) => state.createBoard);
+    const renameBoard = useStore((state) => state.renameBoard);
     const theme = useTheme();
 
     const [inviteOpen, setInviteOpen] = useState(false);
     const [membersOpen, setMembersOpen] = useState(false);
+    const [createBoardOpen, setCreateBoardOpen] = useState(false);
     const [email, setEmail] = useState('');
+    const [newBoardTitle, setNewBoardTitle] = useState('');
+
+    const project = activeProjectId ? projects.find(p => p.id === activeProjectId) : null;
+
+    // Sort boards based on project.boardIds if available, else usage
+    let projectBoards = activeProjectId ? boards.filter(b => b.projectId === activeProjectId) : [];
+
+    if (project && project.boardIds) {
+        projectBoards = projectBoards.sort((a, b) => {
+            const indexA = project.boardIds.indexOf(a.id);
+            const indexB = project.boardIds.indexOf(b.id);
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+        });
+    }
 
     const handleInvite = async () => {
         if (!email) return;
@@ -45,8 +68,14 @@ export default function TopBar() {
         }
     };
 
-    const isOwnerOrAdmin = (activeBoardOwnerId && user?.id === activeBoardOwnerId) || user?.isAdmin;
+    const handleCreateBoard = async () => {
+        if (!newBoardTitle.trim() || !activeProjectId) return;
+        await createBoard(newBoardTitle, activeProjectId);
+        setNewBoardTitle('');
+        setCreateBoardOpen(false);
+    };
 
+    const isOwnerOrAdmin = (activeBoardOwnerId && user?.id === activeBoardOwnerId) || user?.isAdmin;
 
     // Helper to generate consistent color from string
     const stringToColor = (string: string) => {
@@ -68,21 +97,32 @@ export default function TopBar() {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                flexWrap: 'wrap',
                 gap: 2,
-                px: 2,
+                pl: 0,
+                pr: 1,
                 py: 1,
                 bgcolor: 'rgba(255, 255, 255, 0.15)',
                 backdropFilter: 'blur(8px)',
-                borderRadius: 2
+                borderRadius: 2,
+                overflow: 'hidden' // Contain children
             }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="h5" fontWeight="bold" sx={{ color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                        {boardName}
-                    </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                    {/* Render ProjectTabs if in a project, otherwise Board Name */}
+                    {activeProjectId ? (
+                        <ProjectTabs
+                            boards={projectBoards}
+                            activeBoardId={activeBoardId}
+                            onRename={renameBoard}
+                            onCreate={() => setCreateBoardOpen(true)}
+                        />
+                    ) : (
+                        <Typography variant="h5" fontWeight="bold" sx={{ color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.1)', whiteSpace: 'nowrap' }}>
+                            {boardName}
+                        </Typography>
+                    )}
                 </Box>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
 
                     {/* Avatars */}
                     <Box onClick={() => setMembersOpen(true)} sx={{ cursor: 'pointer' }}>
@@ -145,6 +185,26 @@ export default function TopBar() {
                 <DialogActions>
                     <Button onClick={() => { setInviteOpen(false); setEmail(''); }}>Cancel</Button>
                     <Button onClick={handleInvite} variant="contained">Invite</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Create Board Dialog */}
+            <Dialog open={createBoardOpen} onClose={() => { setCreateBoardOpen(false); setNewBoardTitle(''); }}>
+                <DialogTitle>Create New Board</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="Board Title"
+                        fullWidth
+                        variant="outlined"
+                        value={newBoardTitle}
+                        onChange={(e) => setNewBoardTitle(e.target.value)}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCreateBoardOpen(false)}>Cancel</Button>
+                    <Button onClick={handleCreateBoard} variant="contained">Create</Button>
                 </DialogActions>
             </Dialog>
 
