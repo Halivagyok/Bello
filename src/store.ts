@@ -115,9 +115,13 @@ interface BoardState {
     fetchProjects: () => Promise<void>;
     fetchProject: (projectId: string) => Promise<void>;
     createProject: (title: string, description?: string) => Promise<void>;
+    projectBoardPage: number;
     inviteUserToProject: (projectId: string, email: string) => Promise<void>;
     assignBoardToProject: (boardId: string, projectId: string) => Promise<void>;
+    reorderProjectBoards: (projectId: string, newBoardIds: string[]) => Promise<void>;
+    renameBoard: (boardId: string, title: string) => Promise<void>;
     updateRecentBoards: (boardId: string) => void;
+    setProjectBoardPage: (page: number) => void;
 }
 
 // 3. Create Store
@@ -135,7 +139,12 @@ export const useStore = create<BoardState>((set, get) => ({
     socket: null,
     socketRetryCount: 0,
 
+
     activeProjectId: null, // Track active project for WS updates
+    projectBoardPage: 0,
+
+    setProjectBoardPage: (page: number) => set({ projectBoardPage: page }),
+
 
     // Helper for navigation
     navigateToBoards: () => {
@@ -412,7 +421,8 @@ export const useStore = create<BoardState>((set, get) => ({
                     lists: data.lists as List[],
                     boardName: data.title,
                     activeMembers: data.members, // Now we set this!
-                    activeBoardOwnerId: data.ownerId
+                    activeBoardOwnerId: data.ownerId,
+                    activeProjectId: data.projectId // Set activeProjectId
                 });
             }
         } catch (e) {
@@ -814,6 +824,50 @@ export const useStore = create<BoardState>((set, get) => ({
     assignBoardToProject: async (_boardId, _projectId) => {
         console.warn("Moving boards between projects not yet fully supported on backend");
         // Future: await client.boards[boardId].patch({ projectId });
+    },
+
+    reorderProjectBoards: async (projectId: string, newBoardIds: string[]) => {
+        const projects = get().projects;
+        const project = projects.find(p => p.id === projectId);
+        if (!project) return;
+
+        const oldBoardIds = project.boardIds;
+
+        // Optimistic update
+        set(state => ({
+            projects: state.projects.map(p =>
+                p.id === projectId ? { ...p, boardIds: newBoardIds } : p
+            )
+        }));
+
+        try {
+            // We assume the backend supports patching boardIds on the project
+            // This might fail if backend doesn't allow it, but standard CRUD usually does.
+            const { error } = await client.projects[projectId].patch({ boardIds: newBoardIds });
+            if (error) throw error;
+        } catch (e) {
+            console.error('Reorder Project Boards failed:', e);
+            // Revert
+            set(state => ({
+                projects: state.projects.map(p =>
+                    p.id === projectId ? { ...p, boardIds: oldBoardIds } : p
+                )
+            }));
+        }
+    },
+
+    renameBoard: async (boardId: string, title: string) => {
+        set(state => ({
+            boardName: state.activeBoardId === boardId ? title : state.boardName,
+            boards: state.boards.map(b => b.id === boardId ? { ...b, title } : b),
+            recentBoards: state.recentBoards.map(b => b.id === boardId ? { ...b, title } : b)
+        }));
+
+        try {
+            await client.boards[boardId].patch({ title });
+        } catch (e) {
+            console.error('Rename Board failed:', e);
+        }
     },
 
     updateRecentBoards: (boardId) => {
