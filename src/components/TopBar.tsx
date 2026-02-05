@@ -97,15 +97,16 @@ export default function TopBar() {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                flexWrap: 'wrap',
                 gap: 2,
-                px: 2,
+                pl: 0,
+                pr: 1,
                 py: 1,
                 bgcolor: 'rgba(255, 255, 255, 0.15)',
                 backdropFilter: 'blur(8px)',
-                borderRadius: 2
+                borderRadius: 2,
+                overflow: 'hidden' // Contain children
             }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'hidden' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0, overflow: 'hidden' }}>
                     {/* Render ProjectTabs if in a project, otherwise Board Name */}
                     {activeProjectId ? (
                         <ProjectTabs
@@ -115,13 +116,13 @@ export default function TopBar() {
                             onCreate={() => setCreateBoardOpen(true)}
                         />
                     ) : (
-                        <Typography variant="h5" fontWeight="bold" sx={{ color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                        <Typography variant="h5" fontWeight="bold" sx={{ color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.1)', whiteSpace: 'nowrap' }}>
                             {boardName}
                         </Typography>
                     )}
                 </Box>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
 
                     {/* Avatars */}
                     <Box onClick={() => setMembersOpen(true)} sx={{ cursor: 'pointer' }}>

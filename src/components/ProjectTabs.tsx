@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
-import { Box, Button, TextField, IconButton } from '@mui/material';
-import { Droppable, Draggable } from '@hello-pangea/dnd';
-import AddIcon from '@mui/icons-material/Add';
+import { Box, IconButton, TextField, useMediaQuery, Select, MenuItem, Button } from '@mui/material';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import AddIcon from '@mui/icons-material/Add';
+import { Droppable, Draggable } from '@hello-pangea/dnd';
+import { useStore, type Board } from '../store';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStore } from '../store';
-import type { Board } from '../store'; // Keep type import for Board
 
 interface ProjectTabsProps {
     boards: Board[];
     activeBoardId: string | null;
-    onRename: (boardId: string, newTitle: string) => void;
+    onRename: (boardId: string, title: string) => void;
     onCreate: () => void;
 }
 
@@ -19,35 +18,59 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
     const navigate = useNavigate();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editTitle, setEditTitle] = useState('');
+    const isMobile = useMediaQuery('(max-width:1100px)');
 
-    // Pagination from store
-    const page = useStore(state => state.projectBoardPage);
-    const setPage = useStore(state => state.setProjectBoardPage);
+    const onTabClick = (boardId: string) => {
+        // If we are just switching tabs, we might just want to fetchBoard.
+        // But since we are using URLs, we should probably navigate.
+        // However, the original logic was fetchBoard.
+        // The TopBar usage suggests we just want to switch the active board view.
+        // But let's check if the parent component handles navigation?
+        // TopBar just renders ProjectTabs.
+        // BoardPage renders TopBar.
+        // If we navigate to /boards/:id, BoardPage remounts/updates.
+        navigate(`/boards/${boardId}`);
+    };
 
-    const startIndex = page * 5;
-    const visibleBoards = boards.slice(startIndex, startIndex + 5);
-    const hasNext = (startIndex + 5) < boards.length;
-    const hasPrev = page > 0;
-
-    const startEditing = (board: Board) => {
+    const handleStartEdit = (e: React.MouseEvent, board: Board) => {
+        e.stopPropagation();
         setEditingId(board.id);
         setEditTitle(board.title);
     };
 
-    const saveEditing = () => {
+    const handleSaveEdit = () => {
         if (editingId && editTitle.trim()) {
-            onRename(editingId, editTitle.trim());
+            onRename(editingId, editTitle);
         }
         setEditingId(null);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            saveEditing();
-        } else if (e.key === 'Escape') {
-            setEditingId(null);
-        }
+        if (e.key === 'Enter') handleSaveEdit();
+        if (e.key === 'Escape') setEditingId(null);
     };
+
+    const navigationContainerRef = React.useRef<HTMLDivElement>(null);
+
+    // Pagination from store
+    const page = useStore(state => state.projectBoardPage);
+    const setPage = useStore(state => state.setProjectBoardPage);
+
+    // Calculate generic stats
+    const totalPages = Math.ceil(boards.length / 7);
+    const hasNext = page < totalPages - 1;
+    const hasPrev = page > 0;
+
+    useEffect(() => {
+        if (navigationContainerRef.current) {
+            const container = navigationContainerRef.current;
+            const scrollAmount = container.clientWidth;
+            container.scrollTo({
+                left: page * scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+    }, [page]);
 
     const renderTab = (board: Board, provided: any, snapshot: any) => (
         <Box
@@ -57,7 +80,9 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
             onClick={() => navigate(`/boards/${board.id}`)}
             sx={{
                 ...provided.draggableProps.style,
-                minWidth: 120,
+                minWidth: 120, // Keep fixed width
+                maxWidth: 160,
+                flex: '0 0 auto', // Prevent shrinking
                 height: 36,
                 px: 2,
                 borderRadius: '6px', // Rounded all corners
@@ -77,18 +102,21 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
                     zIndex: 9999,
                     boxShadow: '0 5px 10px rgba(0,0,0,0.2)',
                     opacity: 0.9
-                })
+                }),
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
             }}
             onDoubleClick={(e: React.MouseEvent) => {
                 e.stopPropagation(); // Prevent drag?
-                startEditing(board);
+                handleStartEdit(e, board);
             }}
         >
             {editingId === board.id ? (
                 <TextField
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    onBlur={saveEditing}
+                    onBlur={handleSaveEdit}
                     onKeyDown={handleKeyDown}
                     autoFocus
                     size="small"
@@ -103,36 +131,100 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
         </Box>
     );
 
-    return (
-        <Box sx={{ display: 'flex', alignItems: 'center', maxWidth: '100%' }}>
-
-            {/* Prev Button */}
-            {hasPrev && (
-                <IconButton
+    if (isMobile) {
+        return (
+            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
+                <Select
                     size="small"
-                    onClick={() => setPage(page - 1)}
-                    sx={{ color: 'white', mr: 1, bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}
+                    value={activeBoardId || ''}
+                    onChange={(e) => {
+                        const boardId = e.target.value;
+                        if (boardId) onTabClick(boardId);
+                    }}
+                    displayEmpty
+                    sx={{
+                        flex: 1,
+                        color: 'white',
+                        '.MuiSelect-icon': { color: 'white' },
+                        '.MuiOutlinedInput-notchedOutline': { border: 'none' }, // Clean look
+                        bgcolor: 'rgba(255,255,255,0.1)',
+                        borderRadius: 2,
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
+                    }}
+                    MenuProps={{
+                        PaperProps: {
+                            sx: {
+                                bgcolor: '#1976d2', // Match theme main color approx
+                                color: 'white',
+                                '& .MuiMenuItem-root': {
+                                    '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+                                    '&.Mui-selected': { bgcolor: 'rgba(255,255,255,0.2)' }
+                                }
+                            }
+                        }
+                    }}
                 >
-                    <ArrowBackIosNewIcon fontSize="small" />
+                    {boards.length === 0 && <MenuItem value="" disabled>No boards</MenuItem>}
+                    {boards.map(board => (
+                        <MenuItem key={board.id} value={board.id}>{board.title}</MenuItem>
+                    ))}
+                </Select>
+                <IconButton onClick={onCreate} sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
+                    <AddIcon />
                 </IconButton>
-            )}
+            </Box>
+        );
+    }
+
+    return (
+        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', minWidth: 0, position: 'relative' }}>
+            {/* Prev Button */}
+            <IconButton
+                size="small"
+                onClick={() => setPage(Math.max(0, page - 1))}
+                disabled={!hasPrev}
+                sx={{
+                    color: 'white',
+                    flexShrink: 0,
+                    mr: 1,
+                    bgcolor: 'rgba(255,255,255,0.1)',
+                    opacity: hasPrev ? 1 : 0.3,
+                    '&:hover': { bgcolor: hasPrev ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)' }
+                }}
+            >
+                <ArrowBackIosNewIcon fontSize="small" />
+            </IconButton>
 
             <Droppable
                 droppableId="project-tabs"
                 direction="horizontal"
                 type="BOARD_TAB"
                 renderClone={(provided, snapshot, rubric) => {
-                    const board = visibleBoards[rubric.source.index];
+                    const board = boards[rubric.source.index];
                     return renderTab(board, provided, snapshot);
                 }}
             >
                 {(provided) => (
                     <Box
-                        ref={provided.innerRef}
+                        ref={(ref: HTMLDivElement | null) => {
+                            provided.innerRef(ref);
+                            // @ts-ignore
+                            navigationContainerRef.current = ref;
+                        }}
                         {...provided.droppableProps}
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            overflowX: 'auto',
+                            scrollBehavior: 'smooth',
+                            scrollbarWidth: 'none',
+                            '&::-webkit-scrollbar': { display: 'none' },
+                            flex: 1,
+                            maxWidth: '100%',
+                        }}
                     >
-                        {visibleBoards.map((board, index) => (
+                        {boards.map((board, index) => (
                             <Draggable key={board.id} draggableId={board.id} index={index}>
                                 {(provided, snapshot) => renderTab(board, provided, snapshot)}
                             </Draggable>
@@ -143,15 +235,21 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
             </Droppable>
 
             {/* Next Button */}
-            {hasNext && (
-                <IconButton
-                    size="small"
-                    onClick={() => setPage(page + 1)}
-                    sx={{ color: 'white', ml: 1, bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}
-                >
-                    <ArrowForwardIosIcon fontSize="small" />
-                </IconButton>
-            )}
+            <IconButton
+                size="small"
+                onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
+                disabled={!hasNext}
+                sx={{
+                    color: 'white',
+                    flexShrink: 0,
+                    ml: 1,
+                    bgcolor: 'rgba(255,255,255,0.1)',
+                    opacity: hasNext ? 1 : 0.3,
+                    '&:hover': { bgcolor: hasNext ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)' }
+                }}
+            >
+                <ArrowForwardIosIcon fontSize="small" />
+            </IconButton>
 
             <Button
                 variant="text"

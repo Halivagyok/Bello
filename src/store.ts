@@ -393,6 +393,11 @@ export const useStore = create<BoardState>((set, get) => ({
                 const newBoard = data as Board;
                 set(state => ({
                     boards: [...state.boards, newBoard],
+                    projects: state.projects.map(p =>
+                        p.id === projectId
+                            ? { ...p, boardIds: [...(p.boardIds || []), newBoard.id] }
+                            : p
+                    )
                 }));
                 return newBoard;
             }
@@ -424,6 +429,10 @@ export const useStore = create<BoardState>((set, get) => ({
                     activeBoardOwnerId: data.ownerId,
                     activeProjectId: data.projectId // Set activeProjectId
                 });
+
+                if (data.projectId) {
+                    get().subscribeToProject(data.projectId);
+                }
             }
         } catch (e) {
             if (!silent) {

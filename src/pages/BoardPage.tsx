@@ -80,7 +80,7 @@ export default function Board() {
 
             const activeIndex = projectBoards.findIndex(b => b.id === boardId);
             if (activeIndex !== -1) {
-                const requiredPage = Math.floor(activeIndex / 5);
+                const requiredPage = Math.floor(activeIndex / 7);
                 if (requiredPage !== projectBoardPage) {
                     setProjectBoardPage(requiredPage);
                 }
@@ -108,27 +108,25 @@ export default function Board() {
             const project = projects.find(p => p.id === activeProjectId);
             if (!project) return;
 
-            // Get current boards order
-            // If project.boardIds is incomplete or filtered, we should be careful.
-            // But UI shows filtered list.
-            // Let's assume project.boardIds is the source of truth if exists.
+            // Get current boards for the project
+            let projectBoards = boards.filter(b => b.projectId === activeProjectId);
 
-            const currentOrder = project.boardIds && project.boardIds.length > 0
-                ? [...project.boardIds]
-                : useStore.getState().boards.filter(b => b.projectId === activeProjectId).map(b => b.id);
-
-            const offset = projectBoardPage * 5;
-            const realSourceIndex = source.index + offset;
-            const realDestIndex = destination.index + offset;
-
-            // Integrity check
-            if (realSourceIndex >= currentOrder.length || realDestIndex >= currentOrder.length) {
-                console.warn('Drag index out of bounds:', realSourceIndex, realDestIndex, currentOrder.length);
-                return;
+            // Sort to match UI
+            if (project.boardIds) {
+                projectBoards.sort((a, b) => {
+                    const indexA = project.boardIds!.indexOf(a.id);
+                    const indexB = project.boardIds!.indexOf(b.id);
+                    if (indexA === -1) return 1;
+                    if (indexB === -1) return -1;
+                    return indexA - indexB;
+                });
             }
 
-            const [movedId] = currentOrder.splice(realSourceIndex, 1);
-            currentOrder.splice(realDestIndex, 0, movedId);
+            const currentOrder = projectBoards.map(b => b.id);
+
+            // Since ProjectTabs renders all items in a scrollable list, the indices are absolute.
+            const [movedId] = currentOrder.splice(source.index, 1);
+            currentOrder.splice(destination.index, 0, movedId);
 
             reorderProjectBoards(activeProjectId, currentOrder);
             return;
