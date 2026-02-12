@@ -4,6 +4,8 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { useStore, type Card as CardType } from '../store';
+import { GoCheck } from "react-icons/go";
+
 
 interface CardProps {
     card: CardType;
@@ -13,59 +15,18 @@ interface CardProps {
 export default function Card({ card, index }: CardProps) {
     const toggleCardCompletion = useStore(state => state.toggleCardCompletion);
     const [hover, setHover] = useState(false);
+    const [toggled, setToggled] = useState(false)
 
     return (
         <Draggable draggableId={card.id} index={index}>
             {(provided, snapshot) => (
-                <MuiCard
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    onMouseEnter={() => setHover(true)}
-                    onMouseLeave={() => setHover(false)}
-                    sx={{
-                        mb: 1,
-                        bgcolor: snapshot.isDragging ? '#f4f5f7' : 'white',
-                        position: 'relative',
-                        ...provided.draggableProps.style
-                    }}
-                >
+                <div className={`p-2 rounded-lg m-2 flex justify-between ${snapshot.isDragging ? "bg-t1" : "bg-t3"}  `} ref={provided.innerRef} onMouseEnter={()=> setHover(true)} onMouseLeave={() => setHover(false)} {...provided.draggableProps} {...provided.dragHandleProps} >
+                    <div className={`${card.completed ? "line-through select-none" : ""}`}>{card.content}</div>
+                    
                     {(hover || card.completed) && (
-                        <Checkbox
-                            checked={!!card.completed}
-                            onChange={(e) => {
-                                e.stopPropagation(); // Prevent drag start if clicking checkbox? actually drag handle is on card, so maybe fine. 
-                                // preventing propagation is good practice for buttons inside clickables
-                                toggleCardCompletion(card.id, e.target.checked);
-                            }}
-                            onMouseDown={(e) => e.stopPropagation()} // Prevent drag
-                            icon={<RadioButtonUncheckedIcon sx={{ fontSize: 20 }} />}
-                            checkedIcon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
-                            sx={{
-                                position: 'absolute',
-                                top: 4,
-                                right: 4,
-                                p: 0.5,
-                                zIndex: 10,
-                                color: 'text.disabled',
-                                '&.Mui-checked': { color: 'success.main' },
-                                bgcolor: 'rgba(255,255,255,0.8)',
-                                borderRadius: '50%'
-                            }}
-                        />
+                        <div className={`${card.completed ? "bg-[#005F02]" : ""} flex justify-center items-center rounded-full border-1 border-gray-500 text-gray-100 size-6`} onClick={(e) => {e.stopPropagation(); setToggled(!toggled); toggleCardCompletion(card.id, toggled)}} onMouseDown={(e) => e.stopPropagation()} ><GoCheck/></div>
                     )}
-                    <CardContent sx={{ p: '10px !important', '&:last-child': { pb: '10px !important' } }}>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                textDecoration: card.completed ? 'line-through' : 'none',
-                                color: card.completed ? 'text.disabled' : 'inherit'
-                            }}
-                        >
-                            {card.content}
-                        </Typography>
-                    </CardContent>
-                </MuiCard>
+                </div>
             )}
         </Draggable>
     );
