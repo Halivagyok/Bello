@@ -1,17 +1,36 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    Box, Typography, Table, TableBody, TableCell, TableHead, TableRow, Paper,
-    Button, IconButton, Chip, Dialog, TextField, DialogTitle, DialogContent,
-    DialogActions, Stack, Snackbar, Alert
-} from '@mui/material';
-import BlockIcon from '@mui/icons-material/Block';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import EditIcon from '@mui/icons-material/Edit';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import DeleteIcon from '@mui/icons-material/Delete';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import { client, useStore } from '../store';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableRow,
+} from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { 
+    ArrowLeft, 
+    RefreshCw, 
+    Edit2, 
+    Eye, 
+    ShieldAlert, 
+    CheckCircle, 
+    Trash2,
+    Ban,
+    UserCheck,
+    Users
+} from 'lucide-react';
 
 interface AdminUser {
     id: string;
@@ -39,20 +58,17 @@ export default function AdminPage() {
     const [userAccess, setUserAccess] = useState<{ projects: any[], boards: any[] }>({ projects: [], boards: [] });
     const [accessLoading, setAccessLoading] = useState(false);
 
-    // Feedback State
-    const [snackbar, setSnackbar] = useState<{ open: boolean, message: string, severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
-    const [confirmDialog, setConfirmDialog] = useState<{ open: boolean, message: string, onConfirm: () => void }>({ open: false, message: '', onConfirm: () => { } });
+    // Confirm Dialog
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmMessage, setConfirmMessage] = useState('');
+    const [onConfirm, setOnConfirm] = useState<() => void>(() => {});
 
-    const showMessage = (message: string, severity: 'success' | 'error' = 'error') => {
-        setSnackbar({ open: true, message, severity });
+    const handleConfirmAction = (message: string, action: () => void) => {
+        setConfirmMessage(message);
+        setOnConfirm(() => action);
+        setConfirmOpen(true);
     };
 
-    const handleConfirm = (message: string, action: () => void) => {
-        setConfirmDialog({ open: true, message, onConfirm: action });
-    };
-
-
-    // Admin Check
     const user = useStore(state => state.user);
 
     useEffect(() => {
@@ -71,7 +87,7 @@ export default function AdminPage() {
             const { data, error } = await client.admin.users.get();
             if (error) {
                 console.error(error);
-                showMessage('Failed to fetch users');
+                alert('Failed to fetch users');
             } else if (data) {
                 setUsers(data as AdminUser[]);
             }
@@ -86,14 +102,13 @@ export default function AdminPage() {
         try {
             const { data, error } = await client.admin.users[userId].ban.post();
             if (error) throw error;
-            // Update local state if data exists
             if (data?.isBanned !== undefined) {
                 setUsers(users.map(u => u.id === userId ? { ...u, isBanned: data.isBanned } : u));
             } else {
-                fetchUsers(); // Fallback
+                fetchUsers();
             }
         } catch (e) {
-            showMessage('Failed to ban/unban user');
+            alert('Failed to ban/unban user');
             console.error(e);
         }
     };
@@ -112,7 +127,7 @@ export default function AdminPage() {
             setUsers(users.map(u => u.id === selectedUser.id ? { ...u, name: newName } : u));
             setEditOpen(false);
         } catch (e) {
-            showMessage('Failed to update name');
+            alert('Failed to update name');
         }
     };
 
@@ -127,7 +142,7 @@ export default function AdminPage() {
                 setUserAccess(data);
             }
         } catch (e) {
-            showMessage('Failed to fetch access details');
+            alert('Failed to fetch access details');
         } finally {
             setAccessLoading(false);
         }
@@ -135,7 +150,7 @@ export default function AdminPage() {
 
     const removeProject = async (projectId: string) => {
         if (!selectedUser) return;
-        handleConfirm('Are you sure you want to remove the user from this project?', async () => {
+        handleConfirmAction('Are you sure you want to remove the user from this project?', async () => {
             try {
                 const { error } = await client.admin.users[selectedUser.id].projects[projectId].delete();
                 if (error) throw error;
@@ -143,18 +158,16 @@ export default function AdminPage() {
                     ...prev,
                     projects: prev.projects.filter(p => p.projectId !== projectId)
                 }));
-                // Update counts in main list
                 setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, projectsCount: u.projectsCount - 1 } : u));
-                showMessage('User removed from project', 'success');
             } catch (e) {
-                showMessage('Failed to remove from project');
+                alert('Failed to remove from project');
             }
         });
     };
 
     const removeBoard = async (boardId: string) => {
         if (!selectedUser) return;
-        handleConfirm('Are you sure you want to remove the user from this board?', async () => {
+        handleConfirmAction('Are you sure you want to remove the user from this board?', async () => {
             try {
                 const { error } = await client.admin.users[selectedUser.id].boards[boardId].delete();
                 if (error) throw error;
@@ -163,179 +176,213 @@ export default function AdminPage() {
                     boards: prev.boards.filter(b => b.boardId !== boardId)
                 }));
                 setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, boardsCount: u.boardsCount - 1 } : u));
-                showMessage('User removed from board', 'success');
             } catch (e) {
-                showMessage('Failed to remove from board');
+                alert('Failed to remove from board');
             }
         });
     };
 
-    if (loading) return <Box p={3}>Loading Users...</Box>;
+    if (loading) return <div className="p-8 text-center text-muted-foreground">Loading Users...</div>;
 
     return (
-        <Box sx={{ p: 4, maxWidth: 1200, margin: '0 auto' }}>
-            <Box display="flex" alignItems="center" mb={4}>
-                <Button onClick={() => navigate('/boards')} sx={{ mr: 2 }}>Back</Button>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#172b4d', display: 'flex', alignItems: 'center' }}>
-                    User Management
-                    <IconButton onClick={fetchUsers} sx={{ ml: 2, bgcolor: 'rgba(0,0,0,0.05)' }} disabled={loading}>
-                        <RefreshIcon />
-                    </IconButton>
-                </Typography>
-            </Box>
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/boards')} className="gap-2">
+                        <ArrowLeft className="w-4 h-4" />
+                        Back
+                    </Button>
+                    <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
+                    <Button variant="ghost" size="icon" onClick={fetchUsers} disabled={loading} className="h-8 w-8">
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </Button>
+                </div>
+            </div>
 
-            <Paper elevation={2}>
+            <div className="rounded-md border bg-card">
                 <Table>
-                    <TableHead sx={{ bgcolor: '#f4f5f7' }}>
-                        <TableRow>
-                            <TableCell>Name</TableCell>
-                            <TableCell>Email</TableCell>
-                            <TableCell>Registered</TableCell>
-                            <TableCell align="center">Projects</TableCell>
-                            <TableCell align="center">Boards</TableCell>
-                            <TableCell align="center">Status</TableCell>
-                            <TableCell align="right">Actions</TableCell>
+                    <TableHead>
+                        <TableRow className="bg-muted/50">
+                            <TableHead className="font-semibold">Name</TableHead>
+                            <TableHead className="font-semibold">Email</TableHead>
+                            <TableHead className="font-semibold">Registered</TableHead>
+                            <TableHead className="text-center font-semibold">Projects</TableHead>
+                            <TableHead className="text-center font-semibold">Boards</TableHead>
+                            <TableHead className="text-center font-semibold">Status</TableHead>
+                            <TableHead className="text-right font-semibold">Actions</TableHead>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {users.map((user) => (
                             <TableRow key={user.id}>
-                                <TableCell>{user.name} {user.isAdmin && <Chip label="Admin" size="small" color="primary" sx={{ ml: 1 }} />}</TableCell>
-                                <TableCell>{user.email}</TableCell>
-                                <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                                <TableCell align="center">{user.projectsCount}</TableCell>
-                                <TableCell align="center">{user.boardsCount}</TableCell>
-                                <TableCell align="center">
-                                    <Chip
-                                        label={user.isBanned ? "Banned" : "Active"}
-                                        color={user.isBanned ? "error" : "success"}
-                                        size="small"
-                                    />
+                                <TableCell className="font-medium">
+                                    <div className="flex items-center gap-2">
+                                        {user.name} 
+                                        {user.isAdmin && <Badge variant="default" className="text-[10px] px-1.5 h-4 uppercase">Admin</Badge>}
+                                    </div>
                                 </TableCell>
-                                <TableCell align="right">
-                                    <Stack direction="row" spacing={1} justifyContent="flex-end">
-                                        <IconButton size="small" onClick={() => handleEditName(user)} title="Edit Name">
-                                            <EditIcon fontSize="small" />
-                                        </IconButton>
-                                        <IconButton size="small" onClick={() => handleManageAccess(user)} title="Manage Access">
-                                            <VisibilityIcon fontSize="small" />
-                                        </IconButton>
-                                        <IconButton
-                                            size="small"
-                                            color={user.isBanned ? "success" : "error"}
+                                <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                                <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                                <TableCell className="text-center">{user.projectsCount}</TableCell>
+                                <TableCell className="text-center">{user.boardsCount}</TableCell>
+                                <TableCell className="text-center">
+                                    <Badge variant={user.isBanned ? "destructive" : "secondary"}>
+                                        {user.isBanned ? "Banned" : "Active"}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-1">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditName(user)}>
+                                            <Edit2 className="w-4 h-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleManageAccess(user)}>
+                                            <Eye className="w-4 h-4" />
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className={`h-8 w-8 ${user.isBanned ? 'text-green-600 hover:text-green-700' : 'text-red-600 hover:text-red-700'}`}
                                             onClick={() => handleBan(user.id)}
-                                            title={user.isBanned ? "Unban" : "Ban"}
                                         >
-                                            {user.isBanned ? <CheckCircleIcon fontSize="small" /> : <BlockIcon fontSize="small" />}
-                                        </IconButton>
-                                    </Stack>
+                                            {user.isBanned ? <UserCheck className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                                        </Button>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
-            </Paper>
+            </div>
 
-            {/* Edit DIALOG */}
-            <Dialog open={editOpen} onClose={() => setEditOpen(false)}>
-                <DialogTitle>Edit User Name</DialogTitle>
+            {/* Edit Name Dialog */}
+            <Dialog open={editOpen} onOpenChange={(val) => !val && setEditOpen(false)}>
                 <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Name"
-                        fullWidth
-                        value={newName}
-                        onChange={(e) => setNewName(e.target.value)}
-                    />
+                    <DialogHeader>
+                        <DialogTitle>Edit User Name</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="name">Name</Label>
+                            <Input
+                                id="name"
+                                value={newName}
+                                onChange={(e) => setNewName(e.target.value)}
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+                        <Button onClick={saveName}>Save</Button>
+                    </DialogFooter>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setEditOpen(false)}>Cancel</Button>
-                    <Button onClick={saveName} variant="contained">Save</Button>
-                </DialogActions>
             </Dialog>
 
-            {/* Access DIALOG */}
-            <Dialog open={accessOpen} onClose={() => setAccessOpen(false)} maxWidth="md" fullWidth>
-                <DialogTitle>Manage Access for {selectedUser?.name}</DialogTitle>
-                <DialogContent>
-                    {accessLoading ? <Typography>Loading...</Typography> : (
-                        <Box mt={2}>
-                            <Typography variant="h6" gutterBottom>Projects</Typography>
-                            {userAccess.projects.length === 0 ? <Typography color="textSecondary">No projects</Typography> : (
-                                <Table size="small">
-                                    <TableHead><TableRow><TableCell>Project Name</TableCell><TableCell align="right">Action</TableCell></TableRow></TableHead>
-                                    <TableBody>
-                                        {userAccess.projects.map(p => (
-                                            <TableRow key={p.projectId}>
-                                                <TableCell>{p.title}</TableCell>
-                                                <TableCell align="right">
-                                                    <IconButton size="small" color="error" onClick={() => removeProject(p.projectId)}>
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            )}
-
-                            <Box mt={4}>
-                                <Typography variant="h6" gutterBottom>Boards</Typography>
-                                {userAccess.boards.length === 0 ? <Typography color="textSecondary">No boards</Typography> : (
-                                    <Table size="small">
-                                        <TableHead><TableRow><TableCell>Board Name</TableCell><TableCell align="right">Action</TableCell></TableRow></TableHead>
-                                        <TableBody>
-                                            {userAccess.boards.map(b => (
-                                                <TableRow key={b.boardId}>
-                                                    <TableCell>{b.title}</TableCell>
-                                                    <TableCell align="right">
-                                                        <IconButton size="small" color="error" onClick={() => removeBoard(b.boardId)}>
-                                                            <DeleteIcon fontSize="small" />
-                                                        </IconButton>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+            {/* Access Dialog */}
+            <Dialog open={accessOpen} onOpenChange={(val) => !val && setAccessOpen(false)}>
+                <DialogContent className="sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Users className="w-5 h-5" />
+                            Manage Access for {selectedUser?.name}
+                        </DialogTitle>
+                    </DialogHeader>
+                    {accessLoading ? (
+                        <div className="py-8 text-center text-muted-foreground">Loading access details...</div>
+                    ) : (
+                        <div className="space-y-6 py-4 max-h-[60vh] overflow-y-auto pr-2">
+                            <div>
+                                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                    Projects
+                                </h3>
+                                {userAccess.projects.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground italic px-4 py-2 bg-muted/50 rounded-lg">No projects</p>
+                                ) : (
+                                    <div className="rounded-md border overflow-hidden">
+                                        <Table>
+                                            <TableBody>
+                                                {userAccess.projects.map(p => (
+                                                    <TableRow key={p.projectId}>
+                                                        <TableCell className="text-sm">{p.title}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                                onClick={() => removeProject(p.projectId)}
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
                                 )}
-                            </Box>
-                        </Box>
-                    )}
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setAccessOpen(false)}>Close</Button>
-                </DialogActions>
-            </Dialog>
+                            </div>
 
-            {/* Global Snackbar */}
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={6000}
-                onClose={() => setSnackbar({ ...snackbar, open: false })}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            >
-                <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
+                            <div>
+                                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                                    Boards
+                                </h3>
+                                {userAccess.boards.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground italic px-4 py-2 bg-muted/50 rounded-lg">No boards</p>
+                                ) : (
+                                    <div className="rounded-md border overflow-hidden">
+                                        <Table>
+                                            <TableBody>
+                                                {userAccess.boards.map(b => (
+                                                    <TableRow key={b.boardId}>
+                                                        <TableCell className="text-sm">{b.title}</TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                                onClick={() => removeBoard(b.boardId)}
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setAccessOpen(false)} className="w-full">Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Confirm Dialog */}
-            <Dialog open={confirmDialog.open} onClose={() => setConfirmDialog(prev => ({ ...prev, open: false }))}>
-                <DialogTitle>Confirm Action</DialogTitle>
+            <Dialog open={confirmOpen} onOpenChange={(val) => !val && setConfirmOpen(false)}>
                 <DialogContent>
-                    <Typography>{confirmDialog.message}</Typography>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-destructive">
+                            <ShieldAlert className="w-5 h-5" />
+                            Confirm Action
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p className="text-sm text-muted-foreground">{confirmMessage}</p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+                        <Button variant="destructive" onClick={() => {
+                            onConfirm();
+                            setConfirmOpen(false);
+                        }}>Confirm</Button>
+                    </DialogFooter>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setConfirmDialog(prev => ({ ...prev, open: false }))}>Cancel</Button>
-                    <Button onClick={() => {
-                        confirmDialog.onConfirm();
-                        setConfirmDialog(prev => ({ ...prev, open: false }));
-                    }} variant="contained" color="error">
-                        Confirm
-                    </Button>
-                </DialogActions>
             </Dialog>
-        </Box>
+        </div>
     );
 }

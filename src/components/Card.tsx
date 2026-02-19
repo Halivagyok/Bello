@@ -1,11 +1,7 @@
-import { Card as MuiCard, CardContent, Typography, Checkbox } from '@mui/material';
-import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { useStore, type Card as CardType } from '../store';
 import { GoCheck } from "react-icons/go";
-
 
 interface CardProps {
     card: CardType;
@@ -20,12 +16,38 @@ export default function Card({ card, index }: CardProps) {
     return (
         <Draggable draggableId={card.id} index={index}>
             {(provided, snapshot) => (
-                <div className={`p-2 rounded-lg m-2 flex justify-between ${snapshot.isDragging ? "bg-t1" : "bg-t3"}  `} ref={provided.innerRef} onMouseEnter={()=> setHover(true)} onMouseLeave={() => setHover(false)} {...provided.draggableProps} {...provided.dragHandleProps} >
-                    <div className={`${card.completed ? "line-through select-none" : ""}`}>{card.content}</div>
-                    
-                    {(hover || card.completed) && (
-                        <div className={`${card.completed ? "bg-[#005F02]" : ""} flex justify-center items-center rounded-full border-1 border-gray-500 text-gray-100 size-6`} onClick={(e) => {e.stopPropagation(); setToggled(!toggled); toggleCardCompletion(card.id, toggled)}} onMouseDown={(e) => e.stopPropagation()} ><GoCheck/></div>
-                    )}
+                <div 
+                    className={`
+                        p-3 rounded-xl m-2 flex justify-between items-start group shadow-sm transition-all border
+                        ${snapshot.isDragging 
+                            ? "bg-zinc-100 dark:bg-zinc-800 rotate-2 scale-105 border-primary shadow-lg" 
+                            : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+                        }
+                    `} 
+                    ref={provided.innerRef} 
+                    {...provided.draggableProps} 
+                    {...provided.dragHandleProps} 
+                >
+                    <div className={`text-sm font-medium ${card.completed ? "line-through opacity-50 select-none" : "text-foreground"}`}>
+                        {card.content}
+                    </div>
+                    <div 
+                        className={`
+                            shrink-0 flex justify-center items-center rounded-full border border-zinc-300 dark:border-zinc-700 size-6 cursor-pointer transition-all
+                            ${card.completed 
+                                ? "bg-green-600 border-green-600 text-white" 
+                                : "text-transparent group-hover:text-zinc-400 dark:group-hover:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            }
+                        `} 
+                        onClick={(e) => {
+                            e.stopPropagation(); 
+                            setToggled(!toggled); 
+                            toggleCardCompletion(card.id, toggled)
+                        }} 
+                        onMouseDown={(e) => e.stopPropagation()} 
+                    >
+                        <GoCheck className={card.completed ? "w-4 h-4" : "w-3 h-3"} />
+                    </div>
                 </div>
             )}
         </Draggable>

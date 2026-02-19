@@ -1,11 +1,22 @@
-import { Box, IconButton, TextField, useMediaQuery, Select, MenuItem, Button } from '@mui/material';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import AddIcon from '@mui/icons-material/Add';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import { useStore, type Board } from '../store';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { 
+    ChevronLeft, 
+    ChevronRight, 
+    Plus, 
+    GripVertical 
+} from 'lucide-react';
 
 interface ProjectTabsProps {
     boards: Board[];
@@ -18,19 +29,14 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
     const navigate = useNavigate();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editTitle, setEditTitle] = useState('');
-    const isMobile = useMediaQuery('(max-width:1100px)');
+    const [isMobile, setIsMobile] = useState(false);
 
-    const onTabClick = (boardId: string) => {
-        // If we are just switching tabs, we might just want to fetchBoard.
-        // But since we are using URLs, we should probably navigate.
-        // However, the original logic was fetchBoard.
-        // The TopBar usage suggests we just want to switch the active board view.
-        // But let's check if the parent component handles navigation?
-        // TopBar just renders ProjectTabs.
-        // BoardPage renders TopBar.
-        // If we navigate to /boards/:id, BoardPage remounts/updates.
-        navigate(`/boards/${boardId}`);
-    };
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 1100);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const handleStartEdit = (e: React.MouseEvent, board: Board) => {
         e.stopPropagation();
@@ -50,13 +56,11 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
         if (e.key === 'Escape') setEditingId(null);
     };
 
-    const navigationContainerRef = React.useRef<HTMLDivElement>(null);
+    const navigationContainerRef = useRef<HTMLDivElement>(null);
 
-    // Pagination from store
     const page = useStore(state => state.projectBoardPage);
     const setPage = useStore(state => state.setProjectBoardPage);
 
-    // Calculate generic stats
     const totalPages = Math.ceil(boards.length / 7);
     const hasNext = page < totalPages - 1;
     const hasPrev = page > 0;
@@ -73,127 +77,80 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
     }, [page]);
 
     const renderTab = (board: Board, provided: any, snapshot: any) => (
-        <Box
+        <div
             ref={provided.innerRef}
             {...provided.draggableProps}
             {...provided.dragHandleProps}
             onClick={() => navigate(`/boards/${board.id}`)}
-            sx={{
-                ...provided.draggableProps.style,
-                minWidth: 120, // Keep fixed width
-                maxWidth: 160,
-                flex: '0 0 auto', // Prevent shrinking
-                height: 36,
-                px: 2,
-                borderRadius: '6px', // Rounded all corners
-                bgcolor: board.id === activeBoardId ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.3)',
-                color: board.id === activeBoardId ? '#172b4d' : 'white',
-                display: 'flex',
-                alignItems: 'center',
-                cursor: 'pointer',
-                fontWeight: board.id === activeBoardId ? 'bold' : 'normal',
-                transition: 'background-color 0.2s',
-                '&:hover': {
-                    bgcolor: board.id === activeBoardId ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)'
-                },
-                // Add specific style for dragging state to fix offset/scale issues
-                ...(snapshot.isDragging && {
-                    transform: provided.draggableProps.style?.transform,
-                    zIndex: 9999,
-                    boxShadow: '0 5px 10px rgba(0,0,0,0.2)',
-                    opacity: 0.9
-                }),
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-            }}
-            onDoubleClick={(e: React.MouseEvent) => {
-                e.stopPropagation(); // Prevent drag?
-                handleStartEdit(e, board);
-            }}
+            className={`
+                min-w-[120px] max-w-[160px] flex-none h-9 px-3 rounded-lg flex items-center cursor-pointer transition-all relative group
+                ${board.id === activeBoardId 
+                    ? 'bg-white/90 dark:bg-white/20 text-zinc-900 dark:text-white font-bold shadow-sm' 
+                    : 'bg-white/30 dark:bg-white/5 text-white/90 hover:bg-white/40 dark:hover:bg-white/10'
+                }
+                ${snapshot.isDragging ? 'z-50 shadow-xl ring-2 ring-primary opacity-90 scale-105' : ''}
+            `}
+            onDoubleClick={(e: React.MouseEvent) => handleStartEdit(e, board)}
         >
-            {editingId === board.id ? (
-                <TextField
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    onBlur={handleSaveEdit}
-                    onKeyDown={handleKeyDown}
-                    autoFocus
-                    size="small"
-                    variant="standard"
-                    InputProps={{ disableUnderline: true }}
-                    sx={{ input: { color: 'inherit', fontWeight: 'inherit', p: 0 } }}
-                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                />
-            ) : (
-                board.title
-            )}
-        </Box>
+            <GripVertical className="w-3 h-3 mr-1 opacity-0 group-hover:opacity-40 shrink-0" />
+            <div className="flex-1 overflow-hidden text-center">
+                {editingId === board.id ? (
+                    <Input
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        onBlur={handleSaveEdit}
+                        onKeyDown={handleKeyDown}
+                        autoFocus
+                        className="h-6 px-1 py-0 text-xs bg-white dark:bg-zinc-800 text-black dark:text-white border-0 focus-visible:ring-1 focus-visible:ring-primary"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                ) : (
+                    <span className="truncate text-xs">{board.title}</span>
+                )}
+            </div>
+        </div>
     );
 
     if (isMobile) {
         return (
-            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 1 }}>
+            <div className="flex items-center w-full gap-2">
                 <Select
-                    size="small"
                     value={activeBoardId || ''}
-                    onChange={(e) => {
-                        const boardId = e.target.value;
-                        if (boardId) onTabClick(boardId);
-                    }}
-                    displayEmpty
-                    sx={{
-                        flex: 1,
-                        color: 'white',
-                        '.MuiSelect-icon': { color: 'white' },
-                        '.MuiOutlinedInput-notchedOutline': { border: 'none' }, // Clean look
-                        bgcolor: 'rgba(255,255,255,0.1)',
-                        borderRadius: 2,
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
-                    }}
-                    MenuProps={{
-                        PaperProps: {
-                            sx: {
-                                bgcolor: '#1976d2', // Match theme main color approx
-                                color: 'white',
-                                '& .MuiMenuItem-root': {
-                                    '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                                    '&.Mui-selected': { bgcolor: 'rgba(255,255,255,0.2)' }
-                                }
-                            }
-                        }
-                    }}
+                    onValueChange={(val) => val && navigate(`/boards/${val}`)}
                 >
-                    {boards.length === 0 && <MenuItem value="" disabled>No boards</MenuItem>}
-                    {boards.map(board => (
-                        <MenuItem key={board.id} value={board.id}>{board.title}</MenuItem>
-                    ))}
+                    <SelectTrigger className="flex-1 bg-white/20 dark:bg-white/5 border-0 text-white h-9">
+                        <SelectValue placeholder="Select board" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {boards.length === 0 && <SelectItem value="none" disabled>No boards</SelectItem>}
+                        {boards.map(board => (
+                            <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
+                        ))}
+                    </SelectContent>
                 </Select>
-                <IconButton onClick={onCreate} sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
-                    <AddIcon />
-                </IconButton>
-            </Box>
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={onCreate}
+                    className="shrink-0 h-9 w-9 bg-white/20 dark:bg-white/5 text-white hover:bg-white/30"
+                >
+                    <Plus className="w-4 h-4" />
+                </Button>
+            </div>
         );
     }
 
     return (
-        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', minWidth: 0, position: 'relative' }}>
-            {/* Prev Button */}
-            <IconButton
-                size="small"
+        <div className="flex items-center w-full min-w-0 relative gap-1">
+            <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={!hasPrev}
-                sx={{
-                    color: 'white',
-                    flexShrink: 0,
-                    mr: 1,
-                    bgcolor: 'rgba(255,255,255,0.1)',
-                    opacity: hasPrev ? 1 : 0.3,
-                    '&:hover': { bgcolor: hasPrev ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)' }
-                }}
+                className={`h-7 w-7 shrink-0 text-white hover:bg-white/20 ${!hasPrev ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}
             >
-                <ArrowBackIosNewIcon fontSize="small" />
-            </IconButton>
+                <ChevronLeft className="w-4 h-4" />
+            </Button>
 
             <Droppable
                 droppableId="project-tabs"
@@ -205,24 +162,14 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
                 }}
             >
                 {(provided) => (
-                    <Box
+                    <div
                         ref={(ref: HTMLDivElement | null) => {
                             provided.innerRef(ref);
                             // @ts-ignore
                             navigationContainerRef.current = ref;
                         }}
                         {...provided.droppableProps}
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            overflowX: 'auto',
-                            scrollBehavior: 'smooth',
-                            scrollbarWidth: 'none',
-                            '&::-webkit-scrollbar': { display: 'none' },
-                            flex: 1,
-                            maxWidth: '100%',
-                        }}
+                        className="flex items-center gap-1.5 overflow-x-auto scroll-smooth no-scrollbar flex-1 max-w-full py-1"
                     >
                         {boards.map((board, index) => (
                             <Draggable key={board.id} draggableId={board.id} index={index}>
@@ -230,41 +177,28 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
                             </Draggable>
                         ))}
                         {provided.placeholder}
-                    </Box>
+                    </div>
                 )}
             </Droppable>
 
-            {/* Next Button */}
-            <IconButton
-                size="small"
+            <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={!hasNext}
-                sx={{
-                    color: 'white',
-                    flexShrink: 0,
-                    ml: 1,
-                    bgcolor: 'rgba(255,255,255,0.1)',
-                    opacity: hasNext ? 1 : 0.3,
-                    '&:hover': { bgcolor: hasNext ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)' }
-                }}
+                className={`h-7 w-7 shrink-0 text-white hover:bg-white/20 ${!hasNext ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}
             >
-                <ArrowForwardIosIcon fontSize="small" />
-            </IconButton>
+                <ChevronRight className="w-4 h-4" />
+            </Button>
 
             <Button
-                variant="text"
-                startIcon={<AddIcon />}
+                variant="ghost"
                 onClick={onCreate}
-                sx={{
-                    ml: 1,
-                    minWidth: 'auto',
-                    color: 'white',
-                    opacity: 0.8,
-                    '&:hover': { opacity: 1, bgcolor: 'rgba(255,255,255,0.2)' }
-                }}
+                className="ml-1 shrink-0 gap-1.5 text-white/80 hover:text-white hover:bg-white/20 whitespace-nowrap h-8 px-2.5"
             >
-                New Board
+                <Plus className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-bold uppercase tracking-wider">New</span>
             </Button>
-        </Box>
+        </div>
     );
 }

@@ -1,6 +1,7 @@
-import { Typography, Grid, Card, CardActionArea } from '@mui/material';
 import { useStore } from '../../store';
 import { useNavigate } from 'react-router-dom';
+import { Card, CardContent } from "@/components/ui/card"
+import { Users } from 'lucide-react';
 
 export default function SharedProjects() {
     const projects = useStore(state => state.projects);
@@ -10,37 +11,35 @@ export default function SharedProjects() {
 
     const sharedProjects = projects.filter(p => p.ownerId !== user?.id);
 
-    if (sharedProjects.length === 0) return (
-        <>
-            <Typography variant="h5" sx={{ mb: 2 }} fontWeight="bold">Projects shared with me</Typography>
-            <Grid container spacing={3} sx={{ mb: 6 }}>
-                <Grid size={12}>
-                    <Typography color="text.secondary">No shared projects yet.</Typography>
-                </Grid>
-            </Grid>
-        </>
-    );
-
     return (
-        <>
-            <Typography variant="h5" sx={{ mb: 2 }} fontWeight="bold">Projects shared with me</Typography>
-            <Grid container spacing={3} sx={{ mb: 6 }}>
-                {sharedProjects.map(project => (
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={project.id}>
-                        <Card sx={{ height: 120 }}>
-                            <CardActionArea
-                                sx={{ height: '100%', p: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}
-                                onClick={() => navigate(`/projects/${project.id}`)}
-                            >
-                                <Typography variant="h6" fontWeight="bold">{project.title}</Typography>
-                                <Typography variant="body2" color="text.secondary">
+        <section className="mb-10">
+            <div className="flex items-center gap-2 mb-4">
+                <Users className="w-5 h-5 text-primary" />
+                <h2 className="text-xl font-bold tracking-tight">Projects shared with me</h2>
+            </div>
+
+            {sharedProjects.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-8 text-center border-2 border-dashed rounded-xl">
+                    No shared projects yet.
+                </p>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {sharedProjects.map(project => (
+                        <Card 
+                            key={project.id} 
+                            className="group cursor-pointer hover:shadow-md transition-all border-none bg-zinc-100 dark:bg-zinc-800"
+                            onClick={() => navigate(`/projects/${project.id}`)}
+                        >
+                            <CardContent className="h-[120px] p-4 flex flex-col justify-center">
+                                <h3 className="font-bold text-lg">{project.title}</h3>
+                                <p className="text-sm text-muted-foreground">
                                     {boards.filter(b => b.projectId === project.id).length} Boards
-                                </Typography>
-                            </CardActionArea>
+                                </p>
+                            </CardContent>
                         </Card>
-                    </Grid>
-                ))}
-            </Grid>
-        </>
+                    ))}
+                </div>
+            )}
+        </section>
     );
 }

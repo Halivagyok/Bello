@@ -1,6 +1,23 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, FormControl, InputLabel, Select, MenuItem, ListSubheader } from '@mui/material';
 import { useStore, client } from '../store';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog"
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 
 interface MoveCardsDialogProps {
     open: boolean;
@@ -21,10 +38,6 @@ export default function MoveCardsDialog({ open, onClose, sourceListId }: MoveCar
     const activeBoardId = useStore(state => state.activeBoardId);
     const fetchBoards = useStore(state => state.fetchBoards);
 
-    // We can't use `moveAllCards` from store directly if we are moving to another board,
-    // because `moveAllCards` optimistically updates CURRENT board state.
-    // If moving to another board, we just need API call and maybe refresh current board.
-
     const [targetBoardId, setTargetBoardId] = useState(activeBoardId || '');
     const [targetListId, setTargetListId] = useState('');
     const [availableLists, setAvailableLists] = useState<TargetList[]>([]);
@@ -43,7 +56,6 @@ export default function MoveCardsDialog({ open, onClose, sourceListId }: MoveCar
         }
     }, [open, activeBoardId]);
 
-    // Fetch lists when board changes
     useEffect(() => {
         const fetchLists = async () => {
             if (!targetBoardId) {
@@ -51,7 +63,6 @@ export default function MoveCardsDialog({ open, onClose, sourceListId }: MoveCar
                 return;
             }
 
-            // Optimization: If target is current board, use store lists
             if (targetBoardId === activeBoardId) {
                 setAvailableLists(initialLists.filter(l => l.id !== sourceListId));
                 return;
@@ -84,12 +95,8 @@ export default function MoveCardsDialog({ open, onClose, sourceListId }: MoveCar
 
     const handleMove = async () => {
         if (targetListId && sourceListId) {
-            // Call API directly to support cross-board move if needed (though endpoint just needs targetListId)
-            // The backend endpoint `POST /lists/:id/move-cards` takes `targetListId`.
-            // It handles checking if valid.
             try {
                 await client.lists[sourceListId]['move-cards'].post({ targetListId });
-                // Refresh current board to remove cards from source
                 useStore.getState().fetchBoard(activeBoardId!, true);
                 onClose();
             } catch (e) {
@@ -98,7 +105,6 @@ export default function MoveCardsDialog({ open, onClose, sourceListId }: MoveCar
         }
     };
 
-    // Group boards by Project
     const groupedBoards = useMemo(() => {
         const groups: Record<string, typeof boards> = {};
         const noProjectBoards: typeof boards = [];
@@ -115,63 +121,80 @@ export default function MoveCardsDialog({ open, onClose, sourceListId }: MoveCar
     }, [boards]);
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-            <DialogTitle>Move All Cards</DialogTitle>
-            <DialogContent>
-                <FormControl fullWidth sx={{ mt: 2 }}>
-                    <InputLabel>Target Board</InputLabel>
-                    <Select
-                        value={targetBoardId}
-                        label="Target Board"
-                        onChange={(e) => {
-                            setTargetBoardId(e.target.value);
-                            setTargetListId(''); // Reset list on board change
-                        }}
-                    >
-                        {/* Boards without project */}
-                        {groupedBoards.noProjectBoards.length > 0 && <ListSubheader>Personal Boards</ListSubheader>}
-                        {groupedBoards.noProjectBoards.map(board => (
-                            <MenuItem key={board.id} value={board.id}>{board.title}</MenuItem>
-                        ))}
+        <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Move All Cards</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="target-board">Target Board</Label>
+                        <Select 
+                            value={targetBoardId} 
+                            onValueChange={(val) => {
+                                setTargetBoardId(val);
+                                setTargetListId('');
+                            }}
+                        >
+                            <SelectTrigger id="target-board">
+                                <SelectValue placeholder="Select target board" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {groupedBoards.noProjectBoards.length > 0 && (
+                                    <SelectGroup>
+                                        <SelectLabel>Personal Boards</SelectLabel>
+                                        {groupedBoards.noProjectBoards.map(board => (
+                                            <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                )}
 
-                        {/* Projects */}
-                        {Object.entries(groupedBoards.groups).map(([projectId, projectBoards]) => {
-                            const project = projects.find(p => p.id === projectId);
-                            return [
-                                <ListSubheader key={`header-${projectId}`}>{project?.title || 'Unknown Project'}</ListSubheader>,
-                                ...projectBoards.map(board => (
-                                    <MenuItem key={board.id} value={board.id}>{board.title}</MenuItem>
-                                ))
-                            ];
-                        })}
-                    </Select>
-                </FormControl>
+                                {Object.entries(groupedBoards.groups).map(([projectId, projectBoards]) => {
+                                    const project = projects.find(p => p.id === projectId);
+                                    return (
+                                        <SelectGroup key={projectId}>
+                                            <SelectLabel>{project?.title || 'Unknown Project'}</SelectLabel>
+                                            {projectBoards.map(board => (
+                                                <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    );
+                                })}
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                <FormControl fullWidth sx={{ mt: 2 }} disabled={!targetBoardId || loadingLists}>
-                    <InputLabel>Target List</InputLabel>
-                    <Select
-                        value={targetListId}
-                        label="Target List"
-                        onChange={(e) => setTargetListId(e.target.value)}
-                    >
-                        {availableLists.length === 0 && !loadingLists ? (
-                            <MenuItem disabled>No other lists available</MenuItem>
-                        ) : (
-                            availableLists.map(list => (
-                                <MenuItem key={list.id} value={list.id}>
-                                    {list.title}
-                                </MenuItem>
-                            ))
-                        )}
-                    </Select>
-                </FormControl>
+                    <div className="grid gap-2">
+                        <Label htmlFor="target-list">Target List</Label>
+                        <Select 
+                            value={targetListId} 
+                            onValueChange={setTargetListId}
+                            disabled={!targetBoardId || loadingLists}
+                        >
+                            <SelectTrigger id="target-list">
+                                <SelectValue placeholder="Select target list" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableLists.length === 0 && !loadingLists ? (
+                                    <SelectItem value="none" disabled>No other lists available</SelectItem>
+                                ) : (
+                                    availableLists.map(list => (
+                                        <SelectItem key={list.id} value={list.id}>
+                                            {list.title}
+                                        </SelectItem>
+                                    ))
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button onClick={handleMove} disabled={!targetListId || targetListId === 'none'}>
+                        Move Cards
+                    </Button>
+                </DialogFooter>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={handleMove} variant="contained" disabled={!targetListId}>
-                    Move Cards
-                </Button>
-            </DialogActions>
         </Dialog>
     );
 }

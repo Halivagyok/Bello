@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Typography, Grid, Paper, Card, CardActionArea, Box } from '@mui/material';
 import { useStore } from '../../store';
 import { useNavigate } from 'react-router-dom';
 import ProjectDialog from '../ProjectDialog';
+import { Card, CardContent } from "@/components/ui/card"
+import { FolderKanban, Plus } from 'lucide-react';
 
 export default function ProjectList() {
     const projects = useStore(state => state.projects);
@@ -14,49 +15,41 @@ export default function ProjectList() {
     const myProjects = projects.filter(p => p.ownerId === user?.id);
 
     return (
-        <>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h5" fontWeight="bold">My Projects</Typography>
-            </Box>
+        <section className="mb-10">
+            <div className="flex items-center gap-2 mb-4">
+                <FolderKanban className="w-5 h-5 text-primary" />
+                <h2 className="text-xl font-bold tracking-tight">My Projects</h2>
+            </div>
 
-            <Grid container spacing={3} sx={{ mb: 6 }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {/* Create New Project Card */}
-                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Paper
-                        sx={{
-                            height: 120,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            bgcolor: 'rgba(9, 30, 66, 0.04)',
-                            cursor: 'pointer',
-                            transition: '0.2s',
-                            '&:hover': { bgcolor: 'rgba(9, 30, 66, 0.08)' }
-                        }}
-                        onClick={() => setOpenProjectDialog(true)}
-                    >
-                        <Typography variant="h6" color="textSecondary">Create new project</Typography>
-                    </Paper>
-                </Grid>
+                <Card 
+                    className="group cursor-pointer border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-all bg-muted/30"
+                    onClick={() => setOpenProjectDialog(true)}
+                >
+                    <CardContent className="h-[120px] p-4 flex flex-col items-center justify-center gap-2">
+                        <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">Create new project</span>
+                    </CardContent>
+                </Card>
 
                 {myProjects.map(project => (
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={project.id}>
-                        <Card sx={{ height: 120 }}>
-                            <CardActionArea
-                                sx={{ height: '100%', p: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}
-                                onClick={() => navigate(`/projects/${project.id}`)}
-                            >
-                                <Typography variant="h6" fontWeight="bold">{project.title}</Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {boards.filter(b => b.projectId === project.id).length} Boards
-                                </Typography>
-                            </CardActionArea>
-                        </Card>
-                    </Grid>
+                    <Card 
+                        key={project.id} 
+                        className="group cursor-pointer hover:shadow-md transition-all border-none bg-zinc-100 dark:bg-zinc-800"
+                        onClick={() => navigate(`/projects/${project.id}`)}
+                    >
+                        <CardContent className="h-[120px] p-4 flex flex-col justify-center">
+                            <h3 className="font-bold text-lg">{project.title}</h3>
+                            <p className="text-sm text-muted-foreground">
+                                {boards.filter(b => b.projectId === project.id).length} Boards
+                            </p>
+                        </CardContent>
+                    </Card>
                 ))}
-            </Grid>
+            </div>
 
             <ProjectDialog open={openProjectDialog} onClose={() => setOpenProjectDialog(false)} />
-        </>
+        </section>
     );
 }

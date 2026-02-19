@@ -1,13 +1,12 @@
-
 import { useEffect, useRef } from 'react';
-import { Box, Button, Paper, Typography } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { useStore } from '../store';
 import TopBar from '../components/TopBar';
 import CardList from '../components/CardList';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Plus, Layout, ArrowLeft } from 'lucide-react';
 
 export default function Board() {
     const { boardId } = useParams<{ boardId: string }>();
@@ -28,16 +27,13 @@ export default function Board() {
     const projectBoardPage = useStore((state) => state.projectBoardPage);
     const setProjectBoardPage = useStore((state) => state.setProjectBoardPage);
 
-    // Ref to track previous board ID to prevent auto-switching page when manually navigating tabs
     const prevBoardIdRef = useRef<string | null>(null);
 
-    // Initial Fetch Effect
     useEffect(() => {
         fetchBoards();
         fetchProjects();
     }, [fetchBoards, fetchProjects]);
 
-    // Fetch Board Data Effect - Only when ID changes
     useEffect(() => {
         if (boardId) {
             fetchBoard(boardId);
@@ -48,28 +44,17 @@ export default function Board() {
         }
     }, [boardId, fetchBoard]);
 
-    // Sync Page Effect - Only when Board ID changes
     useEffect(() => {
         if (!boardId || !activeProjectId) return;
-
-        // If simple re-render or page switch by user, do NOT force back to active board
-        // Only force if we actually navigated to a new URL/Board
-        // Also handle initial load where prevBoardIdRef.current is null
-
-        // Note: We need to wait for boards/projects to load to calculate page.
-        // If they are empty, we might miss the sync.
-        // But if boardId changed, we WANT to sync.
 
         const project = projects.find(p => p.id === activeProjectId);
         if (!project) return;
 
-        // We check if we need to sync based on board change OR if we haven't synced yet (initial)
         const isNewBoard = boardId !== prevBoardIdRef.current;
 
         if (isNewBoard) {
             const projectBoards = boards.filter(b => b.projectId === activeProjectId);
 
-            // Sort to find index
             if (project.boardIds) {
                 projectBoards.sort((a, b) => {
                     const indexA = project.boardIds!.indexOf(a.id);
@@ -84,7 +69,6 @@ export default function Board() {
                 if (requiredPage !== projectBoardPage) {
                     setProjectBoardPage(requiredPage);
                 }
-                // Only update ref after we successfully found and synced (or verified)
                 prevBoardIdRef.current = boardId;
             }
         }
@@ -102,16 +86,13 @@ export default function Board() {
             return;
         }
 
-        // Handle Project Tabs Reordering
         if (type === 'BOARD_TAB') {
             if (!activeProjectId) return;
             const project = projects.find(p => p.id === activeProjectId);
             if (!project) return;
 
-            // Get current boards for the project
             let projectBoards = boards.filter(b => b.projectId === activeProjectId);
 
-            // Sort to match UI
             if (project.boardIds) {
                 projectBoards.sort((a, b) => {
                     const indexA = project.boardIds!.indexOf(a.id);
@@ -124,7 +105,6 @@ export default function Board() {
 
             const currentOrder = projectBoards.map(b => b.id);
 
-            // Since ProjectTabs renders all items in a scrollable list, the indices are absolute.
             const [movedId] = currentOrder.splice(source.index, 1);
             currentOrder.splice(destination.index, 0, movedId);
 
@@ -132,13 +112,11 @@ export default function Board() {
             return;
         }
 
-        // Handle List Reordering
         if (type === 'list') {
             moveList(source.index, destination.index);
             return;
         }
 
-        // Handle Card Reordering
         moveCard(
             source.droppableId,
             destination.droppableId,
@@ -148,124 +126,64 @@ export default function Board() {
     };
 
     return (
+        <div className="h-screen flex bg-gradient-to-br from-[#0079bf] to-[#5067c5] dark:from-[#0c2b4e] dark:to-[#1d546c] overflow-hidden">
+            {/* Sidebar */}
+            <aside className="w-[260px] shrink-0 border-r border-white/10 bg-black/15 backdrop-blur-sm flex flex-col p-4">
+                <div className="flex items-center gap-2 mb-8 px-2">
+                    <Layout className="w-6 h-6 text-white" />
+                    <span className="text-xl font-bold text-white tracking-tight">Bello</span>
+                </div>
 
-        <Box sx={{
-            height: '100vh',
-            display: 'flex',
-            backgroundImage: 'linear-gradient(135deg, #0079bf 0%, #5067c5 100%)', // Trello-like gradient
-            overflow: 'hidden'
-        }}>
-            {/* Sidebar Placeholder */}
-            <Box sx={{
-                width: 260,
-                flexShrink: 0,
-                borderRight: '1px solid rgba(255,255,255,0.1)',
-                bgcolor: 'rgba(0,0,0,0.15)',
-                display: 'flex',
-                flexDirection: 'column',
-                p: 2
-            }}>
-                <Typography variant="h6" fontWeight="bold" sx={{ color: 'white', mb: 2, px: 1 }}>Bello</Typography>
-
-                <Button
-                    variant="text"
-                    sx={{ color: 'white', justifyContent: 'flex-start' }}
-                    onClick={() => navigate('/boards')}
-                >
-                    Back to Boards
-                </Button>
-            </Box>
+                <nav className="space-y-1">
+                    <Button
+                        variant="ghost"
+                        className="w-full justify-start text-white hover:bg-white/10 gap-2 font-medium"
+                        onClick={() => navigate('/boards')}
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Boards
+                    </Button>
+                </nav>
+            </aside>
 
             {/* Main Content */}
             <DragDropContext onDragEnd={onDragEnd}>
-                <Box sx={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden'
-                }}>
-                    <TopBar />
-                    <Paper
-                        elevation={0}
-                        sx={{
-                            display: 'flex',
-                            flex: 1,
-                            gap: 2,
-                            overflowX: 'auto',
-                            flexWrap: 'nowrap',
-                            alignItems: 'flex-start',
-                            p: 2,
-                            maxWidth: '100%',
-                            width: '100%',
-                            bgcolor: 'transparent',
-                            '&::-webkit-scrollbar': {
-                                height: '12px'
-                            },
-                            '&::-webkit-scrollbar-track': {
-                                bgcolor: 'rgba(0,0,0,0.1)'
-                            },
-                            '&::-webkit-scrollbar-thumb': {
-                                bgcolor: 'rgba(255,255,255,0.3)',
-                                borderRadius: '6px'
-                            }
-                        }}
-                    >
-
+                <main className="flex-1 flex flex-col min-w-0">
+                    <div className="p-4 pb-0">
+                        <TopBar />
+                    </div>
+                    
+                    <div className="flex-1 flex gap-4 overflow-x-auto overflow-y-hidden p-4 items-start scrollbar-board">
                         <Droppable droppableId="board" direction="horizontal" type="list">
                             {(provided) => (
-                                <Box
+                                <div
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
-                                    sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', height: '100%' }}
+                                    className="flex gap-4 items-start h-full"
                                 >
                                     {lists.map((list, index) => (
-                                        <Draggable key={list.id} draggableId={list.id} index={index}>
-                                            {(provided) => (
-                                                <Box
-                                                    ref={provided.innerRef}
-                                                    {...provided.draggableProps}
-                                                    {...provided.dragHandleProps}
-                                                    sx={{
-                                                        minWidth: 280,
-                                                        flexShrink: 0,
-                                                        ...provided.draggableProps.style,
-                                                        maxHeight: '100%',
-                                                        display: 'flex',
-                                                        flexDirection: 'column'
-                                                    }}
-                                                >
-                                                    <CardList list={list} index={index} />
-                                                </Box>
-                                            )}
-                                        </Draggable>
+                                        <div key={list.id}>
+                                            <CardList list={list} index={index} />
+                                        </div>
                                     ))}
                                     {provided.placeholder}
-                                </Box>
+                                </div>
                             )}
                         </Droppable>
 
-                        <Box sx={{ minWidth: 280, flexShrink: 0 }}>
+                        <div className="w-[280px] shrink-0">
                             <Button
-                                variant="contained"
-                                startIcon={<AddIcon />}
                                 onClick={() => addList("New List")}
-                                sx={{
-                                    width: '100%',
-                                    justifyContent: 'flex-start',
-                                    bgcolor: 'rgba(255,255,255,0.24)',
-                                    color: 'white',
-                                    '&:hover': { bgcolor: 'rgba(255,255,255,0.32)' },
-                                    backdropFilter: 'blur(4px)',
-                                    textTransform: 'none'
-                                }}
+                                className="w-full justify-start bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-md h-auto py-3 px-4 font-medium"
                             >
-                                <Typography>Add another list</Typography>
+                                <Plus className="w-5 h-5 mr-2" />
+                                Add another list
                             </Button>
-                        </Box>
-                    </Paper>
-                </Box>
+                        </div>
+                    </div>
+                </main>
             </DragDropContext>
-        </Box>
+        </div>
     );
 }
 

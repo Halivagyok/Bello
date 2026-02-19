@@ -1,6 +1,7 @@
-import { Typography, Grid, Card, CardActionArea } from '@mui/material';
 import { useStore } from '../../store';
 import { useNavigate } from 'react-router-dom';
+import { Card, CardContent } from "@/components/ui/card"
+import { Layout } from 'lucide-react';
 
 export default function RecentBoards() {
     const recentBoards = useStore(state => state.recentBoards);
@@ -14,30 +15,38 @@ export default function RecentBoards() {
     };
 
     return (
-        <>
-            <Typography variant="h5" sx={{ mb: 2, mt: 0 }} fontWeight="bold">Recent Boards</Typography>
-            <Grid container spacing={3} sx={{ mb: 6 }}>
-                {recentBoards.length === 0 && (
-                    <Grid size={12}>
-                        <Typography color="text.secondary">No recently viewed boards.</Typography>
-                    </Grid>
-                )}
-                {recentBoards.map(board => (
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={board.id}>
-                        <Card sx={{ height: 120, bgcolor: '#0079bf', color: 'white' }}>
-                            <CardActionArea
-                                sx={{ height: '100%', p: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'space-between' }}
-                                onClick={() => navigate(`/boards/${board.id}`)}
+        <section className="mb-10">
+            <div className="flex items-center gap-2 mb-4">
+                <Layout className="w-5 h-5 text-primary" />
+                <h2 className="text-xl font-bold tracking-tight">Recent Boards</h2>
+            </div>
+            
+            {recentBoards.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-8 text-center border-2 border-dashed rounded-xl">
+                    No recently viewed boards.
+                </p>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {recentBoards.map(board => (
+                        <Card 
+                            key={board.id} 
+                            className="group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all border-none overflow-hidden"
+                            onClick={() => navigate(`/boards/${board.id}`)}
+                        >
+                            <CardContent 
+                                className="h-[120px] p-4 flex flex-col justify-between text-white relative"
+                                style={{ backgroundColor: '#0079bf' }}
                             >
-                                <Typography variant="h6" fontWeight="bold">{board.title}</Typography>
-                                <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                <h3 className="font-bold text-lg relative z-10">{board.title}</h3>
+                                <p className="text-xs opacity-80 font-medium relative z-10">
                                     {getProjectTitle(board.projectId)}
-                                </Typography>
-                            </CardActionArea>
+                                </p>
+                            </CardContent>
                         </Card>
-                    </Grid>
-                ))}
-            </Grid>
-        </>
+                    ))}
+                </div>
+            )}
+        </section>
     );
 }
