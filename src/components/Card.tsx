@@ -10,8 +10,6 @@ interface CardProps {
 
 export default function Card({ card, index }: CardProps) {
     const toggleCardCompletion = useStore(state => state.toggleCardCompletion);
-    const [hover, setHover] = useState(false);
-    const [toggled, setToggled] = useState(false)
 
     return (
         <Draggable draggableId={card.id} index={index}>
@@ -41,8 +39,7 @@ export default function Card({ card, index }: CardProps) {
                         `} 
                         onClick={(e) => {
                             e.stopPropagation(); 
-                            setToggled(!toggled); 
-                            toggleCardCompletion(card.id, toggled)
+                            toggleCardCompletion(card.id, !card.completed)
                         }} 
                         onMouseDown={(e) => e.stopPropagation()} 
                     >
