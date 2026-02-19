@@ -5,8 +5,6 @@ import Card from './Card';
 import MoveListDialog from './MoveListDialog';
 import MoveCardsDialog from './MoveCardsDialog';
 import { getContrastText } from '../utils/colors';
-import { IoSettingsSharp } from "react-icons/io5";
-import { RiArrowRightUpFill } from "react-icons/ri";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -23,12 +21,13 @@ import {
 import { 
     Plus, 
     X, 
-    MoreHorizontal, 
     Copy, 
     Move, 
     SortAsc, 
     Palette, 
-    Trash2 
+    Trash2,
+    Settings,
+    ArrowUpRight
 } from "lucide-react";
 
 interface CardListProps {
@@ -139,7 +138,7 @@ export default function CardList({ list, index }: CardListProps) {
                                             className="p-1.5 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors focus:outline-none" 
                                             style={{ color: contrastColor }}
                                         >
-                                            <IoSettingsSharp className="w-4 h-4" />
+                                            <Settings className="w-4 h-4" />
                                         </button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-56">
@@ -201,7 +200,7 @@ export default function CardList({ list, index }: CardListProps) {
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
-                                <RiArrowRightUpFill className="w-5 h-5 opacity-40 shrink-0" style={{ color: contrastColor }} />
+                                <ArrowUpRight className="w-5 h-5 opacity-40 shrink-0" style={{ color: contrastColor }} />
                             </div>
                         </div>
 
