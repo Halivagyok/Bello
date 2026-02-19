@@ -1,12 +1,35 @@
-import { Box, Button, IconButton, Typography, useTheme, Avatar, AvatarGroup, Tooltip, List, ListItem, ListItemAvatar, ListItemText, ListItemSecondaryAction } from '@mui/material';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import ShareIcon from '@mui/icons-material/Share';
-import SettingsIcon from '@mui/icons-material/Settings';
-import DeleteIcon from '@mui/icons-material/Delete';
 import { useStore, client } from '../store';
 import { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, TextField, DialogActions } from '@mui/material';
 import ProjectTabs from './ProjectTabs';
+import { ModeToggle } from './mode-toggle';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog"
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from "@/components/ui/avatar"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { 
+    Filter, 
+    Share, 
+    Settings, 
+    Trash2, 
+    Plus,
+    Users
+} from 'lucide-react';
 
 export default function TopBar() {
     const boardName = useStore((state) => state.boardName);
@@ -21,7 +44,6 @@ export default function TopBar() {
     const boards = useStore((state) => state.boards);
     const createBoard = useStore((state) => state.createBoard);
     const renameBoard = useStore((state) => state.renameBoard);
-    const theme = useTheme();
 
     const [inviteOpen, setInviteOpen] = useState(false);
     const [membersOpen, setMembersOpen] = useState(false);
@@ -31,7 +53,6 @@ export default function TopBar() {
 
     const project = activeProjectId ? projects.find(p => p.id === activeProjectId) : null;
 
-    // Sort boards based on project.boardIds if available, else usage
     let projectBoards = activeProjectId ? boards.filter(b => b.projectId === activeProjectId) : [];
 
     if (project && project.boardIds) {
@@ -61,7 +82,7 @@ export default function TopBar() {
         if (!confirm('Remove user from board?')) return;
         try {
             await client.boards[activeBoardId].members[userId].delete();
-            fetchBoard(activeBoardId, true); // Reload members
+            fetchBoard(activeBoardId, true);
         } catch (e) {
             alert('Failed to remove member');
             console.error(e);
@@ -77,7 +98,6 @@ export default function TopBar() {
 
     const isOwnerOrAdmin = (activeBoardOwnerId && user?.id === activeBoardOwnerId) || user?.isAdmin;
 
-    // Helper to generate consistent color from string
     const stringToColor = (string: string) => {
         let hash = 0;
         for (let i = 0; i < string.length; i++) {
@@ -92,22 +112,9 @@ export default function TopBar() {
     };
 
     return (
-        <Box sx={{ width: '100%', mb: 2 }}>
-            <Box sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 2,
-                pl: 0,
-                pr: 1,
-                py: 1,
-                bgcolor: 'rgba(255, 255, 255, 0.15)',
-                backdropFilter: 'blur(8px)',
-                borderRadius: 2,
-                overflow: 'hidden' // Contain children
-            }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                    {/* Render ProjectTabs if in a project, otherwise Board Name */}
+        <div className="w-full mb-4">
+            <div className="flex items-center justify-between gap-4 px-3 py-2 bg-white/15 dark:bg-black/15 backdrop-blur-md rounded-xl overflow-hidden shadow-sm">
+                <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden">
                     {activeProjectId ? (
                         <ProjectTabs
                             boards={projectBoards}
@@ -116,129 +123,153 @@ export default function TopBar() {
                             onCreate={() => setCreateBoardOpen(true)}
                         />
                     ) : (
-                        <Typography variant="h5" fontWeight="bold" sx={{ color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.1)', whiteSpace: 'nowrap' }}>
+                        <h1 className="text-xl font-bold text-white whitespace-nowrap drop-shadow-sm">
                             {boardName}
-                        </Typography>
+                        </h1>
                     )}
-                </Box>
+                </div>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-
+                <div className="flex items-center gap-3 shrink-0">
                     {/* Avatars */}
-                    <Box onClick={() => setMembersOpen(true)} sx={{ cursor: 'pointer' }}>
-                        <AvatarGroup max={4} sx={{ '& .MuiAvatar-root': { width: 32, height: 32, fontSize: '0.875rem' } }}>
-                            {activeMembers.map((member) => (
-                                <Tooltip key={member.id} title={member.name || member.email}>
-                                    <Avatar
-                                        alt={member.name}
-                                        // src={member.avatarUrl} // Future: Add avatarUrl to member
-                                        sx={{ bgcolor: stringToColor(member.name || member.email) }}
-                                    >
-                                        {member.name ? member.name[0].toUpperCase() : member.email[0].toUpperCase()}
-                                    </Avatar>
+                    <div 
+                        onClick={() => setMembersOpen(true)} 
+                        className="flex -space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                        <TooltipProvider>
+                            {activeMembers.slice(0, 4).map((member) => (
+                                <Tooltip key={member.id}>
+                                    <TooltipTrigger asChild>
+                                        <Avatar className="w-8 h-8 border-2 border-white dark:border-zinc-900 ring-offset-background">
+                                            <AvatarFallback 
+                                                style={{ backgroundColor: stringToColor(member.name || member.email) }}
+                                                className="text-[10px] text-white font-bold"
+                                            >
+                                                {member.name ? member.name[0].toUpperCase() : member.email[0].toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{member.name || member.email}</p>
+                                    </TooltipContent>
                                 </Tooltip>
                             ))}
-                        </AvatarGroup>
-                    </Box>
+                            {activeMembers.length > 4 && (
+                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-700 text-white text-[10px] font-bold border-2 border-white dark:border-zinc-900">
+                                    +{activeMembers.length - 4}
+                                </div>
+                            )}
+                        </TooltipProvider>
+                    </div>
 
-                    <Box sx={{ width: '1px', height: '24px', bgcolor: 'rgba(255,255,255,0.3)', mx: 1 }} />
+                    <div className="w-px h-6 bg-white/30" />
 
-                    <IconButton
-                        sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}
-                    >
-                        <FilterListIcon />
-                    </IconButton>
-
-                    <Button
-                        variant="contained"
-                        startIcon={<ShareIcon />}
-                        onClick={() => setInviteOpen(true)}
-                        sx={{
-                            bgcolor: 'white',
-                            color: theme.palette.text.primary,
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-                        }}
-                    >
-                        Share
+                    <Button variant="ghost" size="icon" className="text-white bg-white/10 hover:bg-white/20 h-9 w-9">
+                        <Filter className="w-4 h-4" />
                     </Button>
 
-                    <IconButton sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
-                        <SettingsIcon />
-                    </IconButton>
-                </Box>
-            </Box>
+                    <Button
+                        onClick={() => setInviteOpen(true)}
+                        className="bg-white text-black hover:bg-white/90 h-9 gap-2"
+                    >
+                        <Share className="w-4 h-4" />
+                        <span className="hidden sm:inline">Share</span>
+                    </Button>
 
-            <Dialog open={inviteOpen} onClose={() => { setInviteOpen(false); setEmail(''); }}>
-                <DialogTitle>Invite Member</DialogTitle>
+                    <Button variant="ghost" size="icon" className="text-white bg-white/10 hover:bg-white/20 h-9 w-9">
+                        <Settings className="w-4 h-4" />
+                    </Button>
+
+                    <ModeToggle />
+                </div>
+            </div>
+
+            {/* Invite Dialog */}
+            <Dialog open={inviteOpen} onOpenChange={(open) => !open && (setInviteOpen(false), setEmail(''))}>
                 <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Email Address"
-                        type="email"
-                        fullWidth
-                        variant="outlined"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
+                    <DialogHeader>
+                        <DialogTitle>Invite Member</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Input
+                            placeholder="Email Address"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            autoFocus
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setInviteOpen(false)}>Cancel</Button>
+                        <Button onClick={handleInvite}>Invite</Button>
+                    </DialogFooter>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => { setInviteOpen(false); setEmail(''); }}>Cancel</Button>
-                    <Button onClick={handleInvite} variant="contained">Invite</Button>
-                </DialogActions>
             </Dialog>
 
             {/* Create Board Dialog */}
-            <Dialog open={createBoardOpen} onClose={() => { setCreateBoardOpen(false); setNewBoardTitle(''); }}>
-                <DialogTitle>Create New Board</DialogTitle>
+            <Dialog open={createBoardOpen} onOpenChange={(open) => !open && (setCreateBoardOpen(false), setNewBoardTitle(''))}>
                 <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Board Title"
-                        fullWidth
-                        variant="outlined"
-                        value={newBoardTitle}
-                        onChange={(e) => setNewBoardTitle(e.target.value)}
-                    />
+                    <DialogHeader>
+                        <DialogTitle>Create New Board</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Input
+                            placeholder="Board Title"
+                            value={newBoardTitle}
+                            onChange={(e) => setNewBoardTitle(e.target.value)}
+                            autoFocus
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setCreateBoardOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateBoard}>Create</Button>
+                    </DialogFooter>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setCreateBoardOpen(false)}>Cancel</Button>
-                    <Button onClick={handleCreateBoard} variant="contained">Create</Button>
-                </DialogActions>
             </Dialog>
 
             {/* Members List Dialog */}
-            <Dialog open={membersOpen} onClose={() => setMembersOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Board Members</DialogTitle>
-                <DialogContent>
-                    <List>
+            <Dialog open={membersOpen} onOpenChange={(open) => !open && setMembersOpen(false)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Users className="w-5 h-5" />
+                            Board Members
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
                         {activeMembers.map((member) => (
-                            <ListItem key={member.id}>
-                                <ListItemAvatar>
-                                    <Avatar sx={{ bgcolor: stringToColor(member.name || member.email) }}>
-                                        {member.name ? member.name[0] : member.email[0]}
+                            <div key={member.id} className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-9 w-9">
+                                        <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-white">
+                                            {member.name ? member.name[0] : member.email[0]}
+                                        </AvatarFallback>
                                     </Avatar>
-                                </ListItemAvatar>
-                                <ListItemText
-                                    primary={`${member.name} ${member.id === activeBoardOwnerId ? '(Owner)' : ''} ${member.isAdmin ? '(System Admin)' : ''}`}
-                                    secondary={member.email}
-                                />
-                                <ListItemSecondaryAction>
-                                    {isOwnerOrAdmin && member.id !== user?.id && member.id !== activeBoardOwnerId && (
-                                        <IconButton edge="end" onClick={() => handleRemoveMember(member.id)} color="error">
-                                            <DeleteIcon />
-                                        </IconButton>
-                                    )}
-                                </ListItemSecondaryAction>
-                            </ListItem>
+                                    <div>
+                                        <p className="text-sm font-medium leading-none">
+                                            {member.name} {member.id === activeBoardOwnerId && <span className="text-xs text-muted-foreground">(Owner)</span>}
+                                            {member.isAdmin && <span className="text-xs text-muted-foreground ml-1">(Admin)</span>}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-1">{member.email}</p>
+                                    </div>
+                                </div>
+                                {isOwnerOrAdmin && member.id !== user?.id && member.id !== activeBoardOwnerId && (
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                        onClick={() => handleRemoveMember(member.id)}
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                )}
+                            </div>
                         ))}
-                    </List>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setMembersOpen(false)} className="w-full">Close</Button>
+                    </DialogFooter>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setMembersOpen(false)}>Close</Button>
-                </DialogActions>
             </Dialog>
-        </Box>
+        </div>
     );
 }

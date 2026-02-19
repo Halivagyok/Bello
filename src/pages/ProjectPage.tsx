@@ -1,16 +1,29 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-    Box, Typography, Button, Grid, Paper, Card, CardActionArea, TextField,
-    Dialog, DialogTitle, DialogContent, DialogActions, IconButton,
-    List, ListItem, ListItemAvatar, Avatar, ListItemText, ListItemSecondaryAction
-} from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import GroupIcon from '@mui/icons-material/Group';
-import DeleteIcon from '@mui/icons-material/Delete';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { useStore, client } from '../store';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog"
+import {
+    Avatar,
+    AvatarFallback,
+} from "@/components/ui/avatar"
+import { 
+    ArrowLeft, 
+    Users, 
+    Trash2, 
+    UserPlus,
+    Plus,
+    Layout
+} from 'lucide-react';
 
 export default function ProjectDetails() {
     const { projectId } = useParams();
@@ -37,7 +50,6 @@ export default function ProjectDetails() {
     useEffect(() => {
         fetchBoards();
         fetchProjects();
-        // Connect socket and subscribe
         connectSocket();
 
         if (projectId) {
@@ -65,7 +77,7 @@ export default function ProjectDetails() {
         if (!confirm('Remove user from project?')) return;
         try {
             await client.projects[projectId].members[userId].delete();
-            fetchProject(projectId); // Reload
+            fetchProject(projectId);
         } catch (e) {
             alert('Failed to remove member');
         }
@@ -78,149 +90,197 @@ export default function ProjectDetails() {
             alert('User invited successfully');
             setInviteEmail('');
             setInviteOpen(false);
-            fetchProject(projectId); // Reload members
+            fetchProject(projectId);
         } catch (e) {
-            alert('Failed to invite user (they might not exist or are already a member)');
+            alert('Failed to invite user');
         }
     };
 
     const isOwnerOrAdmin = project ? (project.ownerId === user?.id || user?.isAdmin) : false;
 
-
+    const stringToColor = (string: string) => {
+        let hash = 0;
+        for (let i = 0; i < string.length; i++) {
+            hash = string.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        let color = '#';
+        for (let i = 0; i < 3; i++) {
+            const value = (hash >> (i * 8)) & 0xff;
+            color += `00${value.toString(16)}`.slice(-2);
+        }
+        return color;
+    };
 
     if (!project) {
-        return <Box sx={{ p: 4 }}>Loading or Project Not Found...</Box>;
+        return <div className="p-8 text-center text-muted-foreground">Loading or Project Not Found...</div>;
     }
 
     return (
-        <Box>
+        <div className="space-y-6">
             {/* Header */}
-            <Box sx={{ p: 2, bgcolor: '#026aa7', color: 'white', display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Button startIcon={<ArrowBackIcon />} color="inherit" onClick={() => navigate('/boards')}>
-                    Dashboard
-                </Button>
-                <Typography variant="h6" fontWeight="bold">{project.title}</Typography>
-                <Button startIcon={<GroupIcon />} color="inherit" onClick={() => setMembersOpen(true)} sx={{ ml: 'auto' }}>
-                    Members
-                </Button>
-                <Button startIcon={<PersonAddIcon />} color="inherit" onClick={() => setInviteOpen(true)} sx={{ ml: 1 }}>
-                    Invite
-                </Button>
-            </Box>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-100 dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-border">
+                <div className="flex items-center gap-4">
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => navigate('/boards')}
+                        className="gap-2"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Dashboard
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">{project.title}</h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            {project.description || 'No description provided.'}
+                        </p>
+                    </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="gap-2"
+                        onClick={() => setMembersOpen(true)}
+                    >
+                        <Users className="w-4 h-4" />
+                        Members ({project.members?.length || 0})
+                    </Button>
+                    <Button 
+                        size="sm" 
+                        className="gap-2"
+                        onClick={() => setInviteOpen(true)}
+                    >
+                        <UserPlus className="w-4 h-4" />
+                        Invite
+                    </Button>
+                </div>
+            </div>
 
-            <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
-                <Typography variant="body1" sx={{ mb: 4, color: 'text.secondary' }}>
-                    {project.description || 'No description provided.'}
-                </Typography>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {/* Create New Board Card */}
+                <Card 
+                    className="group cursor-pointer border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-all bg-muted/30"
+                    onClick={() => setOpen(true)}
+                >
+                    <CardContent className="h-[120px] p-4 flex flex-col items-center justify-center gap-2">
+                        <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">Create new board</span>
+                    </CardContent>
+                </Card>
 
-                <Grid container spacing={3}>
-                    {/* Create New Board Card */}
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                        <Paper
-                            sx={{
-                                height: 120,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                bgcolor: 'rgba(9, 30, 66, 0.04)',
-                                cursor: 'pointer',
-                                transition: '0.2s',
-                                '&:hover': { bgcolor: 'rgba(9, 30, 66, 0.08)' }
-                            }}
-                            onClick={() => setOpen(true)}
+                {/* Existing Boards */}
+                {projectBoards.map(board => (
+                    <Card 
+                        key={board.id} 
+                        className="group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all border-none overflow-hidden"
+                        onClick={() => navigate(`/boards/${board.id}`)}
+                    >
+                        <CardContent 
+                            className="h-[120px] p-4 flex flex-col justify-between text-white relative"
+                            style={{ backgroundColor: '#0079bf' }}
                         >
-                            <Typography variant="h6" color="textSecondary">Create new board</Typography>
-                        </Paper>
-                    </Grid>
-
-                    {/* Existing Boards */}
-                    {projectBoards.map(board => (
-                        <Grid size={{ xs: 12, sm: 6, md: 3 }} key={board.id}>
-                            <Card sx={{ height: 120, bgcolor: '#0079bf', color: 'white' }}>
-                                <CardActionArea
-                                    sx={{ height: '100%', p: 2, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start' }}
-                                    onClick={() => navigate(`/boards/${board.id}`)}
-                                >
-                                    <Typography variant="h6" fontWeight="bold">{board.title}</Typography>
-                                </CardActionArea>
-                            </Card>
-                        </Grid>
-                    ))}
-                </Grid>
-            </Box>
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                            <h3 className="font-bold text-lg relative z-10 flex items-center gap-2">
+                                <Layout className="w-4 h-4" />
+                                {board.title}
+                            </h3>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
 
             {/* Create Board Dialog */}
-            <Dialog open={open} onClose={() => { setOpen(false); setNewTitle(''); }}>
-                <DialogTitle>Create Board in {project.title}</DialogTitle>
+            <Dialog open={open} onOpenChange={(val) => !val && (setOpen(false), setNewTitle(''))}>
                 <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Board Title"
-                        fullWidth
-                        value={newTitle}
-                        onChange={(e) => setNewTitle(e.target.value)}
-                    />
+                    <DialogHeader>
+                        <DialogTitle>Create Board in {project.title}</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Input
+                            placeholder="Board Title"
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                            autoFocus
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateBoard}>Create</Button>
+                    </DialogFooter>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => { setOpen(false); setNewTitle(''); }}>Cancel</Button>
-                    <Button onClick={handleCreateBoard} variant="contained">Create</Button>
-                </DialogActions>
             </Dialog>
 
             {/* Invite Dialog */}
-            <Dialog open={inviteOpen} onClose={() => { setInviteOpen(false); setInviteEmail(''); }}>
-                <DialogTitle>Invite to Project</DialogTitle>
+            <Dialog open={inviteOpen} onOpenChange={(val) => !val && (setInviteOpen(false), setInviteEmail(''))}>
                 <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Email Address"
-                        type="email"
-                        fullWidth
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                    />
+                    <DialogHeader>
+                        <DialogTitle>Invite to Project</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Input
+                            placeholder="Email Address"
+                            type="email"
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            autoFocus
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setInviteOpen(false)}>Cancel</Button>
+                        <Button onClick={handleInvite}>Invite</Button>
+                    </DialogFooter>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => { setInviteOpen(false); setInviteEmail(''); }}>Cancel</Button>
-                    <Button onClick={handleInvite} variant="contained">Invite</Button>
-                </DialogActions>
             </Dialog>
 
             {/* Members Dialog */}
-            <Dialog open={membersOpen} onClose={() => setMembersOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Project Members</DialogTitle>
-                <DialogContent>
-                    <List>
+            <Dialog open={membersOpen} onOpenChange={(val) => !val && setMembersOpen(false)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Users className="w-5 h-5" />
+                            Project Members
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
                         {project.members && project.members.map((member) => (
-                            <ListItem key={member.id}>
-                                <ListItemAvatar>
-                                    <Avatar sx={{ bgcolor: '#0079bf' }}>
-                                        {member.name ? member.name[0] : member.email[0]}
+                            <div key={member.id} className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-9 w-9">
+                                        <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-white">
+                                            {(member.name || member.email)[0].toUpperCase()}
+                                        </AvatarFallback>
                                     </Avatar>
-                                </ListItemAvatar>
-                                <ListItemText
-                                    primary={`${member.name} ${member.id === project.ownerId ? '(Owner)' : ''} ${member.isAdmin ? '(System Admin)' : ''}`}
-                                    secondary={member.email}
-                                />
-                                <ListItemSecondaryAction>
-                                    {isOwnerOrAdmin && member.id !== user?.id && member.id !== project.ownerId && (
-                                        <IconButton edge="end" onClick={() => handleRemoveMember(member.id)} color="error">
-                                            <DeleteIcon />
-                                        </IconButton>
-                                    )}
-                                </ListItemSecondaryAction>
-                            </ListItem>
+                                    <div>
+                                        <p className="text-sm font-medium leading-none">
+                                            {member.name} {member.id === project.ownerId && <span className="text-xs text-muted-foreground ml-1">(Owner)</span>}
+                                            {member.isAdmin && <span className="text-xs text-muted-foreground ml-1">(Admin)</span>}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-1">{member.email}</p>
+                                    </div>
+                                </div>
+                                {isOwnerOrAdmin && member.id !== user?.id && member.id !== project.ownerId && (
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                        onClick={() => handleRemoveMember(member.id)}
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                )}
+                            </div>
                         ))}
-                        {(!project.members || project.members.length === 0) && <Typography p={2}>No members found.</Typography>}
-                    </List>
+                        {(!project.members || project.members.length === 0) && (
+                            <p className="text-center text-muted-foreground py-4 text-sm">No members found.</p>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setMembersOpen(false)} className="w-full">Close</Button>
+                    </DialogFooter>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setMembersOpen(false)}>Close</Button>
-                </DialogActions>
             </Dialog>
-        </Box>
+        </div>
     );
-
 }

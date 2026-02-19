@@ -1,98 +1,159 @@
 import { useState } from 'react';
-import { Box, Button, TextField, Typography, Paper, Tab, Tabs, Alert } from '@mui/material';
 import { useStore } from '../store';
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+import { Layout, Loader2 } from 'lucide-react';
 
 export default function Auth() {
-    const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const login = useStore((state) => state.login);
     const signup = useStore((state) => state.signup);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleAuth = async (isLogin: boolean) => {
         setError('');
-
+        setLoading(true);
         try {
-            if (isLogin) {
-                await login(email, password);
-            } else {
-                await signup(email, password, name);
-            }
-        } catch (err: any) {
+            if (isLogin) await login(email, password);
+            else await signup(email, password, name);
+        } 
+        catch (err: any) {
             setError(err.message || 'Authentication failed');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <Box  sx={{
-            height: '100vh',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            bgcolor: '#f5f5f5' // Light grey background
-        }}>
-            <Paper elevation={3} sx={{ p: 4, width: 400, borderRadius: 2 }}>
-                <Typography variant="h4" align="center" gutterBottom fontWeight="bold" color="primary">
-                    Bello
-                </Typography>
+        <div className="min-h-screen flex flex-col justify-center items-center bg-zinc-50 dark:bg-zinc-950 p-4">
+            <div className="flex items-center gap-2 mb-8 animate-in fade-in slide-in-from-top-4 duration-1000">
+                <div className="bg-primary p-2 rounded-xl">
+                    <Layout className="w-8 h-8 text-primary-foreground" />
+                </div>
+                <h1 className="text-4xl font-black tracking-tighter text-foreground">Bello</h1>
+            </div>
 
-                <Tabs
-                    value={isLogin ? 0 : 1}
-                    onChange={(_, val) => setIsLogin(val === 0)}
-                    variant="fullWidth"
-                    sx={{ mb: 3 }}
-                >
-                    <Tab label="Login" />
-                    <Tab label="Sign Up" />
-                </Tabs>
-
-                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
-                <form onSubmit={handleSubmit}>
-                    <TextField
-                        label="Email"
-                        type="email"
-                        fullWidth
-                        margin="normal"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
-                    <TextField
-                        label="Password"
-                        type="password"
-                        fullWidth
-                        margin="normal"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-                    {!isLogin && (
-                        <TextField
-                            label="Name"
-                            fullWidth
-                            margin="normal"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                        />
-                    )}
-
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        fullWidth
-                        size="large"
-                        sx={{ mt: 3, mb: 2 }}
-                    >
-                        {isLogin ? 'Login' : 'Sign Up'}
-                    </Button>
-                </form>
-            </Paper>
-        </Box>
+            <Tabs defaultValue="login" className="w-full max-w-md animate-in fade-in zoom-in-95 duration-500">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="login">Login</TabsTrigger>
+                    <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="login">
+                    <Card className="border-none shadow-xl">
+                        <CardHeader>
+                            <CardTitle>Welcome back</CardTitle>
+                            <CardDescription>
+                                Enter your credentials to access your account.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input 
+                                    id="email" 
+                                    type="email" 
+                                    placeholder="m@example.com" 
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="password">Password</Label>
+                                <Input 
+                                    id="password" 
+                                    type="password" 
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required 
+                                />
+                            </div>
+                            {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+                        </CardContent>
+                        <CardFooter>
+                            <Button className="w-full" onClick={() => handleAuth(true)} disabled={loading}>
+                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Login
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+                
+                <TabsContent value="signup">
+                    <Card className="border-none shadow-xl">
+                        <CardHeader>
+                            <CardTitle>Create an account</CardTitle>
+                            <CardDescription>
+                                Join Bello to start managing your projects efficiently.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="signup-name">Full Name</Label>
+                                <Input 
+                                    id="signup-name" 
+                                    placeholder="John Doe" 
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="signup-email">Email</Label>
+                                <Input 
+                                    id="signup-email" 
+                                    type="email" 
+                                    placeholder="m@example.com" 
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="signup-password">Password</Label>
+                                <Input 
+                                    id="signup-password" 
+                                    type="password" 
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required 
+                                />
+                            </div>
+                            {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+                        </CardContent>
+                        <CardFooter>
+                            <Button className="w-full" onClick={() => handleAuth(false)} disabled={loading}>
+                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Create Account
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+            
+            <p className="mt-8 text-sm text-muted-foreground">
+                Built with precision and passion.
+            </p>
+        </div>
     );
 }

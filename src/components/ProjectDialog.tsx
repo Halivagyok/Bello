@@ -1,14 +1,16 @@
-
 import { useState } from 'react';
+import { useStore } from '../store';
 import {
     Dialog,
-    DialogTitle,
     DialogContent,
-    DialogActions,
-    TextField,
-    Button
-} from '@mui/material';
-import { useStore } from '../store';
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 
 interface ProjectDialogProps {
     open: boolean;
@@ -33,34 +35,40 @@ export default function ProjectDialog({ open, onClose }: ProjectDialogProps) {
     };
 
     return (
-        <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-            <DialogTitle>Create New Project</DialogTitle>
-            <DialogContent>
-                <TextField
-                    autoFocus
-                    margin="dense"
-                    label="Project Title"
-                    fullWidth
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    sx={{ mb: 2 }}
-                />
-                <TextField
-                    margin="dense"
-                    label="Description (Optional)"
-                    fullWidth
-                    multiline
-                    rows={3}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                />
+        <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Create New Project</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="title">Project Title</Label>
+                        <Input
+                            id="title"
+                            autoFocus
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Enter project title"
+                        />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="description">Description (Optional)</Label>
+                        <Textarea
+                            id="description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Enter project description"
+                            className="min-h-[100px]"
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={handleClose}>Cancel</Button>
+                    <Button onClick={handleCreate} disabled={!title.trim()}>
+                        Create
+                    </Button>
+                </DialogFooter>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={handleClose}>Cancel</Button>
-                <Button onClick={handleCreate} variant="contained" disabled={!title.trim()}>
-                    Create
-                </Button>
-            </DialogActions>
         </Dialog>
     );
 }

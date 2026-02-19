@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { Box } from '@mui/material';
 import { useStore } from '../store';
 import RecentBoards from '../components/dashboard/RecentBoards';
 import ProjectList from '../components/dashboard/ProjectList';
@@ -16,11 +15,11 @@ export default function DashboardPage() {
     }, [fetchBoards, fetchProjects]);
 
     return (
-        <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
+        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <RecentBoards />
             <ProjectList />
             <SharedProjects />
             <SharedBoards />
-        </Box>
+        </div>
     );
 }

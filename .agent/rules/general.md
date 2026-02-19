@@ -23,6 +23,7 @@ You are an expert Frontend Engineer specialized in React, Vite, and MUI.
     - Use MUI `Stack` for vertical lists and `Grid` for the board layout.
     - Use MUI `Paper` for Cards and Lists to give depth.
     - Ensure `SxProps` are used for styling overrides, not CSS files.
+    - 'Tailwindcss' for custom components and easy dark mode settings 
 4.  **Drag and Drop:**
     - Always wrap the board in `<DragDropContext>`.
     - Use `Droppable` for Lists (direction="horizontal") and Columns (direction="vertical").

@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { CssBaseline } from '@mui/material';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useStore } from './store';
 
@@ -9,6 +8,7 @@ import BoardPage from './pages/BoardPage';
 import ProjectPage from './pages/ProjectPage';
 import AdminPage from './pages/AdminPage';
 import MainLayout from './layouts/MainLayout';
+import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const user = useStore(state => state.user);
@@ -16,11 +16,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (authLoading) {
     return (
-      <div style={{
-        display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh',
-        backgroundColor: '#f4f5f7', color: '#026aa7'
-      }}>
-        Loading...
+      <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <p className="text-sm font-medium animate-pulse">Checking authentication...</p>
       </div>
     );
   }
@@ -52,31 +50,27 @@ export const App = () => {
 
   if (authLoading) {
     return (
-      <div style={{
-        display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh',
-        backgroundColor: '#0079bf', color: 'white', fontSize: '1.5rem'
-      }}>
-        Loading Bello...
+      <div className="flex flex-col items-center justify-center h-screen bg-[#0079bf] dark:bg-[#0c2b4e] text-white">
+        <Loader2 className="w-12 h-12 animate-spin mb-4" />
+        <h1 className="text-2xl font-bold tracking-tight">Bello</h1>
+        <p className="mt-2 text-white/70 text-sm">Loading your workspace...</p>
       </div>
     );
   }
 
   return (
-    <>
-      <CssBaseline />
-      <Routes>
-        <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/boards" />} />
+    <Routes>
+      <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/boards" />} />
 
-        <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-          <Route path="/boards" element={<DashboardPage />} />
-          <Route path="/projects/:projectId" element={<ProjectPage />} />
-          <Route path="/admin" element={user?.isAdmin ? <AdminPage /> : <Navigate to="/" />} />
-        </Route>
+      <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+        <Route path="/boards" element={<DashboardPage />} />
+        <Route path="/projects/:projectId" element={<ProjectPage />} />
+        <Route path="/admin" element={user?.isAdmin ? <AdminPage /> : <Navigate to="/" />} />
+      </Route>
 
-        <Route path="/boards/:boardId" element={<ProtectedRoute><BoardPage /></ProtectedRoute>} />
+      <Route path="/boards/:boardId" element={<ProtectedRoute><BoardPage /></ProtectedRoute>} />
 
-        <Route path="/" element={<Navigate to={user ? "/boards" : "/login"} />} />
-      </Routes>
-    </>
+      <Route path="/" element={<Navigate to={user ? "/boards" : "/login"} />} />
+    </Routes>
   );
 }
