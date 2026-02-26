@@ -88,7 +88,10 @@ export default function TopBar() {
 
     const project = activeProjectId ? projects.find(p => p.id === activeProjectId) : null;
 
-    const isOwnerOrAdmin = (activeBoardOwnerId && user?.id === activeBoardOwnerId) || user?.isAdmin || currentUserRole === 'admin';
+    const rolePriority: Record<string, number> = { 'owner': 4, 'admin': 3, 'member': 2, 'viewer': 1 };
+    const myRoleVal = (activeBoardOwnerId && user?.id === activeBoardOwnerId) ? 5 : (rolePriority[currentUserRole || 'member'] || 0);
+
+    const isOwnerOrAdmin = myRoleVal >= 3 || user?.isAdmin;
     const isViewer = currentUserRole === 'viewer';
 
     const handleRenameBoard = async () => {
@@ -100,7 +103,7 @@ export default function TopBar() {
 
     const handleDeleteBoard = async () => {
         if (!activeBoardId) return;
-        if (!isOwnerOrAdmin) return;
+        if (myRoleVal < 4 && !user?.isAdmin) return;
         showAlert(
             `Delete board "${boardName}"?`,
             "This action cannot be undone. All lists and cards will be permanently removed.",
@@ -186,6 +189,7 @@ export default function TopBar() {
 
     const getRoleIcon = (role: string) => {
         switch (role?.toLowerCase()) {
+            case 'owner': return <Shield className="w-3.5 h-3.5 text-amber-500" />;
             case 'admin': return <Shield className="w-3.5 h-3.5 text-blue-500" />;
             case 'viewer': return <Eye className="w-3.5 h-3.5 text-zinc-500" />;
             default: return <UserIcon className="w-3.5 h-3.5 text-zinc-500" />;
@@ -202,6 +206,7 @@ export default function TopBar() {
                             activeBoardId={activeBoardId}
                             onRename={renameBoard}
                             onCreate={() => setCreateBoardOpen(true)}
+                            canCreate={isOwnerOrAdmin}
                         />
                     ) : (
                         <h1 className="text-xl font-bold text-white whitespace-nowrap drop-shadow-sm">
@@ -230,7 +235,7 @@ export default function TopBar() {
                                         </Avatar>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p>{member.name || member.email}</p>
+                                        <p>{member.name || member.email} ({member.role})</p>
                                     </TooltipContent>
                                 </Tooltip>
                             ))}
@@ -248,13 +253,13 @@ export default function TopBar() {
                         <Filter className="w-4 h-4" />
                     </Button>
 
-                    {activeProjectId && (
+                    {activeProjectId && isOwnerOrAdmin && (
                         <Button
                             onClick={() => setInviteOpen(true)}
-                            className="bg-white text-black hover:bg-white/90 h-9 gap-2"
+                            className="bg-white text-black hover:bg-white/90 h-9 gap-2 px-3 sm:px-4"
                         >
                             <Share className="w-4 h-4" />
-                            <span className="hidden sm:inline">Invite to Workspace</span>
+                            <span className="hidden [@media(min-width:900px)]:inline">Invite to Workspace</span>
                         </Button>
                     )}
 
@@ -297,7 +302,7 @@ export default function TopBar() {
                                 </div>
                             </div>
 
-                            {isOwnerOrAdmin && (
+                            {(myRoleVal >= 4 || user?.isAdmin) && (
                                 <div className="pt-4 border-t">
                                     <h4 className="text-sm font-medium text-destructive mb-2">Danger Zone</h4>
                                     <p className="text-xs text-muted-foreground mb-4">
@@ -327,7 +332,7 @@ export default function TopBar() {
                                 <Input
                                     id="email"
                                     placeholder="Email Address"
-                                    type="email"
+                                    type="text"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     autoFocus
@@ -340,9 +345,10 @@ export default function TopBar() {
                                         <SelectValue placeholder="Select role" />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="viewer">Viewer</SelectItem>
                                         <SelectItem value="member">Member</SelectItem>
                                         <SelectItem value="admin">Admin</SelectItem>
-                                        <SelectItem value="viewer">Viewer</SelectItem>
+                                        <SelectItem value="owner" disabled={myRoleVal < 4 && !user?.isAdmin}>Owner (Co-owner)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -388,62 +394,67 @@ export default function TopBar() {
                         </DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
-                        {activeMembers.map((member) => (
-                            <div key={member.id} className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-white">
-                                            {member.name ? member.name[0] : member.email[0]}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <div className="flex items-center gap-1.5">
-                                            <p className="text-sm font-medium leading-none">
-                                                {member.name}
-                                            </p>
-                                            {member.id === activeBoardOwnerId ? (
-                                                <Badge variant="outline" className="text-[10px] px-1 h-4 border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20">Owner</Badge>
-                                            ) : (
-                                                <span className="flex items-center gap-1 opacity-70">
-                                                    {getRoleIcon(member.role)}
-                                                    <span className="text-[10px] uppercase font-bold tracking-wider">{member.role}</span>
-                                                </span>
-                                            )}
+                        {activeMembers.map((member) => {
+                            const targetPrio = (activeBoardOwnerId && member.id === activeBoardOwnerId) ? 5 : (rolePriority[member.role] || 0);
+                            const canManageMember = user?.isAdmin || (myRoleVal >= 3 && myRoleVal > targetPrio && member.id !== user?.id);
+
+                            return (
+                                <div key={member.id} className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-9 w-9">
+                                            <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-white">
+                                                {member.name ? member.name[0] : member.email[0]}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <div className="flex items-center gap-1.5">
+                                                <p className="text-sm font-medium leading-none">
+                                                    {member.name}
+                                                </p>
+                                                {member.id === activeBoardOwnerId ? (
+                                                    <Badge variant="outline" className="text-[10px] px-1 h-4 border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20">Primary Owner</Badge>
+                                                ) : (
+                                                    <span className="flex items-center gap-1 opacity-70">
+                                                        {getRoleIcon(member.role)}
+                                                        <span className="text-[10px] uppercase font-bold tracking-wider">{member.role}</span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mt-1">{member.email}</p>
                                         </div>
-                                        <p className="text-xs text-muted-foreground mt-1">{member.email}</p>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2">
+                                        {canManageMember && (
+                                            <>
+                                                <Select 
+                                                    defaultValue={member.role} 
+                                                    onValueChange={(val) => handleRoleChange(member.id, val)}
+                                                >
+                                                    <SelectTrigger className="h-8 w-[100px] text-xs">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="viewer">Viewer</SelectItem>
+                                                        <SelectItem value="member">Member</SelectItem>
+                                                        <SelectItem value="admin">Admin</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                    onClick={() => handleRemoveMember(member.id)}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
-                                
-                                <div className="flex items-center gap-2">
-                                    {isOwnerOrAdmin && member.id !== user?.id && member.id !== activeBoardOwnerId && (
-                                        <>
-                                            <Select 
-                                                defaultValue={member.role} 
-                                                onValueChange={(val) => handleRoleChange(member.id, val)}
-                                            >
-                                                <SelectTrigger className="h-8 w-[100px] text-xs">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="member">Member</SelectItem>
-                                                    <SelectItem value="admin">Admin</SelectItem>
-                                                    <SelectItem value="viewer">Viewer</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                                                onClick={() => handleRemoveMember(member.id)}
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setMembersOpen(false)} className="w-full">Close</Button>

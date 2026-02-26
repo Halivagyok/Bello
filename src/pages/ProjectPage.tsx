@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore, client } from '../store';
@@ -145,7 +144,14 @@ export default function ProjectDetails() {
         }
     };
 
-    const isOwnerOrAdmin = project ? (project.ownerId === user?.id || user?.isAdmin) : false;
+    const rolePriority: Record<string, number> = { 'owner': 4, 'admin': 3, 'member': 2, 'viewer': 1 };
+    
+    // Determine my role in this project
+    const myMember = project?.members?.find(m => m.id === user?.id);
+    const myRole = myMember?.role;
+    const myRoleVal = (project?.ownerId === user?.id) ? 5 : (rolePriority[myRole || 'member'] || 0);
+
+    const isOwnerOrAdmin = myRoleVal >= 3 || user?.isAdmin;
 
     const stringToColor = (string: string) => {
         let hash = 0;
@@ -162,6 +168,7 @@ export default function ProjectDetails() {
 
     const getRoleIcon = (role: string) => {
         switch (role?.toLowerCase()) {
+            case 'owner': return <Shield className="w-3.5 h-3.5 text-amber-500" />;
             case 'admin': return <Shield className="w-3.5 h-3.5 text-blue-500" />;
             case 'viewer': return <Eye className="w-3.5 h-3.5 text-zinc-500" />;
             default: return <UserIcon className="w-3.5 h-3.5 text-zinc-500" />;
@@ -181,10 +188,11 @@ export default function ProjectDetails() {
                         variant="ghost" 
                         size="sm" 
                         onClick={() => navigate('/boards')}
-                        className="gap-2"
+                        className="gap-2 px-2 sm:px-3"
+                        title="Back to Dashboard"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Dashboard
+                        <span className="hidden sm:inline">Dashboard</span>
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">{project.title}</h1>
@@ -204,28 +212,32 @@ export default function ProjectDetails() {
                         <Users className="w-4 h-4" />
                         Members ({project.members?.length || 0})
                     </Button>
-                    <Button 
-                        size="sm" 
-                        className="gap-2"
-                        onClick={() => setInviteOpen(true)}
-                    >
-                        <UserPlus className="w-4 h-4" />
-                        Invite
-                    </Button>
+                    {isOwnerOrAdmin && (
+                        <Button 
+                            size="sm" 
+                            className="gap-2"
+                            onClick={() => setInviteOpen(true)}
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            Invite
+                        </Button>
+                    )}
                 </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {/* Create New Board Card */}
-                <Card 
-                    className="group cursor-pointer border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-all bg-muted/30"
-                    onClick={() => setOpen(true)}
-                >
-                    <CardContent className="h-[120px] p-4 flex flex-col items-center justify-center gap-2">
-                        <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                        <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">Create new board</span>
-                    </CardContent>
-                </Card>
+                {isOwnerOrAdmin && (
+                    <Card 
+                        className="group cursor-pointer border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-all bg-muted/30"
+                        onClick={() => setOpen(true)}
+                    >
+                        <CardContent className="h-[120px] p-4 flex flex-col items-center justify-center gap-2">
+                            <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                            <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">Create new board</span>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Existing Boards */}
                 {projectBoards.map(board => (
@@ -284,7 +296,7 @@ export default function ProjectDetails() {
                                 <Input
                                     id="email"
                                     placeholder="Email Address"
-                                    type="email"
+                                    type="text"
                                     value={inviteEmail}
                                     onChange={(e) => setInviteEmail(e.target.value)}
                                     autoFocus
@@ -297,9 +309,10 @@ export default function ProjectDetails() {
                                         <SelectValue placeholder="Select role" />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="viewer">Viewer</SelectItem>
                                         <SelectItem value="member">Member</SelectItem>
                                         <SelectItem value="admin">Admin</SelectItem>
-                                        <SelectItem value="viewer">Viewer</SelectItem>
+                                        <SelectItem value="owner" disabled={myRoleVal < 4 && !user?.isAdmin}>Owner (Co-owner)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -322,62 +335,78 @@ export default function ProjectDetails() {
                         </DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
-                        {project.members && project.members.map((member) => (
-                            <div key={member.id} className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-white">
-                                            {(member.name || member.email)[0].toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <div className="flex items-center gap-1.5">
-                                            <p className="text-sm font-medium leading-none">
-                                                {member.name}
-                                            </p>
-                                            {member.id === project.ownerId ? (
-                                                <Badge variant="outline" className="text-[10px] px-1 h-4 border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20">Owner</Badge>
-                                            ) : (
-                                                <span className="flex items-center gap-1 opacity-70">
-                                                    {getRoleIcon(member.role)}
-                                                    <span className="text-[10px] uppercase font-bold tracking-wider">{member.role}</span>
-                                                </span>
-                                            )}
+                        {project.members && project.members.map((member) => {
+                            const targetPrio = (project.ownerId === member.id) ? 5 : (rolePriority[member.role] || 0);
+                            const canManageMember = user?.isAdmin || (myRoleVal >= 3 && myRoleVal > targetPrio && member.id !== user?.id);
+
+                            return (
+                                <div key={member.id} className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-9 w-9">
+                                            <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-white">
+                                                {(member.name || member.email)[0].toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <div className="flex items-center gap-1.5">
+                                                <p className="text-sm font-medium leading-none">
+                                                    {member.name}
+                                                </p>
+                                                {member.id === project.ownerId ? (
+                                                    <Badge variant="outline" className="text-[10px] px-1 h-4 border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20">Primary Owner</Badge>
+                                                ) : (
+                                                    <span className="flex items-center gap-1 opacity-70">
+                                                        {getRoleIcon(member.role)}
+                                                        <span className="text-[10px] uppercase font-bold tracking-wider">{member.role}</span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mt-1">{member.email}</p>
                                         </div>
-                                        <p className="text-xs text-muted-foreground mt-1">{member.email}</p>
                                     </div>
-                                </div>
 
-                                <div className="flex items-center gap-2">
-                                    {isOwnerOrAdmin && member.id !== user?.id && member.id !== project.ownerId && (
-                                        <>
-                                            <Select 
-                                                defaultValue={member.role} 
-                                                onValueChange={(val) => handleRoleChange(member.id, val)}
-                                            >
-                                                <SelectTrigger className="h-8 w-[100px] text-xs">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="member">Member</SelectItem>
-                                                    <SelectItem value="admin">Admin</SelectItem>
-                                                    <SelectItem value="viewer">Viewer</SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                    <div className="flex items-center gap-2">
+                                        {canManageMember && (
+                                            <>
+                                                <Select 
+                                                    defaultValue={member.role} 
+                                                    onValueChange={(val) => handleRoleChange(member.id, val)}
+                                                >
+                                                    <SelectTrigger className="h-8 w-[100px] text-xs">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="viewer">Viewer</SelectItem>
+                                                        <SelectItem value="member">Member</SelectItem>
+                                                        <SelectItem value="admin">Admin</SelectItem>
+                                                        <SelectItem value="owner" disabled={myRoleVal < 4 && !user?.isAdmin}>Owner</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
 
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                    onClick={() => handleRemoveMember(member.id)}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </>
+                                        )}
+                                        {member.id === user?.id && member.id !== project.ownerId && (
                                             <Button 
                                                 variant="ghost" 
-                                                size="icon" 
-                                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                size="sm" 
+                                                className="text-red-500 text-xs h-8"
                                                 onClick={() => handleRemoveMember(member.id)}
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                Leave
                                             </Button>
-                                        </>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                         {(!project.members || project.members.length === 0) && (
                             <p className="text-center text-muted-foreground py-4 text-sm">No members found.</p>
                         )}

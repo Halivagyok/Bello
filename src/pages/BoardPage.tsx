@@ -129,20 +129,24 @@ export default function Board() {
     return (
         <div className="h-screen flex bg-gradient-to-br from-[#0079bf] to-[#5067c5] dark:from-[#0c2b4e] dark:to-[#1d546c] overflow-hidden">
             {/* Sidebar */}
-            <aside className="w-[260px] shrink-0 border-r border-white/10 bg-black/15 backdrop-blur-sm flex flex-col p-4">
-                <div className="flex items-center gap-2 mb-8 px-2">
-                    <Layout className="w-6 h-6 text-white" />
-                    <span className="text-xl font-bold text-white tracking-tight">Bello</span>
+            <aside className="w-[70px] lg:w-[260px] transition-all duration-300 shrink-0 border-r border-white/10 bg-black/15 backdrop-blur-sm flex flex-col p-3 lg:p-4">
+                <div 
+                    className="flex items-center gap-2 mb-8 px-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => navigate('/boards')}
+                >
+                    <Layout className="w-6 h-6 text-white shrink-0" />
+                    <span className="text-xl font-bold text-white tracking-tight hidden lg:block">Bello</span>
                 </div>
 
                 <nav className="space-y-1">
                     <Button
                         variant="ghost"
-                        className="w-full justify-start text-white hover:bg-white/10 gap-2 font-medium"
+                        className="w-full justify-center lg:justify-start text-white hover:bg-white/10 gap-2 font-medium px-0 lg:px-4"
                         onClick={() => navigate('/boards')}
+                        title="Back to Boards"
                     >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Boards
+                        <ArrowLeft className="w-4 h-4 shrink-0" />
+                        <span className="hidden lg:block">Back to Boards</span>
                     </Button>
                 </nav>
             </aside>

@@ -193,9 +193,9 @@ export default function AdminPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="sm" onClick={() => navigate('/boards')} className="gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/boards')} className="gap-2 px-2 sm:px-3">
                         <ArrowLeft className="w-4 h-4" />
-                        Back
+                        <span className="hidden sm:inline">Back</span>
                     </Button>
                     <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
                     <Button variant="ghost" size="icon" onClick={fetchUsers} disabled={loading} className="h-8 w-8">

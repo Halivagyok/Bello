@@ -9,7 +9,7 @@ interface CardProps {
     index: number;
 }
 
-function CardInner({ card, isDragging, toggleCardCompletion, isViewer }: { card: CardType, isDragging: boolean, toggleCardCompletion: (id: string, completed: boolean) => void, isViewer: boolean }) {
+function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify }: { card: CardType, isDragging: boolean, toggleCardCompletion: (id: string, completed: boolean) => void, isViewer: boolean, canModify: boolean }) {
     const rotate = useMotionValue(0);
     const springRotate = useSpring(rotate, { stiffness: 400, damping: 25 });
     const lastX = useRef(0);
@@ -65,7 +65,7 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer }: { card:
             <div 
                 className={`
                     shrink-0 flex justify-center items-center rounded-full border border-zinc-300 dark:border-zinc-700 size-6 transition-all mt-0.5
-                    ${isViewer ? "cursor-default" : "cursor-pointer"}
+                    ${isViewer || !canModify ? "cursor-default" : "cursor-pointer"}
                     ${card.completed 
                         ? "bg-green-600 border-green-600 text-white" 
                         : "text-transparent group-hover:text-zinc-400 dark:group-hover:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
@@ -73,7 +73,7 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer }: { card:
                 `} 
                 onClick={(e) => {
                     e.stopPropagation(); 
-                    if (!isViewer) {
+                    if (!isViewer && canModify) {
                         toggleCardCompletion(card.id, !card.completed)
                     }
                 }} 
@@ -87,10 +87,29 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer }: { card:
 
 export default function Card({ card, index }: CardProps) {
     const toggleCardCompletion = useStore(state => state.toggleCardCompletion);
-    const isViewer = useStore(state => state.currentUserRole === 'viewer');
+    const currentUserRole = useStore(state => state.currentUserRole);
+    const activeBoardOwnerId = useStore(state => state.activeBoardOwnerId);
+    const activeMembers = useStore(state => state.activeMembers);
+    const user = useStore(state => state.user);
+    const lists = useStore(state => state.lists);
+
+    const isViewer = currentUserRole === 'viewer';
+
+    const list = lists.find(l => l.id === card.listId);
+    const rolePriority: Record<string, number> = { 'owner': 4, 'admin': 3, 'member': 2, 'viewer': 1 };
+    const myRoleVal = (activeBoardOwnerId && user?.id === activeBoardOwnerId) ? 5 : (rolePriority[currentUserRole || 'member'] || 0);
+    
+    const ownerMember = activeMembers.find(m => m.id === list?.ownerId);
+    const ownerPrio = (activeBoardOwnerId && list?.ownerId === activeBoardOwnerId) ? 5 : (rolePriority[ownerMember?.role || 'member'] || 0);
+
+    const canModify = (user?.isAdmin) || 
+                      (user?.id === activeBoardOwnerId) ||
+                      (myRoleVal >= 3 && myRoleVal >= ownerPrio) || // Higher or equal to owner
+                      (list?.ownerId === user?.id) ||
+                      (!list?.ownerId);
 
     return (
-        <Draggable draggableId={card.id} index={index} isDragDisabled={isViewer}>
+        <Draggable draggableId={card.id} index={index} isDragDisabled={isViewer || !canModify}>
             {(provided, snapshot) => (
                 <div 
                     ref={provided.innerRef} 
@@ -107,6 +126,7 @@ export default function Card({ card, index }: CardProps) {
                         isDragging={snapshot.isDragging} 
                         toggleCardCompletion={toggleCardCompletion} 
                         isViewer={isViewer}
+                        canModify={canModify}
                     />
                 </div>
             )}

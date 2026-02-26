@@ -25,6 +25,13 @@ import {
     DropdownMenuSubContent,
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { 
     Plus, 
     X, 
@@ -34,9 +41,11 @@ import {
     Palette, 
     Trash2,
     Settings,
-    ArrowUpRight
+    ArrowUpRight,
+    UserCircle
 } from "lucide-react";
 import { AlertDialog } from './AlertDialog';
+import { Label } from "./ui/label";
 
 interface CardListProps {
     list: List;
@@ -52,6 +61,8 @@ export default function CardList({ list, index }: CardListProps) {
     const [openMoveCards, setOpenMoveCards] = useState(false);
     const [openDuplicate, setOpenDuplicate] = useState(false);
     const [duplicateTitle, setDuplicateTitle] = useState(`Copy of ${list.title}`);
+    const [openTransfer, setOpenTransfer] = useState(false);
+    const [targetOwnerId, setTargetOwnerId] = useState('');
 
     const addCard = useStore((state) => state.addCard);
     const updateListTitle = useStore((state) => state.updateListTitle);
@@ -59,7 +70,12 @@ export default function CardList({ list, index }: CardListProps) {
     const duplicateList = useStore((state) => state.duplicateList);
     const updateListColor = useStore((state) => state.updateListColor);
     const sortCards = useStore((state) => state.sortCards);
+    const transferListOwnership = useStore((state) => state.transferListOwnership);
     const isViewer = useStore((state) => state.currentUserRole === 'viewer');
+    const user = useStore(state => state.user);
+    const currentUserRole = useStore(state => state.currentUserRole);
+    const activeMembers = useStore(state => state.activeMembers);
+    const activeBoardOwnerId = useStore(state => state.activeBoardOwnerId);
 
     // Alert Dialog State
     const [alertDialog, setAlertDialog] = useState<{
@@ -78,14 +94,46 @@ export default function CardList({ list, index }: CardListProps) {
         setAlertDialog({ open: true, title, description, onConfirm, variant });
     };
 
+    const rolePriority: Record<string, number> = { 'owner': 4, 'admin': 3, 'member': 2, 'viewer': 1 };
+    const myRoleVal = (activeBoardOwnerId && user?.id === activeBoardOwnerId) ? 5 : (rolePriority[currentUserRole || 'member'] || 0);
+    
+    const ownerMember = activeMembers.find(m => m.id === list.ownerId);
+    const ownerPrio = (activeBoardOwnerId && list.ownerId === activeBoardOwnerId) ? 5 : (rolePriority[ownerMember?.role || 'member'] || 0);
+
+    // Permissions:
+    // 1. Board owner/System Admin can always edit
+    // 2. Board admin can always edit
+    // 3. List owner can always edit
+    // 4. Other members can only edit if their role >= owner's role
+    const canModify = (user?.isAdmin) || 
+                      (user?.id === activeBoardOwnerId) ||
+                      (myRoleVal >= 3 && myRoleVal >= ownerPrio) ||
+                      (list.ownerId === user?.id) ||
+                      (!list.ownerId);
+
+    const canTransfer = (user?.isAdmin) || 
+                        (user?.id === activeBoardOwnerId) ||
+                        (myRoleVal >= 3);
+
     const handleTitleClick = () => { 
-        if (!isViewer) setIsEditingTitle(true) 
+        if (!isViewer && canModify) setIsEditingTitle(true) 
     }
     
     const handleDuplicate = () => {
         if (duplicateTitle.trim()) {
             duplicateList(list.id, duplicateTitle);
             setOpenDuplicate(false);
+        }
+    };
+
+    const handleTransfer = async () => {
+        if (targetOwnerId) {
+            try {
+                await transferListOwnership(list.id, targetOwnerId);
+                setOpenTransfer(false);
+            } catch (e) {
+                showAlert('Error', 'Failed to transfer ownership');
+            }
         }
     };
 
@@ -99,7 +147,7 @@ export default function CardList({ list, index }: CardListProps) {
     }
 
     const handleDeleteList = () => {
-        if (isViewer) return;
+        if (isViewer || !canModify) return;
         showAlert(
             'Delete List?',
             `Are you sure you want to delete the list "${list.title}"? This will permanently remove all cards in it.`,
@@ -109,12 +157,12 @@ export default function CardList({ list, index }: CardListProps) {
     };
 
     const handleColorChange = (color: string) => {
-        if (isViewer) return;
+        if (isViewer || !canModify) return;
         updateListColor(list.id, color);
     };
 
     const handleSort = (sortBy: 'oldest' | 'newest' | 'abc' | 'checked-first' | 'checked-last') => {
-        if (isViewer) return;
+        if (isViewer || !canModify) return;
         sortCards(list.id, sortBy);
     };
 
@@ -133,7 +181,7 @@ export default function CardList({ list, index }: CardListProps) {
     const contrastColor = getContrastText(list.color);
 
     return (
-        <Draggable draggableId={list.id} index={index} isDragDisabled={isViewer}>
+        <Draggable draggableId={list.id} index={index} isDragDisabled={isViewer || !canModify}>
             {(provided) => (
                 <div
                     {...provided.draggableProps}
@@ -147,7 +195,7 @@ export default function CardList({ list, index }: CardListProps) {
                     >
                         {/* List Header */}
                         <div className="flex items-center justify-between p-3">
-                            <div className="flex-grow mr-2">
+                            <div className="flex-grow mr-2 min-w-0">
                                 {isEditingTitle ? (
                                     <Input
                                         value={title}
@@ -162,13 +210,21 @@ export default function CardList({ list, index }: CardListProps) {
                                         className="h-8 bg-white text-black border-zinc-200 focus-visible:ring-1 focus-visible:ring-primary"
                                     />
                                 ) : (
-                                    <h3
-                                        onClick={handleTitleClick}
-                                        className={`text-sm font-bold px-2 py-1.5 rounded transition-colors truncate ${isViewer ? 'cursor-default' : 'cursor-pointer hover:bg-black/5 dark:hover:bg-white/10'}`}
-                                        style={{ color: contrastColor }}
-                                    >
-                                        {list.title}
-                                    </h3>
+                                    <div>
+                                        <h3
+                                            onClick={handleTitleClick}
+                                            className={`text-sm font-bold px-2 py-1 rounded transition-colors truncate ${isViewer || !canModify ? 'cursor-default' : 'cursor-pointer hover:bg-black/5 dark:hover:bg-white/10'}`}
+                                            style={{ color: contrastColor }}
+                                        >
+                                            {list.title}
+                                        </h3>
+                                        {ownerMember && (
+                                            <div className="flex items-center gap-1 px-2 opacity-60 text-[10px] font-medium uppercase tracking-tight" style={{ color: contrastColor }}>
+                                                <UserCircle className="w-2.5 h-2.5" />
+                                                <span className="truncate">{ownerMember.name || ownerMember.email}</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                             
@@ -184,77 +240,92 @@ export default function CardList({ list, index }: CardListProps) {
                                             </button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="w-56">
-                                            <DropdownMenuItem onClick={() => {
-                                                setDuplicateTitle(`Copy of ${list.title}`);
-                                                setOpenDuplicate(true);
-                                            }} className="gap-2">
-                                                <Copy className="w-4 h-4" /> Duplicate List
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setOpenMoveList(true)} className="gap-2">
-                                                <Move className="w-4 h-4" /> Move List
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setOpenMoveCards(true)} className="gap-2">
-                                                <Move className="w-4 h-4" /> Move All Cards
-                                            </DropdownMenuItem>
-                                            
-                                            <DropdownMenuSeparator />
-                                            
-                                            <DropdownMenuSub>
-                                                <DropdownMenuSubTrigger className="gap-2">
-                                                    <SortAsc className="w-4 h-4" /> Sort cards
-                                                </DropdownMenuSubTrigger>
-                                                <DropdownMenuSubContent>
-                                                    <DropdownMenuItem onClick={() => handleSort('oldest')}>Date Created (Oldest)</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleSort('newest')}>Date Created (Newest)</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleSort('abc')}>Alphabetically</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleSort('checked-first')}>Checked First</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleSort('checked-last')}>Checked Last</DropdownMenuItem>
-                                                </DropdownMenuSubContent>
-                                            </DropdownMenuSub>
-
-                                            <DropdownMenuSub>
-                                                <DropdownMenuSubTrigger className="gap-2">
-                                                    <Palette className="w-4 h-4" /> Change color
-                                                </DropdownMenuSubTrigger>
-                                                <DropdownMenuSubContent className="p-3 w-[180px]">
-                                                    <div className="grid grid-cols-4 gap-2 mb-3">
-                                                        {[
-                                                            '#F4F5F7', // Neutral Gray (Bright)
-                                                            '#4BCE97', // Vibrant Green
-                                                            '#F5CD47', // Vibrant Yellow
-                                                            '#FEA362', // Vibrant Orange
-                                                            '#F87168', // Vibrant Red
-                                                            '#9F8FEF', // Vibrant Purple
-                                                            '#579DFF', // Vibrant Blue
-                                                            '#60C6D2', // Vibrant Teal
-                                                        ].map(color => (
-                                                            <div
-                                                                key={color}
-                                                                onClick={() => handleColorChange(color)}
-                                                                className={`w-7 h-7 rounded-md cursor-pointer border-2 transition-all hover:scale-110 active:scale-95 ${list.color === color ? 'border-primary ring-1 ring-primary shadow-sm' : 'border-transparent hover:border-zinc-300 dark:hover:border-zinc-600'}`}
-                                                                style={{ backgroundColor: color }}
-                                                                title={color}
-                                                            />
-                                                        ))}
-                                                    </div>
+                                            {canModify && (
+                                                <>
+                                                    <DropdownMenuItem onClick={() => {
+                                                        setDuplicateTitle(`Copy of ${list.title}`);
+                                                        setOpenDuplicate(true);
+                                                    }} className="gap-2">
+                                                        <Copy className="w-4 h-4" /> Duplicate List
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => setOpenMoveList(true)} className="gap-2">
+                                                        <Move className="w-4 h-4" /> Move List
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => setOpenMoveCards(true)} className="gap-2">
+                                                        <Move className="w-4 h-4" /> Move All Cards
+                                                    </DropdownMenuItem>
+                                                    
                                                     <DropdownMenuSeparator />
-                                                    <div className="flex items-center justify-between mt-3 px-1">
-                                                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Custom</span>
-                                                        <input
-                                                            type="color"
-                                                            value={list.color || '#F4F5F7'}
-                                                            onChange={(e) => handleColorChange(e.target.value)}
-                                                            className="w-8 h-8 p-0.5 border border-zinc-200 dark:border-zinc-800 bg-card cursor-pointer rounded-md transition-shadow hover:shadow-sm"
-                                                        />
-                                                    </div>
-                                                </DropdownMenuSubContent>
-                                            </DropdownMenuSub>
+                                                    
+                                                    <DropdownMenuSub>
+                                                        <DropdownMenuSubTrigger className="gap-2">
+                                                            <SortAsc className="w-4 h-4" /> Sort cards
+                                                        </DropdownMenuSubTrigger>
+                                                        <DropdownMenuSubContent>
+                                                            <DropdownMenuItem onClick={() => handleSort('oldest')}>Date Created (Oldest)</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleSort('newest')}>Date Created (Newest)</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleSort('abc')}>Alphabetically</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleSort('checked-first')}>Checked First</DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleSort('checked-last')}>Checked Last</DropdownMenuItem>
+                                                        </DropdownMenuSubContent>
+                                                    </DropdownMenuSub>
 
-                                            <DropdownMenuSeparator />
-                                            
-                                            <DropdownMenuItem onClick={handleDeleteList} className="gap-2 text-destructive focus:text-destructive">
-                                                <Trash2 className="w-4 h-4" /> Delete List
-                                            </DropdownMenuItem>
+                                                    <DropdownMenuSub>
+                                                        <DropdownMenuSubTrigger className="gap-2">
+                                                            <Palette className="w-4 h-4" /> Change color
+                                                        </DropdownMenuSubTrigger>
+                                                        <DropdownMenuSubContent className="p-3 w-[180px]">
+                                                            <div className="grid grid-cols-4 gap-2 mb-3">
+                                                                {[
+                                                                    '#F4F5F7', // Neutral Gray (Bright)
+                                                                    '#4BCE97', // Vibrant Green
+                                                                    '#F5CD47', // Vibrant Yellow
+                                                                    '#FEA362', // Vibrant Orange
+                                                                    '#F87168', // Vibrant Red
+                                                                    '#9F8FEF', // Vibrant Purple
+                                                                    '#579DFF', // Vibrant Blue
+                                                                    '#60C6D2', // Vibrant Teal
+                                                                ].map(color => (
+                                                                    <div
+                                                                        key={color}
+                                                                        onClick={() => handleColorChange(color)}
+                                                                        className={`w-7 h-7 rounded-md cursor-pointer border-2 transition-all hover:scale-110 active:scale-95 ${list.color === color ? 'border-primary ring-1 ring-primary shadow-sm' : 'border-transparent hover:border-zinc-300 dark:hover:border-zinc-600'}`}
+                                                                        style={{ backgroundColor: color }}
+                                                                        title={color}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                            <DropdownMenuSeparator />
+                                                            <div className="flex items-center justify-between mt-3 px-1">
+                                                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Custom</span>
+                                                                <input
+                                                                    type="color"
+                                                                    value={list.color || '#F4F5F7'}
+                                                                    onChange={(e) => handleColorChange(e.target.value)}
+                                                                    className="w-8 h-8 p-0.5 border border-zinc-200 dark:border-zinc-800 bg-card cursor-pointer rounded-md transition-shadow hover:shadow-sm"
+                                                                />
+                                                            </div>
+                                                        </DropdownMenuSubContent>
+                                                    </DropdownMenuSub>
+
+                                                    {canTransfer && (
+                                                        <DropdownMenuItem onClick={() => setOpenTransfer(true)} className="gap-2">
+                                                            <UserCircle className="w-4 h-4" /> Give to Someone
+                                                        </DropdownMenuItem>
+                                                    )}
+
+                                                    <DropdownMenuSeparator />
+                                                    
+                                                    <DropdownMenuItem onClick={handleDeleteList} className="gap-2 text-destructive focus:text-destructive">
+                                                        <Trash2 className="w-4 h-4" /> Delete List
+                                                    </DropdownMenuItem>
+                                                </>
+                                            )}
+                                            {!canModify && (
+                                                <DropdownMenuItem disabled>
+                                                    Insufficient permissions
+                                                </DropdownMenuItem>
+                                            )}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                     <ArrowUpRight className="w-5 h-5 opacity-40 shrink-0" style={{ color: contrastColor }} />
@@ -263,7 +334,7 @@ export default function CardList({ list, index }: CardListProps) {
                         </div>
 
                         {/* Cards Area */}
-                        <Droppable droppableId={list.id} type="card">
+                        <Droppable droppableId={list.id} type="card" isDropDisabled={isViewer || !canModify}>
                             {(provided, snapshot) => (
                                 <div
                                     ref={provided.innerRef}
@@ -281,7 +352,7 @@ export default function CardList({ list, index }: CardListProps) {
 
                         {/* Add Card Footer */}
                         <div className="p-2 mt-auto">
-                            {isAddingCard && !isViewer ? (
+                            {isAddingCard && !isViewer && canModify ? (
                                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
                                     <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-sm border border-black/5 dark:border-white/10 p-2">
                                         <Textarea
@@ -317,7 +388,7 @@ export default function CardList({ list, index }: CardListProps) {
                                         </Button>
                                     </div>
                                 </div>
-                            ) : !isViewer ? (
+                            ) : !isViewer && canModify ? (
                                 <Button
                                     variant="ghost"
                                     className="w-full justify-start gap-2 hover:bg-black/10 dark:hover:bg-white/10 text-sm font-medium h-9"
@@ -359,6 +430,41 @@ export default function CardList({ list, index }: CardListProps) {
                                 <DialogFooter>
                                     <Button type="button" variant="outline" onClick={() => setOpenDuplicate(false)}>Cancel</Button>
                                     <Button type="submit">Duplicate</Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Transfer Ownership Dialog */}
+                    <Dialog open={openTransfer} onOpenChange={(val) => !val && setOpenTransfer(false)}>
+                        <DialogContent>
+                            <form onSubmit={(e) => { e.preventDefault(); handleTransfer(); }}>
+                                <DialogHeader>
+                                    <DialogTitle>Transfer List Ownership</DialogTitle>
+                                </DialogHeader>
+                                <div className="py-4 space-y-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="target-owner">Select New Owner</Label>
+                                        <Select value={targetOwnerId} onValueChange={setTargetOwnerId}>
+                                            <SelectTrigger id="target-owner">
+                                                <SelectValue placeholder="Select a member" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {activeMembers.filter(m => m.id !== list.ownerId).map(member => (
+                                                    <SelectItem key={member.id} value={member.id}>
+                                                        {member.name || member.email} ({member.role})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground italic">
+                                        Note: Members with a lower role than the new owner will no longer be able to modify this list.
+                                    </p>
+                                </div>
+                                <DialogFooter>
+                                    <Button type="button" variant="outline" onClick={() => setOpenTransfer(false)}>Cancel</Button>
+                                    <Button type="submit" disabled={!targetOwnerId}>Transfer</Button>
                                 </DialogFooter>
                             </form>
                         </DialogContent>

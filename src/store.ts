@@ -51,6 +51,7 @@ export interface List {
     position: number;
     cards: Card[];
     boardId: string;
+    ownerId?: string;
     color?: string;
 }
 
@@ -64,7 +65,7 @@ interface BoardState {
     status: string;
     boardName: string; // Current board name
     currentUserRole: string | null;
-    activeMembers: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[];
+    activeMembers: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[]; // role: 'owner' | 'admin' | 'member' | 'viewer'
     activeBoardOwnerId?: string;
     activeProjectId: string | null;
     authLoading: boolean;
@@ -103,6 +104,7 @@ interface BoardState {
     sortCards: (listId: string, sortBy: 'oldest' | 'newest' | 'abc' | 'checked-first' | 'checked-last') => void;
     updateListColor: (listId: string, color: string) => void;
     moveListToBoard: (listId: string, boardId: string) => void;
+    transferListOwnership: (listId: string, userId: string) => Promise<void>;
     moveList: (fromIndex: number, toIndex: number) => void;
     moveCard: (
         sourceListId: string,
@@ -822,6 +824,17 @@ export const useStore = create<BoardState>((set, get) => ({
         } catch (e) {
             set({ lists: oldLists });
             console.error('Move to Board Error', e);
+        }
+    },
+
+    transferListOwnership: async (listId, userId) => {
+        try {
+            const { error } = await client.lists[listId].owner.patch({ ownerId: userId });
+            if (error) throw error;
+            get().fetchBoard(get().activeBoardId!, true);
+        } catch (e) {
+            console.error('Transfer Ownership failed:', e);
+            throw e;
         }
     },
 
