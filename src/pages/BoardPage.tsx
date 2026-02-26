@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { useStore } from '../store';
 import TopBar from '../components/TopBar';
@@ -26,6 +26,7 @@ export default function Board() {
     const boards = useStore((state) => state.boards);
     const projectBoardPage = useStore((state) => state.projectBoardPage);
     const setProjectBoardPage = useStore((state) => state.setProjectBoardPage);
+    const isViewer = useStore((state) => state.currentUserRole === 'viewer');
 
     const prevBoardIdRef = useRef<string | null>(null);
 
@@ -171,15 +172,17 @@ export default function Board() {
                             )}
                         </Droppable>
 
-                        <div className="w-[280px] shrink-0">
-                            <Button
-                                onClick={() => addList("New List")}
-                                className="w-full justify-start bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-md h-auto py-3 px-4 font-medium"
-                            >
-                                <Plus className="w-5 h-5 mr-2" />
-                                Add another list
-                            </Button>
-                        </div>
+                        {!isViewer && (
+                            <div className="w-[280px] shrink-0">
+                                <Button
+                                    onClick={() => addList("New List")}
+                                    className="w-full justify-start bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-md h-auto py-3 px-4 font-medium"
+                                >
+                                    <Plus className="w-5 h-5 mr-2" />
+                                    Add another list
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </main>
             </DragDropContext>

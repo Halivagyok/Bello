@@ -5,6 +5,8 @@ import { useStore, client } from '../store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import {
     Dialog,
     DialogContent,
@@ -16,14 +18,25 @@ import {
     Avatar,
     AvatarFallback,
 } from "@/components/ui/avatar"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { 
     ArrowLeft, 
     Users, 
     Trash2, 
     UserPlus,
     Plus,
-    Layout
+    Layout,
+    Shield,
+    User as UserIcon,
+    Eye
 } from 'lucide-react';
+import { AlertDialog } from '../components/AlertDialog';
 
 export default function ProjectDetails() {
     const { projectId } = useParams();
@@ -45,7 +58,25 @@ export default function ProjectDetails() {
     const [membersOpen, setMembersOpen] = useState(false);
     const [inviteOpen, setInviteOpen] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteRole, setInviteRole] = useState('member');
     const [newTitle, setNewTitle] = useState('');
+
+    // Alert Dialog States
+    const [alertDialog, setAlertDialog] = useState<{
+        open: boolean,
+        title: string,
+        description: string,
+        onConfirm?: () => void,
+        variant?: 'default' | 'destructive'
+    }>({
+        open: false,
+        title: '',
+        description: ''
+    });
+
+    const showAlert = (title: string, description: string, onConfirm?: () => void, variant: 'default' | 'destructive' = 'default') => {
+        setAlertDialog({ open: true, title, description, onConfirm, variant });
+    };
 
     useEffect(() => {
         fetchBoards();
@@ -74,25 +105,43 @@ export default function ProjectDetails() {
 
     const handleRemoveMember = async (userId: string) => {
         if (!projectId) return;
-        if (!confirm('Remove user from project?')) return;
-        try {
-            await client.projects[projectId].members[userId].delete();
-            fetchProject(projectId);
-        } catch (e) {
-            alert('Failed to remove member');
-        }
+        showAlert(
+            'Remove Member?',
+            'Are you sure you want to remove this user from the project?',
+            async () => {
+                try {
+                    await client.projects[projectId].members[userId].delete();
+                    fetchProject(projectId);
+                } catch (e) {
+                    showAlert('Error', 'Failed to remove member');
+                }
+            },
+            'destructive'
+        );
     };
 
     const handleInvite = async () => {
         if (!projectId || !inviteEmail) return;
         try {
-            await inviteUserToProject(projectId, inviteEmail);
-            alert('User invited successfully');
+            await inviteUserToProject(projectId, inviteEmail, inviteRole);
             setInviteEmail('');
+            setInviteRole('member');
             setInviteOpen(false);
             fetchProject(projectId);
+            showAlert('Success', 'User invited successfully');
         } catch (e) {
-            alert('Failed to invite user');
+            showAlert('Error', 'Failed to invite user');
+        }
+    };
+
+    const handleRoleChange = async (userId: string, newRole: string) => {
+        if (!projectId) return;
+        try {
+            const { error } = await client.projects[projectId].members[userId].patch({ role: newRole });
+            if (error) throw error;
+            fetchProject(projectId);
+        } catch (e) {
+            showAlert('Error', 'Failed to update member role');
         }
     };
 
@@ -109,6 +158,14 @@ export default function ProjectDetails() {
             color += `00${value.toString(16)}`.slice(-2);
         }
         return color;
+    };
+
+    const getRoleIcon = (role: string) => {
+        switch (role?.toLowerCase()) {
+            case 'admin': return <Shield className="w-3.5 h-3.5 text-blue-500" />;
+            case 'viewer': return <Eye className="w-3.5 h-3.5 text-zinc-500" />;
+            default: return <UserIcon className="w-3.5 h-3.5 text-zinc-500" />;
+        }
     };
 
     if (!project) {
@@ -194,43 +251,64 @@ export default function ProjectDetails() {
             {/* Create Board Dialog */}
             <Dialog open={open} onOpenChange={(val) => !val && (setOpen(false), setNewTitle(''))}>
                 <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Create Board in {project.title}</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Input
-                            placeholder="Board Title"
-                            value={newTitle}
-                            onChange={(e) => setNewTitle(e.target.value)}
-                            autoFocus
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                        <Button onClick={handleCreateBoard}>Create</Button>
-                    </DialogFooter>
+                    <form onSubmit={(e) => { e.preventDefault(); handleCreateBoard(); }}>
+                        <DialogHeader>
+                            <DialogTitle>Create Board in {project.title}</DialogTitle>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <Input
+                                placeholder="Board Title"
+                                value={newTitle}
+                                onChange={(e) => setNewTitle(e.target.value)}
+                                autoFocus
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                            <Button type="submit">Create</Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 
             {/* Invite Dialog */}
-            <Dialog open={inviteOpen} onOpenChange={(val) => !val && (setInviteOpen(false), setInviteEmail(''))}>
+            <Dialog open={inviteOpen} onOpenChange={(val) => !val && (setInviteOpen(false), setInviteEmail(''), setInviteRole('member'))}>
                 <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Invite to Project</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Input
-                            placeholder="Email Address"
-                            type="email"
-                            value={inviteEmail}
-                            onChange={(e) => setInviteEmail(e.target.value)}
-                            autoFocus
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setInviteOpen(false)}>Cancel</Button>
-                        <Button onClick={handleInvite}>Invite</Button>
-                    </DialogFooter>
+                    <form onSubmit={(e) => { e.preventDefault(); handleInvite(); }}>
+                        <DialogHeader>
+                            <DialogTitle>Invite to Project</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email Address</Label>
+                                <Input
+                                    id="email"
+                                    placeholder="Email Address"
+                                    type="email"
+                                    value={inviteEmail}
+                                    onChange={(e) => setInviteEmail(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="role">Role</Label>
+                                <Select value={inviteRole} onValueChange={setInviteRole}>
+                                    <SelectTrigger id="role">
+                                        <SelectValue placeholder="Select role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="member">Member</SelectItem>
+                                        <SelectItem value="admin">Admin</SelectItem>
+                                        <SelectItem value="viewer">Viewer</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setInviteOpen(false)}>Cancel</Button>
+                            <Button type="submit">Invite</Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 
@@ -253,23 +331,51 @@ export default function ProjectDetails() {
                                         </AvatarFallback>
                                     </Avatar>
                                     <div>
-                                        <p className="text-sm font-medium leading-none">
-                                            {member.name} {member.id === project.ownerId && <span className="text-xs text-muted-foreground ml-1">(Owner)</span>}
-                                            {member.isAdmin && <span className="text-xs text-muted-foreground ml-1">(Admin)</span>}
-                                        </p>
+                                        <div className="flex items-center gap-1.5">
+                                            <p className="text-sm font-medium leading-none">
+                                                {member.name}
+                                            </p>
+                                            {member.id === project.ownerId ? (
+                                                <Badge variant="outline" className="text-[10px] px-1 h-4 border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20">Owner</Badge>
+                                            ) : (
+                                                <span className="flex items-center gap-1 opacity-70">
+                                                    {getRoleIcon(member.role)}
+                                                    <span className="text-[10px] uppercase font-bold tracking-wider">{member.role}</span>
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className="text-xs text-muted-foreground mt-1">{member.email}</p>
                                     </div>
                                 </div>
-                                {isOwnerOrAdmin && member.id !== user?.id && member.id !== project.ownerId && (
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                                        onClick={() => handleRemoveMember(member.id)}
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                )}
+
+                                <div className="flex items-center gap-2">
+                                    {isOwnerOrAdmin && member.id !== user?.id && member.id !== project.ownerId && (
+                                        <>
+                                            <Select 
+                                                defaultValue={member.role} 
+                                                onValueChange={(val) => handleRoleChange(member.id, val)}
+                                            >
+                                                <SelectTrigger className="h-8 w-[100px] text-xs">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="member">Member</SelectItem>
+                                                    <SelectItem value="admin">Admin</SelectItem>
+                                                    <SelectItem value="viewer">Viewer</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                onClick={() => handleRemoveMember(member.id)}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         ))}
                         {(!project.members || project.members.length === 0) && (
@@ -281,6 +387,15 @@ export default function ProjectDetails() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog 
+                open={alertDialog.open}
+                onClose={() => setAlertDialog(prev => ({ ...prev, open: false }))}
+                title={alertDialog.title}
+                description={alertDialog.description}
+                onConfirm={alertDialog.onConfirm}
+                variant={alertDialog.variant}
+            />
         </div>
     );
 }

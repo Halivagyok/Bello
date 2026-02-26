@@ -18,12 +18,7 @@ export default function SharedBoards() {
     };
 
     return (
-        <section className="mb-10">
-            <div className="flex items-center gap-2 mb-4">
-                <Users className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-bold tracking-tight">Boards shared with me</h2>
-            </div>
-
+        <section>
             {sharedBoards.length === 0 ? (
                 <p className="text-muted-foreground text-sm py-8 text-center border-2 border-dashed rounded-xl">
                     No shared boards yet.

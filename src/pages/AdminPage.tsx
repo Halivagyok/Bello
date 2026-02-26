@@ -24,13 +24,12 @@ import {
     RefreshCw, 
     Edit2, 
     Eye, 
-    ShieldAlert, 
-    CheckCircle, 
     Trash2,
     Ban,
     UserCheck,
     Users
 } from 'lucide-react';
+import { AlertDialog } from '../components/AlertDialog';
 
 interface AdminUser {
     id: string;
@@ -58,15 +57,21 @@ export default function AdminPage() {
     const [userAccess, setUserAccess] = useState<{ projects: any[], boards: any[] }>({ projects: [], boards: [] });
     const [accessLoading, setAccessLoading] = useState(false);
 
-    // Confirm Dialog
-    const [confirmOpen, setConfirmOpen] = useState(false);
-    const [confirmMessage, setConfirmMessage] = useState('');
-    const [onConfirm, setOnConfirm] = useState<() => void>(() => {});
+    // Alert Dialog States
+    const [alertDialog, setAlertDialog] = useState<{
+        open: boolean,
+        title: string,
+        description: string,
+        onConfirm?: () => void,
+        variant?: 'default' | 'destructive'
+    }>({
+        open: false,
+        title: '',
+        description: ''
+    });
 
-    const handleConfirmAction = (message: string, action: () => void) => {
-        setConfirmMessage(message);
-        setOnConfirm(() => action);
-        setConfirmOpen(true);
+    const showAlert = (title: string, description: string, onConfirm?: () => void, variant: 'default' | 'destructive' = 'default') => {
+        setAlertDialog({ open: true, title, description, onConfirm, variant });
     };
 
     const user = useStore(state => state.user);
@@ -87,7 +92,7 @@ export default function AdminPage() {
             const { data, error } = await client.admin.users.get();
             if (error) {
                 console.error(error);
-                alert('Failed to fetch users');
+                showAlert('Error', 'Failed to fetch users');
             } else if (data) {
                 setUsers(data as AdminUser[]);
             }
@@ -108,7 +113,7 @@ export default function AdminPage() {
                 fetchUsers();
             }
         } catch (e) {
-            alert('Failed to ban/unban user');
+            showAlert('Error', 'Failed to ban/unban user');
             console.error(e);
         }
     };
@@ -127,7 +132,7 @@ export default function AdminPage() {
             setUsers(users.map(u => u.id === selectedUser.id ? { ...u, name: newName } : u));
             setEditOpen(false);
         } catch (e) {
-            alert('Failed to update name');
+            showAlert('Error', 'Failed to update user name');
         }
     };
 
@@ -142,7 +147,7 @@ export default function AdminPage() {
                 setUserAccess(data);
             }
         } catch (e) {
-            alert('Failed to fetch access details');
+            showAlert('Error', 'Failed to fetch access details');
         } finally {
             setAccessLoading(false);
         }
@@ -150,7 +155,7 @@ export default function AdminPage() {
 
     const removeProject = async (projectId: string) => {
         if (!selectedUser) return;
-        handleConfirmAction('Are you sure you want to remove the user from this project?', async () => {
+        showAlert('Confirm Action', 'Are you sure you want to remove the user from this project?', async () => {
             try {
                 const { error } = await client.admin.users[selectedUser.id].projects[projectId].delete();
                 if (error) throw error;
@@ -160,14 +165,14 @@ export default function AdminPage() {
                 }));
                 setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, projectsCount: u.projectsCount - 1 } : u));
             } catch (e) {
-                alert('Failed to remove from project');
+                showAlert('Error', 'Failed to remove from project');
             }
-        });
+        }, 'destructive');
     };
 
     const removeBoard = async (boardId: string) => {
         if (!selectedUser) return;
-        handleConfirmAction('Are you sure you want to remove the user from this board?', async () => {
+        showAlert('Confirm Action', 'Are you sure you want to remove the user from this board?', async () => {
             try {
                 const { error } = await client.admin.users[selectedUser.id].boards[boardId].delete();
                 if (error) throw error;
@@ -177,9 +182,9 @@ export default function AdminPage() {
                 }));
                 setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, boardsCount: u.boardsCount - 1 } : u));
             } catch (e) {
-                alert('Failed to remove from board');
+                showAlert('Error', 'Failed to remove from board');
             }
-        });
+        }, 'destructive');
     };
 
     if (loading) return <div className="p-8 text-center text-muted-foreground">Loading Users...</div>;
@@ -257,24 +262,26 @@ export default function AdminPage() {
             {/* Edit Name Dialog */}
             <Dialog open={editOpen} onOpenChange={(val) => !val && setEditOpen(false)}>
                 <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Edit User Name</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="name">Name</Label>
-                            <Input
-                                id="name"
-                                value={newName}
-                                onChange={(e) => setNewName(e.target.value)}
-                                autoFocus
-                            />
+                    <form onSubmit={(e) => { e.preventDefault(); saveName(); }}>
+                        <DialogHeader>
+                            <DialogTitle>Edit User Name</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="name">Name</Label>
+                                <Input
+                                    id="name"
+                                    value={newName}
+                                    onChange={(e) => setNewName(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-                        <Button onClick={saveName}>Save</Button>
-                    </DialogFooter>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+                            <Button type="submit">Save</Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 
@@ -362,27 +369,14 @@ export default function AdminPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Confirm Dialog */}
-            <Dialog open={confirmOpen} onOpenChange={(val) => !val && setConfirmOpen(false)}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-destructive">
-                            <ShieldAlert className="w-5 h-5" />
-                            Confirm Action
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <p className="text-sm text-muted-foreground">{confirmMessage}</p>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
-                        <Button variant="destructive" onClick={() => {
-                            onConfirm();
-                            setConfirmOpen(false);
-                        }}>Confirm</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <AlertDialog 
+                open={alertDialog.open}
+                onClose={() => setAlertDialog(prev => ({ ...prev, open: false }))}
+                title={alertDialog.title}
+                description={alertDialog.description}
+                onConfirm={alertDialog.onConfirm}
+                variant={alertDialog.variant}
+            />
         </div>
     );
 }

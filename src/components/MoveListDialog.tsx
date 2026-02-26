@@ -117,65 +117,67 @@ export default function MoveListDialog({ open, onClose, listId }: MoveListDialog
     return (
         <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>Move List</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="board">Board</Label>
-                        <Select value={targetBoardId} onValueChange={setTargetBoardId}>
-                            <SelectTrigger id="board">
-                                <SelectValue placeholder="Select a board" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {groupedBoards.noProjectBoards.length > 0 && (
-                                    <SelectGroup>
-                                        <SelectLabel>Personal Boards</SelectLabel>
-                                        {groupedBoards.noProjectBoards.map(board => (
-                                            <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                )}
-
-                                {Object.entries(groupedBoards.groups).map(([projectId, projectBoards]) => {
-                                    const project = projects.find(p => p.id === projectId);
-                                    return (
-                                        <SelectGroup key={projectId}>
-                                            <SelectLabel>{project?.title || 'Unknown Project'}</SelectLabel>
-                                            {projectBoards.map(board => (
+                <form onSubmit={(e) => { e.preventDefault(); handleMove(); }}>
+                    <DialogHeader>
+                        <DialogTitle>Move List</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="board">Board</Label>
+                            <Select value={targetBoardId} onValueChange={setTargetBoardId}>
+                                <SelectTrigger id="board">
+                                    <SelectValue placeholder="Select a board" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {groupedBoards.noProjectBoards.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>Personal Boards</SelectLabel>
+                                            {groupedBoards.noProjectBoards.map(board => (
                                                 <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
                                             ))}
                                         </SelectGroup>
-                                    );
-                                })}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                                    )}
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="position">Position</Label>
-                        <Select 
-                            value={targetPosition.toString()} 
-                            onValueChange={(val) => setTargetPosition(parseInt(val))}
-                            disabled={loadingPositions}
-                        >
-                            <SelectTrigger id="position">
-                                <SelectValue placeholder="Select position" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {Array.from({ length: targetLists.length + 1 }, (_, i) => i + 1).map(pos => (
-                                    <SelectItem key={pos} value={pos.toString()}>{pos}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                                    {Object.entries(groupedBoards.groups).map(([projectId, projectBoards]) => {
+                                        const project = projects.find(p => p.id === projectId);
+                                        return (
+                                            <SelectGroup key={projectId}>
+                                                <SelectLabel>{project?.title || 'Unknown Project'}</SelectLabel>
+                                                {projectBoards.map(board => (
+                                                    <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="position">Position</Label>
+                            <Select 
+                                value={targetPosition.toString()} 
+                                onValueChange={(val) => setTargetPosition(parseInt(val))}
+                                disabled={loadingPositions}
+                            >
+                                <SelectTrigger id="position">
+                                    <SelectValue placeholder="Select position" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Array.from({ length: targetLists.length + 1 }, (_, i) => i + 1).map(pos => (
+                                        <SelectItem key={pos} value={pos.toString()}>{pos}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleMove} disabled={!targetBoardId}>
-                        Move
-                    </Button>
-                </DialogFooter>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                        <Button type="submit" disabled={!targetBoardId}>
+                            Move
+                        </Button>
+                    </DialogFooter>
+                </form>
             </DialogContent>
         </Dialog>
     );

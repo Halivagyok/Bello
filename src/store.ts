@@ -63,6 +63,7 @@ interface BoardState {
     lists: List[];
     status: string;
     boardName: string; // Current board name
+    currentUserRole: string | null;
     activeMembers: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[];
     activeBoardOwnerId?: string;
     activeProjectId: string | null;
@@ -88,7 +89,8 @@ interface BoardState {
     fetchBoards: () => Promise<void>;
     createBoard: (title: string, projectId?: string) => Promise<Board | null>;
     fetchBoard: (boardId: string, silent?: boolean) => Promise<void>;
-    inviteUser: (email: string) => Promise<void>;
+    deleteBoard: (boardId: string) => Promise<void>;
+    updateMemberRole: (userId: string, role: string) => Promise<void>;
 
     // Data Actions
     fetchData: () => Promise<void>;
@@ -98,7 +100,7 @@ interface BoardState {
     deleteList: (listId: string) => void;
     duplicateList: (listId: string, title?: string) => Promise<void>;
     moveAllCards: (sourceListId: string, targetListId: string) => void;
-    sortCards: (listId: string, sortBy: 'oldest' | 'newest' | 'abc') => void;
+    sortCards: (listId: string, sortBy: 'oldest' | 'newest' | 'abc' | 'checked-first' | 'checked-last') => void;
     updateListColor: (listId: string, color: string) => void;
     moveListToBoard: (listId: string, boardId: string) => void;
     moveList: (fromIndex: number, toIndex: number) => void;
@@ -116,7 +118,7 @@ interface BoardState {
     fetchProject: (projectId: string) => Promise<void>;
     createProject: (title: string, description?: string) => Promise<void>;
     projectBoardPage: number;
-    inviteUserToProject: (projectId: string, email: string) => Promise<void>;
+    inviteUserToProject: (projectId: string, email: string, role?: string) => Promise<void>;
     assignBoardToProject: (boardId: string, projectId: string) => Promise<void>;
     reorderProjectBoards: (projectId: string, newBoardIds: string[]) => Promise<void>;
     renameBoard: (boardId: string, title: string) => Promise<void>;
@@ -134,6 +136,7 @@ export const useStore = create<BoardState>((set, get) => ({
     lists: [],
     status: 'Connecting...',
     boardName: 'Loading...',
+    currentUserRole: null,
     activeMembers: [],
     authLoading: true,
     socket: null,
@@ -193,7 +196,7 @@ export const useStore = create<BoardState>((set, get) => ({
                         get().fetchBoard(activeId, true).catch(() => {
                             // If fetch fails (e.g. 403 Forbidden because removed), redirect
                             console.log("Access lost or board deleted");
-                            set({ activeBoardId: null, lists: [], activeMembers: [] });
+                            set({ activeBoardId: null, lists: [], activeMembers: [], currentUserRole: null });
                             get().navigateToBoards();
                         });
                     }
@@ -353,7 +356,7 @@ export const useStore = create<BoardState>((set, get) => ({
         } catch (e) {
             console.error('Logout failed:', e);
         }
-        set({ user: null, activeBoardId: null, lists: [], boards: [], projects: [], recentBoards: [], boardName: 'Loading...' });
+        set({ user: null, activeBoardId: null, lists: [], boards: [], projects: [], recentBoards: [], boardName: 'Loading...', currentUserRole: null });
     },
 
     fetchBoards: async () => {
@@ -392,13 +395,12 @@ export const useStore = create<BoardState>((set, get) => ({
             if (data) {
                 const newBoard = data as Board;
                 set(state => ({
-                    boards: [...state.boards, newBoard],
-                    projects: state.projects.map(p =>
-                        p.id === projectId
-                            ? { ...p, boardIds: [...(p.boardIds || []), newBoard.id] }
-                            : p
-                    )
+                    boards: [...state.boards, newBoard]
                 }));
+                // If board belongs to a project, refresh that project to sync boardIds
+                if (projectId) {
+                    get().fetchProjects();
+                }
                 return newBoard;
             }
         } catch (e: any) {
@@ -410,7 +412,7 @@ export const useStore = create<BoardState>((set, get) => ({
 
     fetchBoard: async (boardId, silent = false) => {
         if (!silent) {
-            set({ activeBoardId: boardId, boardName: 'Loading...', lists: [], activeMembers: [] });
+            set({ activeBoardId: boardId, boardName: 'Loading...', lists: [], activeMembers: [], currentUserRole: null });
             // Update recently viewed
             get().updateRecentBoards(boardId);
             // Connect/Subscribe
@@ -422,12 +424,19 @@ export const useStore = create<BoardState>((set, get) => ({
             const { data, error } = await client.boards[boardId].get();
             if (error) throw error;
             if (data) {
+                // Ensure cards in each list are sorted by position
+                const processedLists = (data.lists as List[]).map(list => ({
+                    ...list,
+                    cards: [...list.cards].sort((a, b) => a.position - b.position)
+                }));
+
                 set({
-                    lists: data.lists as List[],
+                    lists: processedLists,
                     boardName: data.title,
-                    activeMembers: data.members, // Now we set this!
+                    activeMembers: data.members,
                     activeBoardOwnerId: data.ownerId,
-                    activeProjectId: data.projectId // Set activeProjectId
+                    activeProjectId: data.projectId,
+                    currentUserRole: data.role
                 });
 
                 if (data.projectId) {
@@ -447,11 +456,36 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
-    inviteUser: async (email) => {
+    deleteBoard: async (boardId: string) => {
+        try {
+            await client.boards[boardId].delete();
+            set(state => ({
+                boards: state.boards.filter(b => b.id !== boardId),
+                recentBoards: state.recentBoards.filter(b => b.id !== boardId)
+            }));
+            
+            // If deleting the active board, navigate away
+            if (get().activeBoardId === boardId) {
+                set({ activeBoardId: null, lists: [], activeMembers: [], currentUserRole: null });
+                get().navigateToBoards();
+            }
+        } catch (e) {
+            console.error('Delete Board failed:', e);
+        }
+    },
+
+    updateMemberRole: async (userId: string, role: string) => {
         const boardId = get().activeBoardId;
         if (!boardId) return;
-        const { error } = await client.boards[boardId].invite.post({ email });
-        if (error) throw new Error(error.value as any);
+        try {
+            const { error } = await client.boards[boardId].members[userId].patch({ role });
+            if (error) throw error;
+            // Optionally fetch board to update members list
+            get().fetchBoard(boardId, true);
+        } catch (e) {
+            console.error('Update Member Role failed:', e);
+            throw e;
+        }
     },
 
     fetchData: async () => {
@@ -707,28 +741,61 @@ export const useStore = create<BoardState>((set, get) => ({
     },
 
     sortCards: async (listId, sortBy) => {
+        const oldLists = get().lists;
+
         // Optimistic Sort
+        let updatedCards: Card[] = [];
         set(state => {
-            const listFn = (l: List) => {
-                if (l.id !== listId) return l;
-                const newCards = [...l.cards];
-                // Note: we might not have createdAt in frontend Card type, 
-                // store.ts Card interface might need update if we want purely local optimistic sort,
-                // but assuming backend does the heavy lifting, we might just wait or fuzzy sort.
-                // let's rely on backend for correct sort, but we can try basic ABC optimistically.
-                if (sortBy === 'abc') {
-                    newCards.sort((a, b) => a.content.localeCompare(b.content));
-                }
-                return { ...l, cards: newCards };
+            const list = state.lists.find(l => l.id === listId);
+            if (!list) return state;
+
+            const sortedCards = [...list.cards];
+            const isDone = (c: Card) => !!c.completed;
+
+            if (sortBy === 'abc') {
+                sortedCards.sort((a, b) => a.content.localeCompare(b.content));
+            } else if (sortBy === 'checked-first') {
+                sortedCards.sort((a, b) => {
+                    const aDone = isDone(a);
+                    const bDone = isDone(b);
+                    if (aDone !== bDone) return aDone ? -1 : 1;
+                    return a.position - b.position;
+                });
+            } else if (sortBy === 'checked-last') {
+                sortedCards.sort((a, b) => {
+                    const aDone = isDone(a);
+                    const bDone = isDone(b);
+                    if (aDone !== bDone) return aDone ? 1 : -1;
+                    return a.position - b.position;
+                });
+            }
+
+            // Re-assign positions locally
+            updatedCards = sortedCards.map((card, index) => ({
+                ...card,
+                position: (index + 1) * 1000
+            }));
+
+            return { 
+                lists: state.lists.map(l => l.id === listId ? { ...l, cards: updatedCards } : l) 
             };
-            return { lists: state.lists.map(listFn) }
         });
 
         try {
+            // 1. First notify backend about the sort mode (if backend supports it)
             await client.lists[listId].sort.post({ sortBy });
-            get().fetchBoard(get().activeBoardId!, true); // Refresh to be safe IDs/Positions
+            
+            // 2. IMPORTANT: Manually sync positions for all cards to ensure persistence
+            // This prevents the backend from using old positions when the next fetchBoard occurs.
+            // We do this in parallel to be faster
+            await Promise.all(updatedCards.map(card => 
+                client.cards[card.id].patch({ position: card.position })
+            ));
+
         } catch (e) {
             console.error('Sort Error', e);
+            set({ lists: oldLists });
+            get().fetchBoard(get().activeBoardId!, true);
         }
     },
 
@@ -820,9 +887,9 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
-    inviteUserToProject: async (projectId, email) => {
+    inviteUserToProject: async (projectId, email, role) => {
         try {
-            const { error } = await client.projects[projectId].invite.post({ email });
+            const { error } = await client.projects[projectId].invite.post({ email, role });
             if (error) throw error;
         } catch (e) {
             console.error('Invite to project failed:', e);
