@@ -3,7 +3,7 @@ import { useStore } from '../../store';
 import { useNavigate } from 'react-router-dom';
 import ProjectDialog from '../ProjectDialog';
 import { Card, CardContent } from "@/components/ui/card"
-import { FolderKanban, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 export default function ProjectList() {
     const projects = useStore(state => state.projects);

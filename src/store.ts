@@ -14,7 +14,8 @@ export const client = edenTreaty<any>(API_URL, {
 export interface User {
     id: string;
     email: string;
-    name: string;
+    name?: string;
+    avatarUrl?: string | null;
     isAdmin?: boolean;
     isBanned?: boolean;
 }
@@ -37,9 +38,25 @@ export interface Project {
     members?: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[];
 }
 
+export interface UserImage {
+    id: string;
+    filename: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    createdAt: Date;
+}
+
 export interface Card {
     id: string;
     content: string;
+    description?: string | null;
+    dueDate?: number | string | Date | null;
+    dueDateMode?: 'full' | 'date-only' | 'time-only' | null;
+    imageUrl?: string | null;
+    location?: string | null;
+    locationLat?: number | null;
+    locationLng?: number | null;
     listId: string;
     position: number;
     completed?: boolean;
@@ -62,6 +79,7 @@ interface BoardState {
     recentBoards: Board[];
     activeBoardId: string | null;
     lists: List[];
+    userImages: UserImage[];
     status: string;
     boardName: string; // Current board name
     currentUserRole: string | null;
@@ -112,6 +130,7 @@ interface BoardState {
         sourceIndex: number,
         destIndex: number
     ) => void;
+    updateCard: (cardId: string, updates: Partial<Card>) => Promise<void>;
     toggleCardCompletion: (cardId: string, completed: boolean) => void;
     checkBackend: () => Promise<void>;
 
@@ -126,6 +145,15 @@ interface BoardState {
     renameBoard: (boardId: string, title: string) => Promise<void>;
     updateRecentBoards: (boardId: string) => void;
     setProjectBoardPage: (page: number) => void;
+
+    // User Actions
+    updateUser: (updates: Partial<User>) => Promise<void>;
+    changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+
+    // Image Actions
+    fetchUserImages: () => Promise<void>;
+    uploadImage: (file: File) => Promise<UserImage | null>;
+    deleteImage: (imageId: string) => Promise<void>;
 }
 
 // 3. Create Store
@@ -136,6 +164,7 @@ export const useStore = create<BoardState>((set, get) => ({
     recentBoards: [],
     activeBoardId: null,
     lists: [],
+    userImages: [],
     status: 'Connecting...',
     boardName: 'Loading...',
     currentUserRole: null,
@@ -150,6 +179,32 @@ export const useStore = create<BoardState>((set, get) => ({
 
     setProjectBoardPage: (page: number) => set({ projectBoardPage: page }),
 
+    updateUser: async (updates: Partial<User>) => {
+        try {
+            const { data } = await client.auth.me.patch(updates);
+            if (data?.user) {
+                set({ user: data.user });
+                // Also refresh boards to see name updates if any
+                get().fetchBoards();
+                get().fetchProjects();
+            }
+        } catch (e) {
+            console.error('Update User Error', e);
+        }
+    },
+
+    changePassword: async (currentPassword, newPassword) => {
+        try {
+            const { error } = await client.auth.password.patch({ currentPassword, newPassword });
+            if (error) {
+                return { success: false, error: (error as any).value?.error || 'Failed to change password' };
+            }
+            return { success: true };
+        } catch (e) {
+            console.error('Change Password Error', e);
+            return { success: false, error: 'Network error' };
+        }
+    },
 
     // Helper for navigation
     navigateToBoards: () => {
@@ -679,6 +734,28 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
+    updateCard: async (cardId, updates) => {
+        const oldLists = get().lists;
+
+        // Optimistic Update
+        set(state => ({
+            lists: state.lists.map(list => ({
+                ...list,
+                cards: list.cards.map(card =>
+                    card.id === cardId ? { ...card, ...updates } : card
+                )
+            }))
+        }));
+
+        try {
+            await client.cards[cardId].patch(updates);
+        } catch (e) {
+            set({ lists: oldLists });
+            console.error('Update Card failed:', e);
+            throw e;
+        }
+    },
+
     toggleCardCompletion: async (cardId, completed) => {
         const oldLists = get().lists;
 
@@ -988,5 +1065,36 @@ export const useStore = create<BoardState>((set, get) => ({
             .slice(0, 4);
 
         set({ recentBoards });
+    },
+
+    fetchUserImages: async () => {
+        try {
+            const { data } = await client.images.get();
+            if (data) set({ userImages: data });
+        } catch (e) {
+            console.error('Fetch Images Error', e);
+        }
+    },
+
+    uploadImage: async (file: File) => {
+        try {
+            const { data } = await client.images.post({ file });
+            if (data) {
+                set(state => ({ userImages: [data, ...state.userImages] }));
+                return data;
+            }
+        } catch (e) {
+            console.error('Upload Image Error', e);
+        }
+        return null;
+    },
+
+    deleteImage: async (imageId: string) => {
+        try {
+            await client.images[imageId].delete();
+            set(state => ({ userImages: state.userImages.filter(img => img.id !== imageId) }));
+        } catch (e) {
+            console.error('Delete Image Error', e);
+        }
     }
 }));

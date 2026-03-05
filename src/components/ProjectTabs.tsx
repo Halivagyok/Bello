@@ -92,7 +92,7 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate,
                 }
             }}
             className={`
-                min-w-[120px] max-w-[160px] flex-none h-9 px-3 rounded-lg flex items-center cursor-pointer transition-all relative group outline-none focus-visible:ring-2 focus-visible:ring-white/50
+                min-w-[120px] max-w-[160px]  flex-none h-9 px-3 rounded-lg flex items-center cursor-pointer transition-all relative group outline-none focus-visible:ring-2 focus-visible:ring-white/50
                 ${board.id === activeBoardId 
                     ? 'bg-white/90 dark:bg-white/20 text-zinc-900 dark:text-white font-bold shadow-sm' 
                     : 'bg-white/30 dark:bg-white/5 text-white/90 hover:bg-white/40 dark:hover:bg-white/10'

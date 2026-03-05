@@ -15,6 +15,7 @@ import {
 import {
     Avatar,
     AvatarFallback,
+    AvatarImage,
 } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -41,6 +42,8 @@ import {
     Eye
 } from 'lucide-react';
 import { AlertDialog } from './AlertDialog';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function TopBar() {
     const boardName = useStore((state) => state.boardName);
@@ -226,6 +229,9 @@ export default function TopBar() {
                                 <Tooltip key={member.id}>
                                     <TooltipTrigger asChild>
                                         <Avatar className="w-8 h-8 border-2 border-white dark:border-zinc-900 ring-offset-background">
+                                            {(member as any).avatarUrl && (
+                                                <AvatarImage src={`${API_URL}/uploads/${(member as any).avatarUrl}`} />
+                                            )}
                                             <AvatarFallback 
                                                 style={{ backgroundColor: stringToColor(member.name || member.email) }}
                                                 className="text-[10px] text-white font-bold"
@@ -271,6 +277,7 @@ export default function TopBar() {
                             setEditBoardTitle(boardName);
                             setSettingsOpen(true);
                         }}
+                        title="Board Settings"
                     >
                         <Settings className="w-4 h-4" />
                     </Button>
@@ -402,6 +409,9 @@ export default function TopBar() {
                                 <div key={member.id} className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-9 w-9">
+                                            {(member as any).avatarUrl && (
+                                                <AvatarImage src={`${API_URL}/uploads/${(member as any).avatarUrl}`} />
+                                            )}
                                             <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-white">
                                                 {member.name ? member.name[0] : member.email[0]}
                                             </AvatarFallback>

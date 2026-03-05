@@ -7,6 +7,8 @@ import DashboardPage from './pages/DashboardPage';
 import BoardPage from './pages/BoardPage';
 import ProjectPage from './pages/ProjectPage';
 import AdminPage from './pages/AdminPage';
+import GalleryPage from './pages/GalleryPage';
+import UserPage from './pages/UserPage';
 import MainLayout from './layouts/MainLayout';
 import { Loader2 } from 'lucide-react';
 
@@ -65,6 +67,8 @@ export const App = () => {
       <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route path="/boards" element={<DashboardPage />} />
         <Route path="/projects/:projectId" element={<ProjectPage />} />
+        <Route path="/gallery" element={<GalleryPage />} />
+        <Route path="/profile" element={<UserPage />} />
         <Route path="/admin" element={user?.isAdmin ? <AdminPage /> : <Navigate to="/" />} />
       </Route>
 

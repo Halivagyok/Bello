@@ -1,7 +1,6 @@
 import { useStore } from '../../store';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card"
-import { Users } from 'lucide-react';
 
 export default function SharedProjects() {
     const projects = useStore(state => state.projects);
