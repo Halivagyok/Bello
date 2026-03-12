@@ -229,8 +229,8 @@ export default function TopBar() {
                                 <Tooltip key={member.id}>
                                     <TooltipTrigger asChild>
                                         <Avatar className="w-8 h-8 border-2 border-white dark:border-zinc-900 ring-offset-background">
-                                            {(member as any).avatarUrl && (
-                                                <AvatarImage src={`${API_URL}/uploads/${(member as any).avatarUrl}`} />
+                                            {member.avatarUrl && (
+                                                <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} />
                                             )}
                                             <AvatarFallback 
                                                 style={{ backgroundColor: stringToColor(member.name || member.email) }}
@@ -409,8 +409,8 @@ export default function TopBar() {
                                 <div key={member.id} className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-9 w-9">
-                                            {(member as any).avatarUrl && (
-                                                <AvatarImage src={`${API_URL}/uploads/${(member as any).avatarUrl}`} />
+                                            {member.avatarUrl && (
+                                                <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} />
                                             )}
                                             <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-white">
                                                 {member.name ? member.name[0] : member.email[0]}

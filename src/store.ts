@@ -24,9 +24,11 @@ export interface Board {
     id: string;
     title: string;
     ownerId: string;
+    ownerName?: string;
+    ownerAvatarUrl?: string | null;
     projectId?: string;
     lastViewed?: number;
-    members?: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[];
+    members?: { id: string; name: string; email: string; role: string; isAdmin?: boolean; avatarUrl?: string | null }[];
 }
 
 export interface Project {
@@ -35,7 +37,7 @@ export interface Project {
     description?: string;
     ownerId: string;
     boardIds: string[];
-    members?: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[];
+    members?: { id: string; name: string; email: string; role: string; isAdmin?: boolean; avatarUrl?: string | null }[];
 }
 
 export interface UserImage {
@@ -83,7 +85,7 @@ interface BoardState {
     status: string;
     boardName: string; // Current board name
     currentUserRole: string | null;
-    activeMembers: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[]; // role: 'owner' | 'admin' | 'member' | 'viewer'
+    activeMembers: { id: string; name: string; email: string; role: string; isAdmin?: boolean; avatarUrl?: string | null }[]; // role: 'owner' | 'admin' | 'member' | 'viewer'
     activeBoardOwnerId?: string;
     activeProjectId: string | null;
     authLoading: boolean;

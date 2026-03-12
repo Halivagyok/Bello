@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
-import { GoPerson, GoMail, GoImage, GoCheck, GoTrash, GoCopy, GoUpload, GoLock } from 'react-icons/go';
+import { GoPerson, GoMail, GoImage, GoCheck, GoTrash, GoCopy, GoUpload, GoLock, GoSync, GoCircle } from 'react-icons/go';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { AvatarCropDialog } from '../components/AvatarCropDialog';
@@ -24,8 +24,11 @@ export default function UserPage() {
     const [email, setEmail] = useState(user?.email || '');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [avatarLoading, setAvatarLoading] = useState(false);
+    const [avatarSuccess, setAvatarSuccess] = useState(false);
     const [dragging, setDragging] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     // Crop state
     const [cropDialogOpen, setCropDialogOpen] = useState(false);
@@ -39,9 +42,24 @@ export default function UserPage() {
     const [passwordError, setPasswordError] = useState('');
     const [passwordSuccess, setPasswordSuccess] = useState(false);
 
+    // Clean up preview URL
+    useEffect(() => {
+        return () => {
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+        };
+    }, [previewUrl]);
+
     useEffect(() => {
         fetchUserImages();
     }, []);
+
+    // Sync input fields when user data changes (e.g. after login or update)
+    useEffect(() => {
+        if (user) {
+            setName(user.name || '');
+            setEmail(user.email || '');
+        }
+    }, [user]);
 
     const handleSetAvatar = (filename: string) => {
         setSelectedImageForCrop(`${API_URL}/uploads/${filename}`);
@@ -49,13 +67,31 @@ export default function UserPage() {
     };
 
     const handleCropComplete = async (blob: Blob) => {
-        // 1. Upload the cropped blob as a new image
-        const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
-        const uploaded = await uploadImage(file);
-        
-        if (uploaded) {
-            // 2. Set the new image as avatar
-            await updateUser({ avatarUrl: uploaded.filename });
+        setAvatarLoading(true);
+        setAvatarSuccess(false);
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
+        try {
+            // 1. Upload the cropped blob as a new image
+            const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+            const uploaded = await uploadImage(file);
+            
+            if (uploaded) {
+                // 2. Set the new image as avatar
+                await updateUser({ avatarUrl: uploaded.filename });
+                setAvatarSuccess(true);
+                setTimeout(() => {
+                    setAvatarSuccess(false);
+                    setPreviewUrl(null);
+                }, 3000);
+            } else {
+                setPreviewUrl(null);
+            }
+        } catch (e) {
+            console.error('Failed to update avatar:', e);
+            setPreviewUrl(null);
+        } finally {
+            setAvatarLoading(false);
         }
     };
 
@@ -152,17 +188,49 @@ export default function UserPage() {
     return (
         <div className="p-8 max-w-6xl mx-auto">
             <div className="flex items-center gap-6 mb-8">
-                <Avatar className="w-20 h-20 shadow-md shrink-0">
-                    {user?.avatarUrl && (
-                        <AvatarImage src={`${API_URL}/uploads/${user.avatarUrl}`} />
+                <div className="relative group">
+                    <Avatar className="w-20 h-20 shadow-md shrink-0 border-2 border-background">
+                        {previewUrl ? (
+                            <AvatarImage src={previewUrl} />
+                        ) : user?.avatarUrl ? (
+                            <AvatarImage src={`${API_URL}/uploads/${user.avatarUrl}`} crossOrigin="anonymous" />
+                        ) : null}
+                        <AvatarFallback 
+                            style={{ backgroundColor: stringToColor(user?.name || user?.email || 'User') }}
+                            className="text-3xl text-white font-bold"
+                        >
+                            {(user?.name || user?.email || 'U')[0].toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-[1px]">
+                        <GoSync className="w-6 h-6 text-white" />
+                        <input 
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*" 
+                            onChange={async (e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                    const file = e.target.files[0];
+                                    const reader = new FileReader();
+                                    reader.onload = (event) => {
+                                        setSelectedImageForCrop(event.target?.result as string);
+                                        setCropDialogOpen(true);
+                                    };
+                                    reader.readAsDataURL(file);
+                                }
+                            }} 
+                        />
+                    </label>
+                    {(avatarLoading || avatarSuccess) && (
+                        <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
+                            {avatarLoading ? (
+                                <GoSync className="w-8 h-8 text-white animate-spin" />
+                            ) : (
+                                <GoCheck className="w-8 h-8 text-green-400" />
+                            )}
+                        </div>
                     )}
-                    <AvatarFallback 
-                        style={{ backgroundColor: stringToColor(user?.name || user?.email || 'User') }}
-                        className="text-3xl text-white font-bold"
-                    >
-                        {(user?.name || user?.email || 'U')[0].toUpperCase()}
-                    </AvatarFallback>
-                </Avatar>
+                </div>
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">{user?.name || 'User Profile'}</h1>
                     <p className="text-zinc-500 dark:text-zinc-400">{user?.email}</p>
@@ -209,13 +277,15 @@ export default function UserPage() {
                         </div>
 
                         {/* Image Grid */}
-                        {userImages.length === 0 ? (
+                        {userImages.filter(img => img.originalName !== 'avatar.jpg').length === 0 ? (
                             <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border">
                                 <p className="text-zinc-500">You haven't uploaded any images yet.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                {userImages.map((img) => (
+                                {userImages
+                                    .filter(img => img.originalName !== 'avatar.jpg')
+                                    .map((img) => (
                                     <Card key={img.id} className="overflow-hidden group border-zinc-200 dark:border-zinc-800">
                                         <div className="aspect-video relative overflow-hidden bg-zinc-100 dark:bg-zinc-950">
                                             <img 

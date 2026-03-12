@@ -22,6 +22,7 @@ export function AvatarCropDialog({ imageUrl, open, onOpenChange, onCropComplete 
     const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    const [imageError, setImageError] = useState<string | null>(null);
 
     const onCropChange = (crop: { x: number, y: number }) => {
         setCrop(crop);
@@ -38,63 +39,105 @@ export function AvatarCropDialog({ imageUrl, open, onOpenChange, onCropComplete 
     const createImage = (url: string): Promise<HTMLImageElement> =>
         new Promise((resolve, reject) => {
             const image = new Image();
-            image.addEventListener('load', () => resolve(image));
-            image.addEventListener('error', (error) => reject(error));
-            image.setAttribute('crossOrigin', 'anonymous');
-            image.src = url;
+            
+            const isDataUrl = url.startsWith('data:');
+            if (!isDataUrl) {
+                image.crossOrigin = 'anonymous';
+            }
+
+            image.onload = () => resolve(image);
+            image.onerror = (error) => {
+                console.error('Image load error for URL:', url.substring(0, 100) + (url.length > 100 ? '...' : ''), error);
+                setImageError('Failed to load image for cropping. Ensure your connection is stable.');
+                reject(error);
+            };
+            
+            // Add cache buster to avoid CORS issues with cached images, but not for data URLs
+            if (!isDataUrl) {
+                const cacheBuster = url.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
+                image.src = url + cacheBuster;
+            } else {
+                image.src = url;
+            }
         });
 
     const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<Blob | null> => {
-        const image = await createImage(imageSrc);
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        try {
+            const image = await createImage(imageSrc);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
 
-        if (!ctx) return null;
+            if (!ctx) {
+                console.error('No 2d context');
+                return null;
+            }
 
-        canvas.width = pixelCrop.width;
-        canvas.height = pixelCrop.height;
+            canvas.width = pixelCrop.width;
+            canvas.height = pixelCrop.height;
 
-        ctx.drawImage(
-            image,
-            pixelCrop.x,
-            pixelCrop.y,
-            pixelCrop.width,
-            pixelCrop.height,
-            0,
-            0,
-            pixelCrop.width,
-            pixelCrop.height
-        );
+            ctx.drawImage(
+                image,
+                pixelCrop.x,
+                pixelCrop.y,
+                pixelCrop.width,
+                pixelCrop.height,
+                0,
+                0,
+                pixelCrop.width,
+                pixelCrop.height
+            );
 
-        return new Promise((resolve) => {
-            canvas.toBlob((blob) => {
-                resolve(blob);
-            }, 'image/jpeg');
-        });
+            return new Promise((resolve, reject) => {
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        console.error('Canvas is empty');
+                        reject(new Error('Canvas is empty'));
+                        return;
+                    }
+                    resolve(blob);
+                }, 'image/jpeg');
+            });
+        } catch (e) {
+            console.error('getCroppedImg error:', e);
+            return null;
+        }
     };
 
     const handleSave = async () => {
         if (!croppedAreaPixels) return;
         setLoading(true);
+        setImageError(null);
         try {
             const blob = await getCroppedImg(imageUrl, croppedAreaPixels);
             if (blob) {
                 onCropComplete(blob);
                 onOpenChange(false);
+            } else {
+                setImageError('Could not process image. This may be due to security restrictions or connection issues.');
             }
         } catch (e) {
-            console.error(e);
+            console.error('Cropping error:', e);
+            setImageError('An unexpected error occurred. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={(val) => {
+            onOpenChange(val);
+            if (!val) setImageError(null);
+        }}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Edit Profile Picture</DialogTitle>
                 </DialogHeader>
+
+                {imageError && (
+                    <div className="bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 p-3 rounded-md text-xs font-medium">
+                        {imageError}
+                    </div>
+                )}
                 
                 <div className="relative w-full h-[350px] bg-zinc-900 rounded-lg overflow-hidden mt-4">
                     <Cropper
@@ -107,6 +150,7 @@ export function AvatarCropDialog({ imageUrl, open, onOpenChange, onCropComplete 
                         onCropChange={onCropChange}
                         onCropComplete={onCropCompleteInternal}
                         onZoomChange={onZoomChange}
+                        crossOrigin={imageUrl.startsWith('data:') ? undefined : "anonymous"}
                     />
                 </div>
 

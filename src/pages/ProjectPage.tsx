@@ -16,6 +16,7 @@ import {
 import {
     Avatar,
     AvatarFallback,
+    AvatarImage,
 } from "@/components/ui/avatar"
 import {
     Select,
@@ -36,6 +37,9 @@ import {
     Eye
 } from 'lucide-react';
 import { AlertDialog } from '../components/AlertDialog';
+import { stringToColor } from '../utils/colors';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function ProjectDetails() {
     const { projectId } = useParams();
@@ -251,10 +255,23 @@ export default function ProjectDetails() {
                             style={{ backgroundColor: '#0079bf' }}
                         >
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                            <h3 className="font-bold text-lg relative z-10 flex items-center gap-2">
-                                <Layout className="w-4 h-4" />
-                                {board.title}
-                            </h3>
+                            <div className="flex justify-between items-start relative z-10">
+                                <h3 className="font-bold text-lg leading-tight line-clamp-2 flex items-center gap-2">
+                                    <Layout className="w-4 h-4" />
+                                    {board.title}
+                                </h3>
+                                <Avatar className="w-6 h-6 border border-white/20 shrink-0">
+                                    {board.ownerAvatarUrl && (
+                                        <AvatarImage src={`${API_URL}/uploads/${board.ownerAvatarUrl}`} />
+                                    )}
+                                    <AvatarFallback 
+                                        style={{ backgroundColor: stringToColor(board.ownerName || board.ownerId) }}
+                                        className="text-[8px] text-white font-bold"
+                                    >
+                                        {(board.ownerName || 'U')[0].toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </div>
                         </CardContent>
                     </Card>
                 ))}
@@ -343,6 +360,9 @@ export default function ProjectDetails() {
                                 <div key={member.id} className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-9 w-9">
+                                            {member.avatarUrl && (
+                                                <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} />
+                                            )}
                                             <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-white">
                                                 {(member.name || member.email)[0].toUpperCase()}
                                             </AvatarFallback>
