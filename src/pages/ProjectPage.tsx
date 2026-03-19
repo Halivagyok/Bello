@@ -157,19 +157,6 @@ export default function ProjectDetails() {
 
     const isOwnerOrAdmin = myRoleVal >= 3 || user?.isAdmin;
 
-    const stringToColor = (string: string) => {
-        let hash = 0;
-        for (let i = 0; i < string.length; i++) {
-            hash = string.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        let color = '#';
-        for (let i = 0; i < 3; i++) {
-            const value = (hash >> (i * 8)) & 0xff;
-            color += `00${value.toString(16)}`.slice(-2);
-        }
-        return color;
-    };
-
     const getRoleIcon = (role: string) => {
         switch (role?.toLowerCase()) {
             case 'owner': return <Shield className="w-3.5 h-3.5 text-amber-500" />;
@@ -313,7 +300,7 @@ export default function ProjectDetails() {
                                 <Input
                                     id="email"
                                     placeholder="Email Address"
-                                    type="text"
+                                    type="email"
                                     value={inviteEmail}
                                     onChange={(e) => setInviteEmail(e.target.value)}
                                     autoFocus

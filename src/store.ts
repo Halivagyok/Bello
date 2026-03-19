@@ -186,7 +186,11 @@ export const useStore = create<BoardState>((set, get) => ({
 
     updateUser: async (updates: Partial<User>) => {
         try {
-            const { data } = await client.auth.me.patch(updates);
+            const { data, error } = await client.auth.me.patch(updates);
+            if (error) {
+                const message = (error as any).value?.error || (error as any).message || 'Failed to update user';
+                throw new Error(message);
+            }
             if (data?.user) {
                 set({ user: data.user });
                 // Also refresh boards to see name updates if any
@@ -195,6 +199,7 @@ export const useStore = create<BoardState>((set, get) => ({
             }
         } catch (e) {
             console.error('Update User Error', e);
+            throw e;
         }
     },
 
@@ -846,55 +851,62 @@ export const useStore = create<BoardState>((set, get) => ({
 
     sortCards: async (listId, sortBy) => {
         const oldLists = get().lists;
+        const needsBackendSort = sortBy === 'oldest' || sortBy === 'newest';
 
-        // Optimistic Sort
+        // Optimistic Sort (only for modes with deterministic local ordering)
         let updatedCards: Card[] = [];
-        set(state => {
-            const list = state.lists.find(l => l.id === listId);
-            if (!list) return state;
+        if (!needsBackendSort) {
+            set(state => {
+                const list = state.lists.find(l => l.id === listId);
+                if (!list) return state;
 
-            const sortedCards = [...list.cards];
-            const isDone = (c: Card) => !!c.completed;
+                const sortedCards = [...list.cards];
+                const isDone = (c: Card) => !!c.completed;
 
-            if (sortBy === 'abc') {
-                sortedCards.sort((a, b) => a.content.localeCompare(b.content));
-            } else if (sortBy === 'checked-first') {
-                sortedCards.sort((a, b) => {
-                    const aDone = isDone(a);
-                    const bDone = isDone(b);
-                    if (aDone !== bDone) return aDone ? -1 : 1;
-                    return a.position - b.position;
-                });
-            } else if (sortBy === 'checked-last') {
-                sortedCards.sort((a, b) => {
-                    const aDone = isDone(a);
-                    const bDone = isDone(b);
-                    if (aDone !== bDone) return aDone ? 1 : -1;
-                    return a.position - b.position;
-                });
-            }
+                if (sortBy === 'abc') {
+                    sortedCards.sort((a, b) => a.content.localeCompare(b.content));
+                } else if (sortBy === 'checked-first') {
+                    sortedCards.sort((a, b) => {
+                        const aDone = isDone(a);
+                        const bDone = isDone(b);
+                        if (aDone !== bDone) return aDone ? -1 : 1;
+                        return a.position - b.position;
+                    });
+                } else if (sortBy === 'checked-last') {
+                    sortedCards.sort((a, b) => {
+                        const aDone = isDone(a);
+                        const bDone = isDone(b);
+                        if (aDone !== bDone) return aDone ? 1 : -1;
+                        return a.position - b.position;
+                    });
+                }
 
-            // Re-assign positions locally
-            updatedCards = sortedCards.map((card, index) => ({
-                ...card,
-                position: (index + 1) * 1000
-            }));
+                // Re-assign positions locally
+                updatedCards = sortedCards.map((card, index) => ({
+                    ...card,
+                    position: (index + 1) * 1000
+                }));
 
-            return { 
-                lists: state.lists.map(l => l.id === listId ? { ...l, cards: updatedCards } : l) 
-            };
-        });
+                return { 
+                    lists: state.lists.map(l => l.id === listId ? { ...l, cards: updatedCards } : l) 
+                };
+            });
+        }
 
         try {
-            // 1. First notify backend about the sort mode (if backend supports it)
+            // Notify backend about the sort mode
             await client.lists[listId].sort.post({ sortBy });
             
-            // 2. IMPORTANT: Manually sync positions for all cards to ensure persistence
-            // This prevents the backend from using old positions when the next fetchBoard occurs.
-            // We do this in parallel to be faster
-            await Promise.all(updatedCards.map(card => 
-                client.cards[card.id].patch({ position: card.position })
-            ));
+            if (!needsBackendSort) {
+                // Sync positions for locally-sorted cards to ensure persistence
+                await Promise.all(updatedCards.map(card => 
+                    client.cards[card.id].patch({ position: card.position })
+                ));
+            } else {
+                // For backend-ordered modes (oldest/newest), refresh from server
+                const activeBoardId = get().activeBoardId;
+                if (activeBoardId) await get().fetchBoard(activeBoardId, true);
+            }
 
         } catch (e) {
             console.error('Sort Error', e);

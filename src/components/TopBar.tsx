@@ -339,7 +339,7 @@ export default function TopBar() {
                                 <Input
                                     id="email"
                                     placeholder="Email Address"
-                                    type="text"
+                                    type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     autoFocus
