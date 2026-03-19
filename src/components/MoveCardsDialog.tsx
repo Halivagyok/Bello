@@ -123,77 +123,79 @@ export default function MoveCardsDialog({ open, onClose, sourceListId }: MoveCar
     return (
         <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>Move All Cards</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="target-board">Target Board</Label>
-                        <Select 
-                            value={targetBoardId} 
-                            onValueChange={(val) => {
-                                setTargetBoardId(val);
-                                setTargetListId('');
-                            }}
-                        >
-                            <SelectTrigger id="target-board">
-                                <SelectValue placeholder="Select target board" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {groupedBoards.noProjectBoards.length > 0 && (
-                                    <SelectGroup>
-                                        <SelectLabel>Personal Boards</SelectLabel>
-                                        {groupedBoards.noProjectBoards.map(board => (
-                                            <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                )}
-
-                                {Object.entries(groupedBoards.groups).map(([projectId, projectBoards]) => {
-                                    const project = projects.find(p => p.id === projectId);
-                                    return (
-                                        <SelectGroup key={projectId}>
-                                            <SelectLabel>{project?.title || 'Unknown Project'}</SelectLabel>
-                                            {projectBoards.map(board => (
+                <form onSubmit={(e) => { e.preventDefault(); handleMove(); }}>
+                    <DialogHeader>
+                        <DialogTitle>Move All Cards</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="target-board">Target Board</Label>
+                            <Select 
+                                value={targetBoardId} 
+                                onValueChange={(val) => {
+                                    setTargetBoardId(val);
+                                    setTargetListId('');
+                                }}
+                            >
+                                <SelectTrigger id="target-board">
+                                    <SelectValue placeholder="Select target board" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {groupedBoards.noProjectBoards.length > 0 && (
+                                        <SelectGroup>
+                                            <SelectLabel>Personal Boards</SelectLabel>
+                                            {groupedBoards.noProjectBoards.map(board => (
                                                 <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
                                             ))}
                                         </SelectGroup>
-                                    );
-                                })}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                                    )}
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="target-list">Target List</Label>
-                        <Select 
-                            value={targetListId} 
-                            onValueChange={setTargetListId}
-                            disabled={!targetBoardId || loadingLists}
-                        >
-                            <SelectTrigger id="target-list">
-                                <SelectValue placeholder="Select target list" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {availableLists.length === 0 && !loadingLists ? (
-                                    <SelectItem value="none" disabled>No other lists available</SelectItem>
-                                ) : (
-                                    availableLists.map(list => (
-                                        <SelectItem key={list.id} value={list.id}>
-                                            {list.title}
-                                        </SelectItem>
-                                    ))
-                                )}
-                            </SelectContent>
-                        </Select>
+                                    {Object.entries(groupedBoards.groups).map(([projectId, projectBoards]) => {
+                                        const project = projects.find(p => p.id === projectId);
+                                        return (
+                                            <SelectGroup key={projectId}>
+                                                <SelectLabel>{project?.title || 'Unknown Project'}</SelectLabel>
+                                                {projectBoards.map(board => (
+                                                    <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="target-list">Target List</Label>
+                            <Select 
+                                value={targetListId} 
+                                onValueChange={setTargetListId}
+                                disabled={!targetBoardId || loadingLists}
+                            >
+                                <SelectTrigger id="target-list">
+                                    <SelectValue placeholder="Select target list" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableLists.length === 0 && !loadingLists ? (
+                                        <SelectItem value="none" disabled>No other lists available</SelectItem>
+                                    ) : (
+                                        availableLists.map(list => (
+                                            <SelectItem key={list.id} value={list.id}>
+                                                {list.title}
+                                            </SelectItem>
+                                        ))
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleMove} disabled={!targetListId || targetListId === 'none'}>
-                        Move Cards
-                    </Button>
-                </DialogFooter>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                        <Button type="submit" disabled={!targetListId || targetListId === 'none'}>
+                            Move Cards
+                        </Button>
+                    </DialogFooter>
+                </form>
             </DialogContent>
         </Dialog>
     );

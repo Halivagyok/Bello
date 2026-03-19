@@ -6,7 +6,10 @@ import { ModeToggle } from '@/components/mode-toggle';
 import {
     Avatar,
     AvatarFallback,
+    AvatarImage,
 } from "@/components/ui/avatar"
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function MainLayout() {
     const user = useStore(state => state.user);
@@ -43,8 +46,14 @@ export default function MainLayout() {
                 </Link>
 
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 hidden md:flex">
+                    <div 
+                        onClick={() => navigate('/profile')}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 hidden md:flex cursor-pointer hover:bg-muted transition-colors"
+                    >
                         <Avatar className="w-6 h-6">
+                            {user?.avatarUrl && (
+                                <AvatarImage src={`${API_URL}/uploads/${user.avatarUrl}`} />
+                            )}
                             <AvatarFallback style={{ backgroundColor: stringToColor(user?.name || user?.email || 'User') }} className="text-[10px] text-white">
                                 {(user?.name || user?.email || 'U')[0].toUpperCase()}
                             </AvatarFallback>

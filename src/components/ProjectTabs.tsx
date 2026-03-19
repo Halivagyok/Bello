@@ -23,9 +23,10 @@ interface ProjectTabsProps {
     activeBoardId: string | null;
     onRename: (boardId: string, title: string) => void;
     onCreate: () => void;
+    canCreate?: boolean;
 }
 
-export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate }: ProjectTabsProps) {
+export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate, canCreate = true }: ProjectTabsProps) {
     const navigate = useNavigate();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editTitle, setEditTitle] = useState('');
@@ -91,7 +92,7 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
                 }
             }}
             className={`
-                min-w-[120px] max-w-[160px] flex-none h-9 px-3 rounded-lg flex items-center cursor-pointer transition-all relative group outline-none focus-visible:ring-2 focus-visible:ring-white/50
+                min-w-[120px] max-w-[160px]  flex-none h-9 px-3 rounded-lg flex items-center cursor-pointer transition-all relative group outline-none focus-visible:ring-2 focus-visible:ring-white/50
                 ${board.id === activeBoardId
                     ? 'bg-white/90 dark:bg-white/20 text-zinc-900 dark:text-white font-bold shadow-sm'
                     : 'bg-white/30 dark:bg-white/5 text-white/90 hover:bg-white/40 dark:hover:bg-white/10'
@@ -136,14 +137,16 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
                         ))}
                     </SelectContent>
                 </Select>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onCreate}
-                    className="shrink-0 h-9 w-9 bg-white/20 dark:bg-white/5 text-white hover:bg-white/30"
-                >
-                    <Plus className="w-4 h-4" />
-                </Button>
+                {canCreate && (
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={onCreate}
+                        className="shrink-0 h-9 w-9 bg-white/20 dark:bg-white/5 text-white hover:bg-white/30"
+                    >
+                        <Plus className="w-4 h-4" />
+                    </Button>
+                )}
             </div>
         );
     }
@@ -199,14 +202,16 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
                 <ChevronRight className="w-4 h-4" />
             </Button>
 
-            <Button
-                variant="ghost"
-                onClick={onCreate}
-                className="ml-1 shrink-0 gap-1.5 text-white/80 hover:text-white hover:bg-white/20 whitespace-nowrap h-8 px-2.5"
-            >
-                <Plus className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-bold uppercase tracking-wider">New</span>
-            </Button>
+            {canCreate && (
+                <Button
+                    variant="ghost"
+                    onClick={onCreate}
+                    className="ml-1 shrink-0 gap-1.5 text-white/80 hover:text-white hover:bg-white/20 whitespace-nowrap h-8 px-2.5"
+                >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider">New</span>
+                </Button>
+            )}
         </div>
     );
 }

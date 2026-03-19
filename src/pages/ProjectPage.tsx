@@ -1,10 +1,11 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore, client } from '../store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import {
     Dialog,
     DialogContent,
@@ -15,15 +16,30 @@ import {
 import {
     Avatar,
     AvatarFallback,
+    AvatarImage,
 } from "@/components/ui/avatar"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { 
     ArrowLeft, 
     Users, 
     Trash2, 
     UserPlus,
     Plus,
-    Layout
+    Layout,
+    Shield,
+    User as UserIcon,
+    Eye
 } from 'lucide-react';
+import { AlertDialog } from '../components/AlertDialog';
+import { stringToColor } from '../utils/colors';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function ProjectDetails() {
     const { projectId } = useParams();
@@ -45,7 +61,25 @@ export default function ProjectDetails() {
     const [membersOpen, setMembersOpen] = useState(false);
     const [inviteOpen, setInviteOpen] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteRole, setInviteRole] = useState('member');
     const [newTitle, setNewTitle] = useState('');
+
+    // Alert Dialog States
+    const [alertDialog, setAlertDialog] = useState<{
+        open: boolean,
+        title: string,
+        description: string,
+        onConfirm?: () => void,
+        variant?: 'default' | 'destructive'
+    }>({
+        open: false,
+        title: '',
+        description: ''
+    });
+
+    const showAlert = (title: string, description: string, onConfirm?: () => void, variant: 'default' | 'destructive' = 'default') => {
+        setAlertDialog({ open: true, title, description, onConfirm, variant });
+    };
 
     useEffect(() => {
         fetchBoards();
@@ -74,41 +108,62 @@ export default function ProjectDetails() {
 
     const handleRemoveMember = async (userId: string) => {
         if (!projectId) return;
-        if (!confirm('Remove user from project?')) return;
-        try {
-            await client.projects[projectId].members[userId].delete();
-            fetchProject(projectId);
-        } catch (e) {
-            alert('Failed to remove member');
-        }
+        showAlert(
+            'Remove Member?',
+            'Are you sure you want to remove this user from the project?',
+            async () => {
+                try {
+                    await client.projects[projectId].members[userId].delete();
+                    fetchProject(projectId);
+                } catch (e) {
+                    showAlert('Error', 'Failed to remove member');
+                }
+            },
+            'destructive'
+        );
     };
 
     const handleInvite = async () => {
         if (!projectId || !inviteEmail) return;
         try {
-            await inviteUserToProject(projectId, inviteEmail);
-            alert('User invited successfully');
+            await inviteUserToProject(projectId, inviteEmail, inviteRole);
             setInviteEmail('');
+            setInviteRole('member');
             setInviteOpen(false);
             fetchProject(projectId);
+            showAlert('Success', 'User invited successfully');
         } catch (e) {
-            alert('Failed to invite user');
+            showAlert('Error', 'Failed to invite user');
         }
     };
 
-    const isOwnerOrAdmin = project ? (project.ownerId === user?.id || user?.isAdmin) : false;
+    const handleRoleChange = async (userId: string, newRole: string) => {
+        if (!projectId) return;
+        try {
+            const { error } = await client.projects[projectId].members[userId].patch({ role: newRole });
+            if (error) throw error;
+            fetchProject(projectId);
+        } catch (e) {
+            showAlert('Error', 'Failed to update member role');
+        }
+    };
 
-    const stringToColor = (string: string) => {
-        let hash = 0;
-        for (let i = 0; i < string.length; i++) {
-            hash = string.charCodeAt(i) + ((hash << 5) - hash);
+    const rolePriority: Record<string, number> = { 'owner': 4, 'admin': 3, 'member': 2, 'viewer': 1 };
+    
+    // Determine my role in this project
+    const myMember = project?.members?.find(m => m.id === user?.id);
+    const myRole = myMember?.role;
+    const myRoleVal = (project?.ownerId === user?.id) ? 5 : (rolePriority[myRole || 'member'] || 0);
+
+    const isOwnerOrAdmin = myRoleVal >= 3 || user?.isAdmin;
+
+    const getRoleIcon = (role: string) => {
+        switch (role?.toLowerCase()) {
+            case 'owner': return <Shield className="w-3.5 h-3.5 text-amber-500" />;
+            case 'admin': return <Shield className="w-3.5 h-3.5 text-blue-500" />;
+            case 'viewer': return <Eye className="w-3.5 h-3.5 text-zinc-500" />;
+            default: return <UserIcon className="w-3.5 h-3.5 text-zinc-500" />;
         }
-        let color = '#';
-        for (let i = 0; i < 3; i++) {
-            const value = (hash >> (i * 8)) & 0xff;
-            color += `00${value.toString(16)}`.slice(-2);
-        }
-        return color;
     };
 
     if (!project) {
@@ -124,10 +179,11 @@ export default function ProjectDetails() {
                         variant="ghost" 
                         size="sm" 
                         onClick={() => navigate('/boards')}
-                        className="gap-2"
+                        className="gap-2 px-2 sm:px-3"
+                        title="Back to Dashboard"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Dashboard
+                        <span className="hidden sm:inline">Dashboard</span>
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">{project.title}</h1>
@@ -147,28 +203,32 @@ export default function ProjectDetails() {
                         <Users className="w-4 h-4" />
                         Members ({project.members?.length || 0})
                     </Button>
-                    <Button 
-                        size="sm" 
-                        className="gap-2"
-                        onClick={() => setInviteOpen(true)}
-                    >
-                        <UserPlus className="w-4 h-4" />
-                        Invite
-                    </Button>
+                    {isOwnerOrAdmin && (
+                        <Button 
+                            size="sm" 
+                            className="gap-2"
+                            onClick={() => setInviteOpen(true)}
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            Invite
+                        </Button>
+                    )}
                 </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {/* Create New Board Card */}
-                <Card 
-                    className="group cursor-pointer border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-all bg-muted/30"
-                    onClick={() => setOpen(true)}
-                >
-                    <CardContent className="h-[120px] p-4 flex flex-col items-center justify-center gap-2">
-                        <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                        <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">Create new board</span>
-                    </CardContent>
-                </Card>
+                {isOwnerOrAdmin && (
+                    <Card 
+                        className="group cursor-pointer border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-all bg-muted/30"
+                        onClick={() => setOpen(true)}
+                    >
+                        <CardContent className="h-[120px] p-4 flex flex-col items-center justify-center gap-2">
+                            <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                            <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">Create new board</span>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Existing Boards */}
                 {projectBoards.map(board => (
@@ -182,10 +242,23 @@ export default function ProjectDetails() {
                             style={{ backgroundColor: '#0079bf' }}
                         >
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                            <h3 className="font-bold text-lg relative z-10 flex items-center gap-2">
-                                <Layout className="w-4 h-4" />
-                                {board.title}
-                            </h3>
+                            <div className="flex justify-between items-start relative z-10">
+                                <h3 className="font-bold text-lg leading-tight line-clamp-2 flex items-center gap-2">
+                                    <Layout className="w-4 h-4" />
+                                    {board.title}
+                                </h3>
+                                <Avatar className="w-6 h-6 border border-white/20 shrink-0">
+                                    {board.ownerAvatarUrl && (
+                                        <AvatarImage src={`${API_URL}/uploads/${board.ownerAvatarUrl}`} />
+                                    )}
+                                    <AvatarFallback 
+                                        style={{ backgroundColor: stringToColor(board.ownerName || board.ownerId) }}
+                                        className="text-[8px] text-white font-bold"
+                                    >
+                                        {(board.ownerName || 'U')[0].toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </div>
                         </CardContent>
                     </Card>
                 ))}
@@ -194,43 +267,65 @@ export default function ProjectDetails() {
             {/* Create Board Dialog */}
             <Dialog open={open} onOpenChange={(val) => !val && (setOpen(false), setNewTitle(''))}>
                 <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Create Board in {project.title}</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Input
-                            placeholder="Board Title"
-                            value={newTitle}
-                            onChange={(e) => setNewTitle(e.target.value)}
-                            autoFocus
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                        <Button onClick={handleCreateBoard}>Create</Button>
-                    </DialogFooter>
+                    <form onSubmit={(e) => { e.preventDefault(); handleCreateBoard(); }}>
+                        <DialogHeader>
+                            <DialogTitle>Create Board in {project.title}</DialogTitle>
+                        </DialogHeader>
+                        <div className="py-4">
+                            <Input
+                                placeholder="Board Title"
+                                value={newTitle}
+                                onChange={(e) => setNewTitle(e.target.value)}
+                                autoFocus
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                            <Button type="submit">Create</Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 
             {/* Invite Dialog */}
-            <Dialog open={inviteOpen} onOpenChange={(val) => !val && (setInviteOpen(false), setInviteEmail(''))}>
+            <Dialog open={inviteOpen} onOpenChange={(val) => !val && (setInviteOpen(false), setInviteEmail(''), setInviteRole('member'))}>
                 <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Invite to Project</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Input
-                            placeholder="Email Address"
-                            type="email"
-                            value={inviteEmail}
-                            onChange={(e) => setInviteEmail(e.target.value)}
-                            autoFocus
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setInviteOpen(false)}>Cancel</Button>
-                        <Button onClick={handleInvite}>Invite</Button>
-                    </DialogFooter>
+                    <form onSubmit={(e) => { e.preventDefault(); handleInvite(); }}>
+                        <DialogHeader>
+                            <DialogTitle>Invite to Project</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email Address</Label>
+                                <Input
+                                    id="email"
+                                    placeholder="Email Address"
+                                    type="email"
+                                    value={inviteEmail}
+                                    onChange={(e) => setInviteEmail(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="role">Role</Label>
+                                <Select value={inviteRole} onValueChange={setInviteRole}>
+                                    <SelectTrigger id="role">
+                                        <SelectValue placeholder="Select role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="viewer">Viewer</SelectItem>
+                                        <SelectItem value="member">Member</SelectItem>
+                                        <SelectItem value="admin">Admin</SelectItem>
+                                        <SelectItem value="owner" disabled={myRoleVal < 4 && !user?.isAdmin}>Owner (Co-owner)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setInviteOpen(false)}>Cancel</Button>
+                            <Button type="submit">Invite</Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 
@@ -244,34 +339,81 @@ export default function ProjectDetails() {
                         </DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
-                        {project.members && project.members.map((member) => (
-                            <div key={member.id} className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-white">
-                                            {(member.name || member.email)[0].toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="text-sm font-medium leading-none">
-                                            {member.name} {member.id === project.ownerId && <span className="text-xs text-muted-foreground ml-1">(Owner)</span>}
-                                            {member.isAdmin && <span className="text-xs text-muted-foreground ml-1">(Admin)</span>}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground mt-1">{member.email}</p>
+                        {project.members && project.members.map((member) => {
+                            const targetPrio = (project.ownerId === member.id) ? 5 : (rolePriority[member.role] || 0);
+                            const canManageMember = user?.isAdmin || (myRoleVal >= 3 && myRoleVal > targetPrio && member.id !== user?.id);
+
+                            return (
+                                <div key={member.id} className="flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-9 w-9">
+                                            {member.avatarUrl && (
+                                                <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} />
+                                            )}
+                                            <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-white">
+                                                {(member.name || member.email)[0].toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <div className="flex items-center gap-1.5">
+                                                <p className="text-sm font-medium leading-none">
+                                                    {member.name}
+                                                </p>
+                                                {member.id === project.ownerId ? (
+                                                    <Badge variant="outline" className="text-[10px] px-1 h-4 border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20">Primary Owner</Badge>
+                                                ) : (
+                                                    <span className="flex items-center gap-1 opacity-70">
+                                                        {getRoleIcon(member.role)}
+                                                        <span className="text-[10px] uppercase font-bold tracking-wider">{member.role}</span>
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mt-1">{member.email}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        {canManageMember && (
+                                            <>
+                                                <Select 
+                                                    defaultValue={member.role} 
+                                                    onValueChange={(val) => handleRoleChange(member.id, val)}
+                                                >
+                                                    <SelectTrigger className="h-8 w-[100px] text-xs">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="viewer">Viewer</SelectItem>
+                                                        <SelectItem value="member">Member</SelectItem>
+                                                        <SelectItem value="admin">Admin</SelectItem>
+                                                        <SelectItem value="owner" disabled={myRoleVal < 4 && !user?.isAdmin}>Owner</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                    onClick={() => handleRemoveMember(member.id)}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </>
+                                        )}
+                                        {member.id === user?.id && member.id !== project.ownerId && (
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="text-red-500 text-xs h-8"
+                                                onClick={() => handleRemoveMember(member.id)}
+                                            >
+                                                Leave
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
-                                {isOwnerOrAdmin && member.id !== user?.id && member.id !== project.ownerId && (
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                                        onClick={() => handleRemoveMember(member.id)}
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                )}
-                            </div>
-                        ))}
+                            );
+                        })}
                         {(!project.members || project.members.length === 0) && (
                             <p className="text-center text-muted-foreground py-4 text-sm">No members found.</p>
                         )}
@@ -281,6 +423,15 @@ export default function ProjectDetails() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog 
+                open={alertDialog.open}
+                onClose={() => setAlertDialog(prev => ({ ...prev, open: false }))}
+                title={alertDialog.title}
+                description={alertDialog.description}
+                onConfirm={alertDialog.onConfirm}
+                variant={alertDialog.variant}
+            />
         </div>
     );
 }

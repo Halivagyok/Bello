@@ -37,37 +37,39 @@ export default function ProjectDialog({ open, onClose }: ProjectDialogProps) {
     return (
         <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>Create New Project</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="title">Project Title</Label>
-                        <Input
-                            id="title"
-                            autoFocus
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Enter project title"
-                        />
+                <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }}>
+                    <DialogHeader>
+                        <DialogTitle>Create New Project</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="title">Project Title</Label>
+                            <Input
+                                id="title"
+                                autoFocus
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                placeholder="Enter project title"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="description">Description (Optional)</Label>
+                            <Textarea
+                                id="description"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="Enter project description"
+                                className="min-h-[100px]"
+                            />
+                        </div>
                     </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="description">Description (Optional)</Label>
-                        <Textarea
-                            id="description"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Enter project description"
-                            className="min-h-[100px]"
-                        />
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={handleClose}>Cancel</Button>
-                    <Button onClick={handleCreate} disabled={!title.trim()}>
-                        Create
-                    </Button>
-                </DialogFooter>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
+                        <Button type="submit" disabled={!title.trim()}>
+                            Create
+                        </Button>
+                    </DialogFooter>
+                </form>
             </DialogContent>
         </Dialog>
     );

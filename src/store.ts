@@ -14,7 +14,10 @@ export const client = edenTreaty<any>(API_URL, {
 export interface User {
     id: string;
     email: string;
-    name: string;
+    name?: string;
+    avatarUrl?: string | null;
+    timeFormat?: '12h' | '24h';
+    dateFormat?: string;
     isAdmin?: boolean;
     isBanned?: boolean;
 }
@@ -23,9 +26,11 @@ export interface Board {
     id: string;
     title: string;
     ownerId: string;
+    ownerName?: string;
+    ownerAvatarUrl?: string | null;
     projectId?: string;
     lastViewed?: number;
-    members?: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[];
+    members?: { id: string; name: string; email: string; role: string; isAdmin?: boolean; avatarUrl?: string | null }[];
 }
 
 export interface Project {
@@ -34,12 +39,28 @@ export interface Project {
     description?: string;
     ownerId: string;
     boardIds: string[];
-    members?: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[];
+    members?: { id: string; name: string; email: string; role: string; isAdmin?: boolean; avatarUrl?: string | null }[];
+}
+
+export interface UserImage {
+    id: string;
+    filename: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    createdAt: Date;
 }
 
 export interface Card {
     id: string;
     content: string;
+    description?: string | null;
+    dueDate?: number | string | Date | null;
+    dueDateMode?: 'full' | 'date-only' | 'time-only' | null;
+    imageUrl?: string | null;
+    location?: string | null;
+    locationLat?: number | null;
+    locationLng?: number | null;
     listId: string;
     position: number;
     completed?: boolean;
@@ -51,6 +72,7 @@ export interface List {
     position: number;
     cards: Card[];
     boardId: string;
+    ownerId?: string;
     color?: string;
 }
 
@@ -61,9 +83,11 @@ interface BoardState {
     recentBoards: Board[];
     activeBoardId: string | null;
     lists: List[];
+    userImages: UserImage[];
     status: string;
     boardName: string; // Current board name
-    activeMembers: { id: string; name: string; email: string; role: string; isAdmin?: boolean }[];
+    currentUserRole: string | null;
+    activeMembers: { id: string; name: string; email: string; role: string; isAdmin?: boolean; avatarUrl?: string | null }[]; // role: 'owner' | 'admin' | 'member' | 'viewer'
     activeBoardOwnerId?: string;
     activeProjectId: string | null;
     authLoading: boolean;
@@ -88,7 +112,8 @@ interface BoardState {
     fetchBoards: () => Promise<void>;
     createBoard: (title: string, projectId?: string) => Promise<Board | null>;
     fetchBoard: (boardId: string, silent?: boolean) => Promise<void>;
-    inviteUser: (email: string) => Promise<void>;
+    deleteBoard: (boardId: string) => Promise<void>;
+    updateMemberRole: (userId: string, role: string) => Promise<void>;
 
     // Data Actions
     fetchData: () => Promise<void>;
@@ -98,9 +123,10 @@ interface BoardState {
     deleteList: (listId: string) => void;
     duplicateList: (listId: string, title?: string) => Promise<void>;
     moveAllCards: (sourceListId: string, targetListId: string) => void;
-    sortCards: (listId: string, sortBy: 'oldest' | 'newest' | 'abc') => void;
+    sortCards: (listId: string, sortBy: 'oldest' | 'newest' | 'abc' | 'checked-first' | 'checked-last') => void;
     updateListColor: (listId: string, color: string) => void;
     moveListToBoard: (listId: string, boardId: string) => void;
+    transferListOwnership: (listId: string, userId: string) => Promise<void>;
     moveList: (fromIndex: number, toIndex: number) => void;
     moveCard: (
         sourceListId: string,
@@ -108,6 +134,8 @@ interface BoardState {
         sourceIndex: number,
         destIndex: number
     ) => void;
+    updateCard: (cardId: string, updates: Partial<Card>) => Promise<void>;
+    deleteCard: (cardId: string) => Promise<void>;
     toggleCardCompletion: (cardId: string, completed: boolean) => void;
     checkBackend: () => Promise<void>;
 
@@ -116,12 +144,21 @@ interface BoardState {
     fetchProject: (projectId: string) => Promise<void>;
     createProject: (title: string, description?: string) => Promise<void>;
     projectBoardPage: number;
-    inviteUserToProject: (projectId: string, email: string) => Promise<void>;
+    inviteUserToProject: (projectId: string, email: string, role?: string) => Promise<void>;
     assignBoardToProject: (boardId: string, projectId: string) => Promise<void>;
     reorderProjectBoards: (projectId: string, newBoardIds: string[]) => Promise<void>;
     renameBoard: (boardId: string, title: string) => Promise<void>;
     updateRecentBoards: (boardId: string) => void;
     setProjectBoardPage: (page: number) => void;
+
+    // User Actions
+    updateUser: (updates: Partial<User>) => Promise<void>;
+    changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+
+    // Image Actions
+    fetchUserImages: () => Promise<void>;
+    uploadImage: (file: File) => Promise<UserImage | null>;
+    deleteImage: (imageId: string) => Promise<void>;
 }
 
 // 3. Create Store
@@ -132,8 +169,10 @@ export const useStore = create<BoardState>((set, get) => ({
     recentBoards: [],
     activeBoardId: null,
     lists: [],
+    userImages: [],
     status: 'Connecting...',
     boardName: 'Loading...',
+    currentUserRole: null,
     activeMembers: [],
     authLoading: true,
     socket: null,
@@ -145,6 +184,37 @@ export const useStore = create<BoardState>((set, get) => ({
 
     setProjectBoardPage: (page: number) => set({ projectBoardPage: page }),
 
+    updateUser: async (updates: Partial<User>) => {
+        try {
+            const { data, error } = await client.auth.me.patch(updates);
+            if (error) {
+                const message = (error as any).value?.error || (error as any).message || 'Failed to update user';
+                throw new Error(message);
+            }
+            if (data?.user) {
+                set({ user: data.user });
+                // Also refresh boards to see name updates if any
+                get().fetchBoards();
+                get().fetchProjects();
+            }
+        } catch (e) {
+            console.error('Update User Error', e);
+            throw e;
+        }
+    },
+
+    changePassword: async (currentPassword, newPassword) => {
+        try {
+            const { error } = await client.auth.password.patch({ currentPassword, newPassword });
+            if (error) {
+                return { success: false, error: (error as any).value?.error || 'Failed to change password' };
+            }
+            return { success: true };
+        } catch (e) {
+            console.error('Change Password Error', e);
+            return { success: false, error: 'Network error' };
+        }
+    },
 
     // Helper for navigation
     navigateToBoards: () => {
@@ -193,7 +263,7 @@ export const useStore = create<BoardState>((set, get) => ({
                         get().fetchBoard(activeId, true).catch(() => {
                             // If fetch fails (e.g. 403 Forbidden because removed), redirect
                             console.log("Access lost or board deleted");
-                            set({ activeBoardId: null, lists: [], activeMembers: [] });
+                            set({ activeBoardId: null, lists: [], activeMembers: [], currentUserRole: null });
                             get().navigateToBoards();
                         });
                     }
@@ -353,7 +423,7 @@ export const useStore = create<BoardState>((set, get) => ({
         } catch (e) {
             console.error('Logout failed:', e);
         }
-        set({ user: null, activeBoardId: null, lists: [], boards: [], projects: [], recentBoards: [], boardName: 'Loading...' });
+        set({ user: null, activeBoardId: null, lists: [], boards: [], projects: [], recentBoards: [], boardName: 'Loading...', currentUserRole: null });
     },
 
     fetchBoards: async () => {
@@ -392,13 +462,12 @@ export const useStore = create<BoardState>((set, get) => ({
             if (data) {
                 const newBoard = data as Board;
                 set(state => ({
-                    boards: [...state.boards, newBoard],
-                    projects: state.projects.map(p =>
-                        p.id === projectId
-                            ? { ...p, boardIds: [...(p.boardIds || []), newBoard.id] }
-                            : p
-                    )
+                    boards: [...state.boards, newBoard]
                 }));
+                // If board belongs to a project, refresh that project to sync boardIds
+                if (projectId) {
+                    get().fetchProjects();
+                }
                 return newBoard;
             }
         } catch (e: any) {
@@ -410,7 +479,7 @@ export const useStore = create<BoardState>((set, get) => ({
 
     fetchBoard: async (boardId, silent = false) => {
         if (!silent) {
-            set({ activeBoardId: boardId, boardName: 'Loading...', lists: [], activeMembers: [] });
+            set({ activeBoardId: boardId, boardName: 'Loading...', lists: [], activeMembers: [], currentUserRole: null });
             // Update recently viewed
             get().updateRecentBoards(boardId);
             // Connect/Subscribe
@@ -422,12 +491,19 @@ export const useStore = create<BoardState>((set, get) => ({
             const { data, error } = await client.boards[boardId].get();
             if (error) throw error;
             if (data) {
+                // Ensure cards in each list are sorted by position
+                const processedLists = (data.lists as List[]).map(list => ({
+                    ...list,
+                    cards: [...list.cards].sort((a, b) => a.position - b.position)
+                }));
+
                 set({
-                    lists: data.lists as List[],
+                    lists: processedLists,
                     boardName: data.title,
-                    activeMembers: data.members, // Now we set this!
+                    activeMembers: data.activeMembers || [],
                     activeBoardOwnerId: data.ownerId,
-                    activeProjectId: data.projectId // Set activeProjectId
+                    activeProjectId: data.projectId,
+                    currentUserRole: data.currentUserRole
                 });
 
                 if (data.projectId) {
@@ -447,11 +523,36 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
-    inviteUser: async (email) => {
+    deleteBoard: async (boardId: string) => {
+        try {
+            await client.boards[boardId].delete();
+            set(state => ({
+                boards: state.boards.filter(b => b.id !== boardId),
+                recentBoards: state.recentBoards.filter(b => b.id !== boardId)
+            }));
+            
+            // If deleting the active board, navigate away
+            if (get().activeBoardId === boardId) {
+                set({ activeBoardId: null, lists: [], activeMembers: [], currentUserRole: null });
+                get().navigateToBoards();
+            }
+        } catch (e) {
+            console.error('Delete Board failed:', e);
+        }
+    },
+
+    updateMemberRole: async (userId: string, role: string) => {
         const boardId = get().activeBoardId;
         if (!boardId) return;
-        const { error } = await client.boards[boardId].invite.post({ email });
-        if (error) throw new Error(error.value as any);
+        try {
+            const { error } = await client.boards[boardId].members[userId].patch({ role });
+            if (error) throw error;
+            // Optionally fetch board to update members list
+            get().fetchBoard(boardId, true);
+        } catch (e) {
+            console.error('Update Member Role failed:', e);
+            throw e;
+        }
     },
 
     fetchData: async () => {
@@ -643,6 +744,48 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
+    updateCard: async (cardId, updates) => {
+        const oldLists = get().lists;
+
+        // Optimistic Update
+        set(state => ({
+            lists: state.lists.map(list => ({
+                ...list,
+                cards: list.cards.map(card =>
+                    card.id === cardId ? { ...card, ...updates } : card
+                )
+            }))
+        }));
+
+        try {
+            await client.cards[cardId].patch(updates);
+        } catch (e) {
+            set({ lists: oldLists });
+            console.error('Update Card failed:', e);
+            throw e;
+        }
+    },
+
+    deleteCard: async (cardId) => {
+        const oldLists = get().lists;
+
+        // Optimistic Update
+        set(state => ({
+            lists: state.lists.map(list => ({
+                ...list,
+                cards: list.cards.filter(card => card.id !== cardId)
+            }))
+        }));
+
+        try {
+            await client.cards[cardId].delete();
+        } catch (e) {
+            set({ lists: oldLists });
+            console.error('Delete Card failed:', e);
+            throw e;
+        }
+    },
+
     toggleCardCompletion: async (cardId, completed) => {
         const oldLists = get().lists;
 
@@ -707,28 +850,68 @@ export const useStore = create<BoardState>((set, get) => ({
     },
 
     sortCards: async (listId, sortBy) => {
-        // Optimistic Sort
-        set(state => {
-            const listFn = (l: List) => {
-                if (l.id !== listId) return l;
-                const newCards = [...l.cards];
-                // Note: we might not have createdAt in frontend Card type, 
-                // store.ts Card interface might need update if we want purely local optimistic sort,
-                // but assuming backend does the heavy lifting, we might just wait or fuzzy sort.
-                // let's rely on backend for correct sort, but we can try basic ABC optimistically.
+        const oldLists = get().lists;
+        const needsBackendSort = sortBy === 'oldest' || sortBy === 'newest';
+
+        // Optimistic Sort (only for modes with deterministic local ordering)
+        let updatedCards: Card[] = [];
+        if (!needsBackendSort) {
+            set(state => {
+                const list = state.lists.find(l => l.id === listId);
+                if (!list) return state;
+
+                const sortedCards = [...list.cards];
+                const isDone = (c: Card) => !!c.completed;
+
                 if (sortBy === 'abc') {
-                    newCards.sort((a, b) => a.content.localeCompare(b.content));
+                    sortedCards.sort((a, b) => a.content.localeCompare(b.content));
+                } else if (sortBy === 'checked-first') {
+                    sortedCards.sort((a, b) => {
+                        const aDone = isDone(a);
+                        const bDone = isDone(b);
+                        if (aDone !== bDone) return aDone ? -1 : 1;
+                        return a.position - b.position;
+                    });
+                } else if (sortBy === 'checked-last') {
+                    sortedCards.sort((a, b) => {
+                        const aDone = isDone(a);
+                        const bDone = isDone(b);
+                        if (aDone !== bDone) return aDone ? 1 : -1;
+                        return a.position - b.position;
+                    });
                 }
-                return { ...l, cards: newCards };
-            };
-            return { lists: state.lists.map(listFn) }
-        });
+
+                // Re-assign positions locally
+                updatedCards = sortedCards.map((card, index) => ({
+                    ...card,
+                    position: (index + 1) * 1000
+                }));
+
+                return { 
+                    lists: state.lists.map(l => l.id === listId ? { ...l, cards: updatedCards } : l) 
+                };
+            });
+        }
 
         try {
+            // Notify backend about the sort mode
             await client.lists[listId].sort.post({ sortBy });
-            get().fetchBoard(get().activeBoardId!, true); // Refresh to be safe IDs/Positions
+            
+            if (!needsBackendSort) {
+                // Sync positions for locally-sorted cards to ensure persistence
+                await Promise.all(updatedCards.map(card => 
+                    client.cards[card.id].patch({ position: card.position })
+                ));
+            } else {
+                // For backend-ordered modes (oldest/newest), refresh from server
+                const activeBoardId = get().activeBoardId;
+                if (activeBoardId) await get().fetchBoard(activeBoardId, true);
+            }
+
         } catch (e) {
             console.error('Sort Error', e);
+            set({ lists: oldLists });
+            get().fetchBoard(get().activeBoardId!, true);
         }
     },
 
@@ -755,6 +938,17 @@ export const useStore = create<BoardState>((set, get) => ({
         } catch (e) {
             set({ lists: oldLists });
             console.error('Move to Board Error', e);
+        }
+    },
+
+    transferListOwnership: async (listId, userId) => {
+        try {
+            const { error } = await client.lists[listId].owner.patch({ ownerId: userId });
+            if (error) throw error;
+            get().fetchBoard(get().activeBoardId!, true);
+        } catch (e) {
+            console.error('Transfer Ownership failed:', e);
+            throw e;
         }
     },
 
@@ -820,9 +1014,9 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
-    inviteUserToProject: async (projectId, email) => {
+    inviteUserToProject: async (projectId, email, role) => {
         try {
-            const { error } = await client.projects[projectId].invite.post({ email });
+            const { error } = await client.projects[projectId].invite.post({ email, role });
             if (error) throw error;
         } catch (e) {
             console.error('Invite to project failed:', e);
@@ -908,5 +1102,36 @@ export const useStore = create<BoardState>((set, get) => ({
             .slice(0, 4);
 
         set({ recentBoards });
+    },
+
+    fetchUserImages: async () => {
+        try {
+            const { data } = await client.images.get();
+            if (data) set({ userImages: data });
+        } catch (e) {
+            console.error('Fetch Images Error', e);
+        }
+    },
+
+    uploadImage: async (file: File) => {
+        try {
+            const { data } = await client.images.post({ file });
+            if (data) {
+                set(state => ({ userImages: [data, ...state.userImages] }));
+                return data;
+            }
+        } catch (e) {
+            console.error('Upload Image Error', e);
+        }
+        return null;
+    },
+
+    deleteImage: async (imageId: string) => {
+        try {
+            await client.images[imageId].delete();
+            set(state => ({ userImages: state.userImages.filter(img => img.id !== imageId) }));
+        } catch (e) {
+            console.error('Delete Image Error', e);
+        }
     }
 }));
