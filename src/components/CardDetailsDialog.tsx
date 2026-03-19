@@ -64,6 +64,7 @@ function LocationMarker({ position, setPosition }: { position: [number, number] 
 
 export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialogProps) {
     const updateCard = useStore(state => state.updateCard);
+    const deleteCard = useStore(state => state.deleteCard);
     const uploadImage = useStore(state => state.uploadImage);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     
@@ -173,6 +174,21 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
         }
     };
 
+    const handleDelete = async () => {
+        if (!card) return;
+        if (confirm('Are you sure you want to delete this card?')) {
+            setLoading(true);
+            try {
+                await deleteCard(card.id);
+                onOpenChange(false);
+            } catch (error) {
+                console.error('Failed to delete card:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
     const handleDrop = async (e: React.DragEvent) => {
         e.preventDefault();
         setDragging(false);
@@ -186,7 +202,11 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
     };
 
     const handleGeocode = async () => {
-        if (!location.trim()) return;
+        if (!location.trim()) {
+            setLocationLat(null);
+            setLocationLng(null);
+            return;
+        }
         setGeocoding(true);
         try {
             const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`);
@@ -202,6 +222,12 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
         } finally {
             setGeocoding(false);
         }
+    };
+
+    const clearLocation = () => {
+        setLocation('');
+        setLocationLat(null);
+        setLocationLng(null);
     };
 
     const clearDueDate = () => {
@@ -341,9 +367,16 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                             <div className="flex items-center gap-2 font-medium text-sm">
                                 <GoLocation className="w-4 h-4" /> Location
                             </div>
-                            <Button variant="ghost" size="sm" onClick={() => setShowMap(!showMap)}>
-                                {showMap ? "Hide Map" : "Show Map"}
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                {location && (
+                                    <Button variant="ghost" size="sm" onClick={clearLocation} className="h-7 px-2 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 gap-1">
+                                        <GoX className="w-3.5 h-3.5" /> Clear
+                                    </Button>
+                                )}
+                                <Button variant="ghost" size="sm" onClick={() => setShowMap(!showMap)}>
+                                    {showMap ? "Hide Map" : "Show Map"}
+                                </Button>
+                            </div>
                         </div>
                         
                         <div className="grid gap-2">
@@ -354,6 +387,13 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                                     value={location} 
                                     onChange={(e) => setLocation(e.target.value)} 
                                     placeholder="e.g. Budapest, Deák Ferenc tér"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !location.trim()) {
+                                            clearLocation();
+                                        } else if (e.key === 'Enter') {
+                                            handleGeocode();
+                                        }
+                                    }}
                                     onBlur={handleGeocode}
                                 />
                                 <Button size="icon" variant="outline" onClick={handleGeocode} disabled={geocoding} title="Locate on map">
@@ -385,11 +425,16 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                         )}
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSave} disabled={loading}>
-                        {loading ? 'Saving...' : 'Save Changes'}
+                <DialogFooter className="flex justify-between items-center">
+                    <Button variant="destructive" onClick={handleDelete} disabled={loading} className="gap-2">
+                        <GoTrash className="w-4 h-4" /> Delete Card
                     </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button onClick={handleSave} disabled={loading}>
+                            {loading ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

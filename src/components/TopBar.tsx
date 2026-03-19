@@ -225,7 +225,7 @@ export default function TopBar() {
                         className="flex -space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
                     >
                         <TooltipProvider>
-                            {activeMembers.slice(0, 4).map((member) => (
+                            {(activeMembers || []).slice(0, 4).map((member) => (
                                 <Tooltip key={member.id}>
                                     <TooltipTrigger asChild>
                                         <Avatar className="w-8 h-8 border-2 border-white dark:border-zinc-900 ring-offset-background">
@@ -245,7 +245,7 @@ export default function TopBar() {
                                     </TooltipContent>
                                 </Tooltip>
                             ))}
-                            {activeMembers.length > 4 && (
+                            {activeMembers && activeMembers.length > 4 && (
                                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-700 text-white text-[10px] font-bold border-2 border-white dark:border-zinc-900">
                                     +{activeMembers.length - 4}
                                 </div>
@@ -401,7 +401,7 @@ export default function TopBar() {
                         </DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
-                        {activeMembers.map((member) => {
+                        {(activeMembers || []).map((member) => {
                             const targetPrio = (activeBoardOwnerId && member.id === activeBoardOwnerId) ? 5 : (rolePriority[member.role] || 0);
                             const canManageMember = user?.isAdmin || (myRoleVal >= 3 && myRoleVal > targetPrio && member.id !== user?.id);
 

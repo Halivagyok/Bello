@@ -97,7 +97,7 @@ export default function CardList({ list, index }: CardListProps) {
     const rolePriority: Record<string, number> = { 'owner': 4, 'admin': 3, 'member': 2, 'viewer': 1 };
     const myRoleVal = (activeBoardOwnerId && user?.id === activeBoardOwnerId) ? 5 : (rolePriority[currentUserRole || 'member'] || 0);
     
-    const ownerMember = activeMembers.find(m => m.id === list.ownerId);
+    const ownerMember = (activeMembers || []).find(m => m.id === list.ownerId);
     const ownerPrio = (activeBoardOwnerId && list.ownerId === activeBoardOwnerId) ? 5 : (rolePriority[ownerMember?.role || 'member'] || 0);
 
     // Permissions:

@@ -4,10 +4,17 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
-import { GoPerson, GoMail, GoImage, GoCheck, GoTrash, GoCopy, GoUpload, GoLock, GoSync, GoCircle } from 'react-icons/go';
+import { GoPerson, GoMail, GoImage, GoCheck, GoTrash, GoCopy, GoUpload, GoLock, GoSync, GoCircle, GoClock, GoCalendar } from 'react-icons/go';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { AvatarCropDialog } from '../components/AvatarCropDialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../components/ui/select";
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -22,6 +29,8 @@ export default function UserPage() {
     
     const [name, setName] = useState(user?.name || '');
     const [email, setEmail] = useState(user?.email || '');
+    const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>(user?.timeFormat || '24h');
+    const [dateFormat, setDateFormat] = useState(user?.dateFormat || 'YYYY-MM-DD');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [avatarLoading, setAvatarLoading] = useState(false);
@@ -58,6 +67,8 @@ export default function UserPage() {
         if (user) {
             setName(user.name || '');
             setEmail(user.email || '');
+            setTimeFormat(user.timeFormat || '24h');
+            setDateFormat(user.dateFormat || 'YYYY-MM-DD');
         }
     }, [user]);
 
@@ -100,7 +111,7 @@ export default function UserPage() {
         setLoading(true);
         setSuccess(false);
         try {
-            await updateUser({ name, email });
+            await updateUser({ name, email, timeFormat, dateFormat });
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);
         } catch (e) {
@@ -367,6 +378,40 @@ export default function UserPage() {
                                                 onChange={(e) => setEmail(e.target.value)} 
                                                 placeholder="email@example.com"
                                             />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Time Format</Label>
+                                            <Select value={timeFormat} onValueChange={(v: any) => setTimeFormat(v)}>
+                                                <SelectTrigger className="w-full">
+                                                    <div className="flex items-center gap-2">
+                                                        <GoClock className="text-zinc-400" />
+                                                        <SelectValue placeholder="Select time format" />
+                                                    </div>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="24h">24 Hours (14:30)</SelectItem>
+                                                    <SelectItem value="12h">12 Hours (2:30 PM)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Date Format</Label>
+                                            <Select value={dateFormat} onValueChange={setDateFormat}>
+                                                <SelectTrigger className="w-full">
+                                                    <div className="flex items-center gap-2">
+                                                        <GoCalendar className="text-zinc-400" />
+                                                        <SelectValue placeholder="Select date format" />
+                                                    </div>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                                                    <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                                                    <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                                                    <SelectItem value="DD.MM.YYYY">DD.MM.YYYY</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                     </div>
                                 </CardContent>

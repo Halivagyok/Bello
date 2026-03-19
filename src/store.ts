@@ -16,6 +16,8 @@ export interface User {
     email: string;
     name?: string;
     avatarUrl?: string | null;
+    timeFormat?: '12h' | '24h';
+    dateFormat?: string;
     isAdmin?: boolean;
     isBanned?: boolean;
 }
@@ -133,6 +135,7 @@ interface BoardState {
         destIndex: number
     ) => void;
     updateCard: (cardId: string, updates: Partial<Card>) => Promise<void>;
+    deleteCard: (cardId: string) => Promise<void>;
     toggleCardCompletion: (cardId: string, completed: boolean) => void;
     checkBackend: () => Promise<void>;
 
@@ -492,10 +495,10 @@ export const useStore = create<BoardState>((set, get) => ({
                 set({
                     lists: processedLists,
                     boardName: data.title,
-                    activeMembers: data.members,
+                    activeMembers: data.activeMembers || [],
                     activeBoardOwnerId: data.ownerId,
                     activeProjectId: data.projectId,
-                    currentUserRole: data.role
+                    currentUserRole: data.currentUserRole
                 });
 
                 if (data.projectId) {
@@ -754,6 +757,26 @@ export const useStore = create<BoardState>((set, get) => ({
         } catch (e) {
             set({ lists: oldLists });
             console.error('Update Card failed:', e);
+            throw e;
+        }
+    },
+
+    deleteCard: async (cardId) => {
+        const oldLists = get().lists;
+
+        // Optimistic Update
+        set(state => ({
+            lists: state.lists.map(list => ({
+                ...list,
+                cards: list.cards.filter(card => card.id !== cardId)
+            }))
+        }));
+
+        try {
+            await client.cards[cardId].delete();
+        } catch (e) {
+            set({ lists: oldLists });
+            console.error('Delete Card failed:', e);
             throw e;
         }
     },

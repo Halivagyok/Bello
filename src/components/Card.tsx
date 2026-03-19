@@ -14,6 +14,7 @@ interface CardProps {
 }
 
 function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify, onOpenDetails }: { card: CardType, isDragging: boolean, toggleCardCompletion: (id: string, completed: boolean) => void, isViewer: boolean, canModify: boolean, onOpenDetails: () => void }) {
+    const user = useStore(state => state.user);
     const rotate = useMotionValue(0);
     const springRotate = useSpring(rotate, { stiffness: 400, damping: 25 });
     const lastX = useRef(0);
@@ -55,9 +56,13 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify
     const getFormattedDate = () => {
         if (!card.dueDate) return null;
         const d = new Date(card.dueDate);
-        if (card.dueDateMode === 'date-only') return format(d, 'yyyy/MM/dd');
-        if (card.dueDateMode === 'time-only') return format(d, 'HH:mm');
-        return format(d, 'yyyy/MM/dd HH:mm');
+        
+        const timeFmt = user?.timeFormat === '12h' ? 'hh:mm a' : 'HH:mm';
+        const dateFmt = user?.dateFormat || 'yyyy/MM/dd';
+        
+        if (card.dueDateMode === 'date-only') return format(d, dateFmt);
+        if (card.dueDateMode === 'time-only') return format(d, timeFmt);
+        return format(d, `${dateFmt} ${timeFmt}`);
     };
 
     const formattedDate = getFormattedDate();
@@ -156,7 +161,7 @@ export default function Card({ card, index }: CardProps) {
     const rolePriority: Record<string, number> = { 'owner': 4, 'admin': 3, 'member': 2, 'viewer': 1 };
     const myRoleVal = (activeBoardOwnerId && user?.id === activeBoardOwnerId) ? 5 : (rolePriority[currentUserRole || 'member'] || 0);
     
-    const ownerMember = activeMembers.find(m => m.id === list?.ownerId);
+    const ownerMember = (activeMembers || []).find(m => m.id === list?.ownerId);
     const ownerPrio = (activeBoardOwnerId && list?.ownerId === activeBoardOwnerId) ? 5 : (rolePriority[ownerMember?.role || 'member'] || 0);
 
     const canModify = (user?.isAdmin) || 
