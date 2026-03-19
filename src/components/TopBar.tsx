@@ -22,11 +22,11 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { 
-    Filter, 
-    Share, 
-    Settings, 
-    Trash2, 
+import {
+    Filter,
+    Share,
+    Settings,
+    Trash2,
     Plus,
     Users
 } from 'lucide-react';
@@ -131,8 +131,8 @@ export default function TopBar() {
 
                 <div className="flex items-center gap-3 shrink-0">
                     {/* Avatars */}
-                    <div 
-                        onClick={() => setMembersOpen(true)} 
+                    <div
+                        onClick={() => setMembersOpen(true)}
                         className="flex -space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
                     >
                         <TooltipProvider>
@@ -140,7 +140,7 @@ export default function TopBar() {
                                 <Tooltip key={member.id}>
                                     <TooltipTrigger asChild>
                                         <Avatar className="w-8 h-8 border-2 border-white dark:border-zinc-900 ring-offset-background">
-                                            <AvatarFallback 
+                                            <AvatarFallback
                                                 style={{ backgroundColor: stringToColor(member.name || member.email) }}
                                                 className="text-[10px] text-white font-bold"
                                             >
@@ -253,9 +253,9 @@ export default function TopBar() {
                                     </div>
                                 </div>
                                 {isOwnerOrAdmin && member.id !== user?.id && member.id !== activeBoardOwnerId && (
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
                                         className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
                                         onClick={() => handleRemoveMember(member.id)}
                                     >

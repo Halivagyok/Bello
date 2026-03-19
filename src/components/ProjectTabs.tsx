@@ -11,11 +11,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { 
-    ChevronLeft, 
-    ChevronRight, 
-    Plus, 
-    GripVertical 
+import {
+    ChevronLeft,
+    ChevronRight,
+    Plus,
+    GripVertical
 } from 'lucide-react';
 
 interface ProjectTabsProps {
@@ -92,8 +92,8 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
             }}
             className={`
                 min-w-[120px] max-w-[160px] flex-none h-9 px-3 rounded-lg flex items-center cursor-pointer transition-all relative group outline-none focus-visible:ring-2 focus-visible:ring-white/50
-                ${board.id === activeBoardId 
-                    ? 'bg-white/90 dark:bg-white/20 text-zinc-900 dark:text-white font-bold shadow-sm' 
+                ${board.id === activeBoardId
+                    ? 'bg-white/90 dark:bg-white/20 text-zinc-900 dark:text-white font-bold shadow-sm'
                     : 'bg-white/30 dark:bg-white/5 text-white/90 hover:bg-white/40 dark:hover:bg-white/10'
                 }
                 ${snapshot.isDragging ? 'z-50 shadow-xl ring-2 ring-primary opacity-90 scale-105' : ''}
@@ -101,7 +101,7 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
             onDoubleClick={(e: React.MouseEvent) => handleStartEdit(e, board)}
         >
             <GripVertical className="w-3 h-3 mr-1 opacity-0 group-hover:opacity-40 shrink-0" />
-            <div className="flex-1 overflow-hidden text-center">
+            <div className="flex-1 overflow-hidden flex items-center">
                 {editingId === board.id ? (
                     <Input
                         value={editTitle}
@@ -136,9 +136,9 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate 
                         ))}
                     </SelectContent>
                 </Select>
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={onCreate}
                     className="shrink-0 h-9 w-9 bg-white/20 dark:bg-white/5 text-white hover:bg-white/30"
                 >
