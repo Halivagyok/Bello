@@ -15,6 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "../components/ui/select";
+import { stringToColor } from '../utils/colors';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -181,19 +182,6 @@ export default function UserPage() {
         navigator.clipboard.writeText(text);
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
-    };
-
-    const stringToColor = (string: string) => {
-        let hash = 0;
-        for (let i = 0; i < string.length; i++) {
-            hash = string.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        let color = '#';
-        for (let i = 0; i < 3; i++) {
-            const value = (hash >> (i * 8)) & 0xff;
-            color += `00${value.toString(16)}`.slice(-2);
-        }
-        return color;
     };
 
     return (
