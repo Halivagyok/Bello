@@ -27,7 +27,7 @@ export default function ProjectList() {
                     className="group cursor-pointer border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-all bg-muted/30"
                     onClick={() => setOpenProjectDialog(true)}
                 >
-                    <CardContent className="h-[120px] p-4 flex flex-col items-center justify-center gap-2">
+                    <CardContent className="h-[120px] p-0 flex flex-col items-center justify-center gap-2 px-4">
                         <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
                         <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">Create new project</span>
                     </CardContent>
@@ -39,7 +39,7 @@ export default function ProjectList() {
                         className="group cursor-pointer hover:shadow-md transition-all border-none bg-zinc-100 dark:bg-zinc-800"
                         onClick={() => navigate(`/projects/${project.id}`)}
                     >
-                        <CardContent className="h-[120px] p-4 flex flex-col justify-center">
+                        <CardContent className="h-[120px] p-0 flex flex-col justify-center px-4">
                             <h3 className="font-bold text-lg">{project.title}</h3>
                             <p className="text-sm text-muted-foreground">
                                 {boards.filter(b => b.projectId === project.id).length} Boards
