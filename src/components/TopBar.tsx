@@ -31,11 +31,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { 
-    Filter, 
-    Share, 
-    Settings, 
-    Trash2, 
+import {
+    Filter,
+    Share,
+    Settings,
+    Trash2,
     Users,
     Shield,
     User as UserIcon,
@@ -220,8 +220,8 @@ export default function TopBar() {
 
                 <div className="flex items-center gap-3 shrink-0">
                     {/* Avatars */}
-                    <div 
-                        onClick={() => setMembersOpen(true)} 
+                    <div
+                        onClick={() => setMembersOpen(true)}
                         className="flex -space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
                     >
                         <TooltipProvider>

@@ -77,7 +77,7 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify
             style={{ rotate: springRotate }}
             onClick={onOpenDetails}
             className={`
-                rounded-xl flex flex-col gap-0 group shadow-sm transition-all border overflow-hidden cursor-pointer
+                rounded-xl flex flex-col items-center gap-0 group shadow-sm transition-all border overflow-hidden cursor-pointer
                 ${isDragging 
                     ? "bg-zinc-100 dark:bg-zinc-800 scale-105 border-primary shadow-lg ring-1 ring-primary/20" 
                     : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-md"
