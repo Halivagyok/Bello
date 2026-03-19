@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { useStore, type Card as CardType } from '../store';
 import { GoCheck } from "react-icons/go";
@@ -16,7 +15,7 @@ export default function Card({ card, index }: CardProps) {
             {(provided, snapshot) => (
                 <div 
                     className={`
-                        p-3 rounded-xl m-2 flex justify-between items-start group shadow-sm transition-all border
+                        p-3 rounded-xl m-2 flex justify-between items-center group shadow-sm transition-all border
                         ${snapshot.isDragging 
                             ? "bg-zinc-100 dark:bg-zinc-800 rotate-2 scale-105 border-primary shadow-lg" 
                             : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
@@ -26,7 +25,7 @@ export default function Card({ card, index }: CardProps) {
                     {...provided.draggableProps} 
                     {...provided.dragHandleProps} 
                 >
-                    <div className={`text-sm font-medium ${card.completed ? "line-through opacity-50 select-none" : "text-foreground"}`}>
+                    <div className={`text-sm font-medium flex-1 min-w-0 break-words whitespace-pre-wrap mr-3 ${card.completed ? "line-through opacity-50 select-none" : "text-foreground"}`}>
                         {card.content}
                     </div>
                     <div 
