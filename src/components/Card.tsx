@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { useStore, type Card as CardType } from '../store';
 import { GoCheck, GoClock, GoListUnordered, GoLocation } from "react-icons/go";
@@ -19,6 +19,19 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify
     const springRotate = useSpring(rotate, { stiffness: 400, damping: 25 });
     const lastX = useRef(0);
     const timerRef = useRef<number | null>(null);
+    
+    // Logic to detect if text is multi-line for vertical alignment
+    const [isMultiLine, setIsMultiLine] = useState(false);
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    useLayoutEffect(() => {
+        if (contentRef.current) {
+            const { height } = contentRef.current.getBoundingClientRect();
+            const style = window.getComputedStyle(contentRef.current);
+            const lineHeight = parseFloat(style.lineHeight) || 20;
+            setIsMultiLine(height > lineHeight * 1.2);
+        }
+    }, [card.content]);
 
     useEffect(() => {
         if (!isDragging) {
@@ -77,7 +90,7 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify
             style={{ rotate: springRotate }}
             onClick={onOpenDetails}
             className={`
-                rounded-xl flex flex-col items-center gap-0 group shadow-sm transition-all border overflow-hidden cursor-pointer
+                rounded-xl flex flex-col items-stretch gap-0 group shadow-sm transition-all border overflow-hidden cursor-pointer
                 ${isDragging 
                     ? "bg-zinc-100 dark:bg-zinc-800 scale-105 border-primary shadow-lg ring-1 ring-primary/20" 
                     : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-md"
@@ -89,9 +102,12 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify
                     <img src={displayImageUrl} alt="" className="w-full h-full object-cover" />
                 </div>
             )}
-            <div className="p-3 flex justify-between items-start gap-3">
+            <div className={`p-3 flex justify-between ${isMultiLine ? 'items-start' : 'items-center'} gap-3 w-full`}>
                 <div className="flex-1 min-w-0">
-                    <div className={`text-sm font-medium break-words whitespace-pre-wrap ${card.completed ? "line-through opacity-50 select-none" : "text-foreground"}`}>
+                    <div 
+                        ref={contentRef}
+                        className={`text-sm font-medium break-all whitespace-pre-wrap ${card.completed ? "line-through opacity-50 select-none" : "text-foreground"}`}
+                    >
                         {card.content}
                     </div>
                     
