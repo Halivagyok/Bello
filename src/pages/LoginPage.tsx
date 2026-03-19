@@ -86,7 +86,7 @@ export default function Auth() {
                                                 <Label htmlFor="email">Email</Label>
                                                 <Input 
                                                     id="email" 
-                                                    type="text" 
+                                                    type="email" 
                                                     placeholder="m@example.com" 
                                                     value={email}
                                                     onChange={(e) => setEmail(e.target.value)}
@@ -144,18 +144,19 @@ export default function Auth() {
                                                     required 
                                                 />
                                             </div>
-                                                                                    <div className="space-y-2">
-                                                                                        <Label htmlFor="signup-email">Email</Label>
-                                                                                        <Input 
-                                                                                            id="signup-email" 
-                                                                                            type="text" 
-                                                                                            placeholder="m@example.com" 
-                                                                                            value={email}
-                                                                                            onChange={(e) => setEmail(e.target.value)}
-                                                                                            className="bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary"
-                                                                                            required 
-                                                                                        />
-                                                                                    </div>                                            <div className="space-y-2">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="signup-email">Email</Label>
+                                                <Input 
+                                                    id="signup-email" 
+                                                    type="email" 
+                                                    placeholder="m@example.com" 
+                                                    value={email}
+                                                    onChange={(e) => setEmail(e.target.value)}
+                                                    className="bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                                                    required 
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
                                                 <Label htmlFor="signup-password">Password</Label>
                                                 <Input 
                                                     id="signup-password" 

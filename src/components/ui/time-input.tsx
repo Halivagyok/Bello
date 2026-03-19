@@ -60,7 +60,7 @@ export function TimeInput({ value, onChange, className }: TimeInputProps) {
       </div>
       <div 
         className="absolute right-3 flex items-center justify-center cursor-pointer text-zinc-400 hover:text-primary transition-colors h-full px-1"
-        onClick={() => pickerRef.current?.showPicker()}
+        onClick={() => pickerRef.current?.showPicker?.()}
         title="Open time picker"
       >
         <GoClock className="w-4 h-4" />

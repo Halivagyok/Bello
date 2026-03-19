@@ -394,10 +394,10 @@ export default function UserPage() {
                                                     </div>
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                                                    <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                                                    <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                                                    <SelectItem value="DD.MM.YYYY">DD.MM.YYYY</SelectItem>
+                                                    <SelectItem value="yyyy-MM-dd">YYYY-MM-DD</SelectItem>
+                                                    <SelectItem value="dd/MM/yyyy">DD/MM/YYYY</SelectItem>
+                                                    <SelectItem value="MM/dd/yyyy">MM/DD/YYYY</SelectItem>
+                                                    <SelectItem value="dd.MM.yyyy">DD.MM.YYYY</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
