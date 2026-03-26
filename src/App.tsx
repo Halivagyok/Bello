@@ -72,7 +72,7 @@ export const App = () => {
         <Route path="/admin" element={user?.isAdmin ? <AdminPage /> : <Navigate to="/" />} />
       </Route>
 
-      <Route path="/boards/:boardId" element={<ProtectedRoute><BoardPage /></ProtectedRoute>} />
+      <Route path="/boards/:boardId" element={<BoardPage />} />
 
       <Route path="/" element={<Navigate to={user ? "/boards" : "/login"} />} />
     </Routes>

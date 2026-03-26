@@ -150,7 +150,6 @@ export function AvatarCropDialog({ imageUrl, open, onOpenChange, onCropComplete 
                         onCropChange={onCropChange}
                         onCropComplete={onCropCompleteInternal}
                         onZoomChange={onZoomChange}
-                        crossOrigin={imageUrl.startsWith('data:') ? undefined : "anonymous"}
                     />
                 </div>
 

@@ -32,16 +32,20 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import {
-    Filter,
     Share,
     Settings,
     Trash2,
     Users,
     Shield,
     User as UserIcon,
-    Eye
+    Eye,
+    Lock,
+    Globe
 } from 'lucide-react';
 import { AlertDialog } from './AlertDialog';
+import { GlobalSearch } from './GlobalSearch';
+import { BoardFilter } from './BoardFilter';
+import { BoardVisibilityMenu } from './BoardVisibilityMenu';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -70,6 +74,7 @@ export default function TopBar() {
     const [email, setEmail] = useState('');
     const [inviteRole, setInviteRole] = useState('member');
     const [newBoardTitle, setNewBoardTitle] = useState('');
+    const [newBoardVisibility, setNewBoardVisibility] = useState<string>('workspace');
     const [editBoardTitle, setEditBoardTitle] = useState('');
 
     // Alert Dialog States
@@ -94,8 +99,8 @@ export default function TopBar() {
     const rolePriority: Record<string, number> = { 'owner': 4, 'admin': 3, 'member': 2, 'viewer': 1 };
     const myRoleVal = (activeBoardOwnerId && user?.id === activeBoardOwnerId) ? 5 : (rolePriority[currentUserRole || 'member'] || 0);
 
-    const isOwnerOrAdmin = myRoleVal >= 3 || user?.isAdmin;
-    const isViewer = currentUserRole === 'viewer';
+    const isOwnerOrAdmin = !!user && (myRoleVal >= 3 || user.isAdmin);
+    const isViewer = !user || currentUserRole === 'viewer';
 
     const handleRenameBoard = async () => {
         if (!activeBoardId || !editBoardTitle.trim()) return;
@@ -172,8 +177,9 @@ export default function TopBar() {
 
     const handleCreateBoard = async () => {
         if (!newBoardTitle.trim() || !activeProjectId) return;
-        await createBoard(newBoardTitle, activeProjectId);
+        await createBoard(newBoardTitle, activeProjectId, newBoardVisibility as 'private'|'workspace'|'public');
         setNewBoardTitle('');
+        setNewBoardVisibility('workspace');
         setCreateBoardOpen(false);
     };
 
@@ -201,7 +207,7 @@ export default function TopBar() {
 
     return (
         <div className="w-full mb-4">
-            <div className="flex items-center justify-between gap-4 px-3 py-2 bg-white/15 dark:bg-black/15 backdrop-blur-md rounded-xl overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between gap-4 px-3 py-2 bg-white/15 dark:bg-black/15 backdrop-blur-md rounded-xl shadow-sm relative z-50">
                 <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden">
                     {activeProjectId ? (
                         <ProjectTabs
@@ -255,9 +261,9 @@ export default function TopBar() {
 
                     <div className="w-px h-6 bg-white/30" />
 
-                    <Button variant="ghost" size="icon" className="text-white bg-white/10 hover:bg-white/20 h-9 w-9">
-                        <Filter className="w-4 h-4" />
-                    </Button>
+                    {!isViewer && <GlobalSearch />}
+
+                    {!isViewer && activeProjectId && <BoardFilter />}
 
                     {activeProjectId && isOwnerOrAdmin && (
                         <Button
@@ -268,6 +274,8 @@ export default function TopBar() {
                             <span className="hidden [@media(min-width:900px)]:inline">Invite to Workspace</span>
                         </Button>
                     )}
+
+                    {activeBoardId && <BoardVisibilityMenu />}
 
                     <Button 
                         variant="ghost" 
@@ -282,7 +290,7 @@ export default function TopBar() {
                         <Settings className="w-4 h-4" />
                     </Button>
 
-                    <ModeToggle />
+                    <ModeToggle variant="ghost" className="text-white bg-white/10 hover:bg-white/20 h-9 w-9" />
                 </div>
             </div>
 
@@ -375,13 +383,45 @@ export default function TopBar() {
                         <DialogHeader>
                             <DialogTitle>Create New Board</DialogTitle>
                         </DialogHeader>
-                        <div className="py-4">
-                            <Input
-                                placeholder="Board Title"
-                                value={newBoardTitle}
-                                onChange={(e) => setNewBoardTitle(e.target.value)}
-                                autoFocus
-                            />
+                        <div className="py-4 space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="board-title">Board Title</Label>
+                                <Input
+                                    id="board-title"
+                                    placeholder="Enter board title..."
+                                    value={newBoardTitle}
+                                    onChange={(e) => setNewBoardTitle(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="visibility">Visibility</Label>
+                                <Select value={newBoardVisibility} onValueChange={setNewBoardVisibility}>
+                                    <SelectTrigger id="visibility">
+                                        <SelectValue placeholder="Select visibility" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="private">
+                                            <div className="flex items-center gap-2">
+                                                <Lock className="w-4 h-4 text-red-500" />
+                                                <span>Private</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="workspace">
+                                            <div className="flex items-center gap-2">
+                                                <Users className="w-4 h-4 text-zinc-500" />
+                                                <span>Workspace</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="public">
+                                            <div className="flex items-center gap-2">
+                                                <Globe className="w-4 h-4 text-green-500" />
+                                                <span>Public</span>
+                                            </div>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setCreateBoardOpen(false)}>Cancel</Button>

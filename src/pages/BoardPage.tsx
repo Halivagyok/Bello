@@ -26,7 +26,9 @@ export default function Board() {
     const boards = useStore((state) => state.boards);
     const projectBoardPage = useStore((state) => state.projectBoardPage);
     const setProjectBoardPage = useStore((state) => state.setProjectBoardPage);
-    const isViewer = useStore((state) => state.currentUserRole === 'viewer');
+    const user = useStore(state => state.user);
+    const currentUserRole = useStore((state) => state.currentUserRole);
+    const isViewer = !user || currentUserRole === 'viewer';
 
     const prevBoardIdRef = useRef<string | null>(null);
 

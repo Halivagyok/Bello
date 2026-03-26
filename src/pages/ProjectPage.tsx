@@ -34,7 +34,9 @@ import {
     Layout,
     Shield,
     User as UserIcon,
-    Eye
+    Eye,
+    Lock,
+    Globe
 } from 'lucide-react';
 import { AlertDialog } from '../components/AlertDialog';
 import { stringToColor } from '../utils/colors';
@@ -63,6 +65,7 @@ export default function ProjectDetails() {
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteRole, setInviteRole] = useState('member');
     const [newTitle, setNewTitle] = useState('');
+    const [newVisibility, setNewVisibility] = useState<string>('workspace');
 
     // Alert Dialog States
     const [alertDialog, setAlertDialog] = useState<{
@@ -101,8 +104,9 @@ export default function ProjectDetails() {
 
     const handleCreateBoard = async () => {
         if (!newTitle.trim() || !projectId) return;
-        await createBoard(newTitle, projectId);
+        await createBoard(newTitle, projectId, newVisibility as 'private'|'workspace'|'public');
         setNewTitle('');
+        setNewVisibility('workspace');
         setOpen(false);
     };
 
@@ -235,11 +239,11 @@ export default function ProjectDetails() {
                     <Card 
                         key={board.id} 
                         className="group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all border-none overflow-hidden"
+                        style={{ backgroundColor: '#0079bf' }}
                         onClick={() => navigate(`/boards/${board.id}`)}
                     >
                         <CardContent 
-                            className="h-[120px] p-4 flex flex-col justify-between text-white relative"
-                            style={{ backgroundColor: '#0079bf' }}
+                            className="h-full min-h-[120px] p-4 flex flex-col justify-between text-white relative"
                         >
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                             <div className="flex justify-between items-start relative z-10">
@@ -271,13 +275,45 @@ export default function ProjectDetails() {
                         <DialogHeader>
                             <DialogTitle>Create Board in {project.title}</DialogTitle>
                         </DialogHeader>
-                        <div className="py-4">
-                            <Input
-                                placeholder="Board Title"
-                                value={newTitle}
-                                onChange={(e) => setNewTitle(e.target.value)}
-                                autoFocus
-                            />
+                        <div className="py-4 space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="board-title">Board Title</Label>
+                                <Input
+                                    id="board-title"
+                                    placeholder="Enter board title..."
+                                    value={newTitle}
+                                    onChange={(e) => setNewTitle(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="visibility">Visibility</Label>
+                                <Select value={newVisibility} onValueChange={setNewVisibility}>
+                                    <SelectTrigger id="visibility">
+                                        <SelectValue placeholder="Select visibility" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="private">
+                                            <div className="flex items-center gap-2">
+                                                <Lock className="w-4 h-4 text-red-500" />
+                                                <span>Private</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="workspace">
+                                            <div className="flex items-center gap-2">
+                                                <Users className="w-4 h-4 text-zinc-500" />
+                                                <span>Workspace</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="public">
+                                            <div className="flex items-center gap-2">
+                                                <Globe className="w-4 h-4 text-green-500" />
+                                                <span>Public</span>
+                                            </div>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>

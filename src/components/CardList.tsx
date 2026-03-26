@@ -71,11 +71,17 @@ export default function CardList({ list, index }: CardListProps) {
     const updateListColor = useStore((state) => state.updateListColor);
     const sortCards = useStore((state) => state.sortCards);
     const transferListOwnership = useStore((state) => state.transferListOwnership);
-    const isViewer = useStore((state) => state.currentUserRole === 'viewer');
     const user = useStore(state => state.user);
     const currentUserRole = useStore(state => state.currentUserRole);
+    const isViewer = !user || currentUserRole === 'viewer';
     const activeMembers = useStore(state => state.activeMembers);
     const activeBoardOwnerId = useStore(state => state.activeBoardOwnerId);
+
+    // Board Filters
+    const boardFilterQuery = useStore(state => state.boardFilterQuery);
+    const boardFilterDue = useStore(state => state.boardFilterDue);
+    const boardFilterStatus = useStore(state => state.boardFilterStatus);
+    const boardFilterLabels = useStore(state => state.boardFilterLabels);
 
     // Alert Dialog State
     const [alertDialog, setAlertDialog] = useState<{
@@ -179,6 +185,39 @@ export default function CardList({ list, index }: CardListProps) {
     };
 
     const contrastColor = getContrastText(list.color);
+
+    const filteredCards = list.cards.filter(card => {
+        if (boardFilterQuery) {
+            const q = boardFilterQuery.toLowerCase();
+            const matchesContent = card.content.toLowerCase().includes(q);
+            const matchesDescription = card.description?.toLowerCase().includes(q);
+            const matchesLabels = card.labels?.some(l => l.title.toLowerCase().includes(q));
+            if (!matchesContent && !matchesDescription && !matchesLabels) return false;
+        }
+
+        if (boardFilterStatus !== 'all') {
+            if (boardFilterStatus === 'completed' && !card.completed) return false;
+            if (boardFilterStatus === 'not-completed' && card.completed) return false;
+        }
+
+        if (boardFilterDue !== 'all') {
+            if (boardFilterDue === 'no-due-date' && card.dueDate) return false;
+            if (boardFilterDue !== 'no-due-date') {
+                if (!card.dueDate) return false;
+                const due = new Date(card.dueDate);
+                const diff = due.getTime() - Date.now();
+                if (boardFilterDue === 'overdue' && (diff > 0 || card.completed)) return false;
+                if (boardFilterDue === 'next-7-days' && (card.completed || diff > 7 * 24 * 60 * 60 * 1000 || diff < 0)) return false;
+                if (boardFilterDue === 'next-14-days' && (card.completed || diff > 14 * 24 * 60 * 60 * 1000 || diff < 0)) return false;
+            }
+        }
+
+        if (boardFilterLabels && boardFilterLabels.length > 0) {
+            if (!card.labels || !card.labels.some(l => boardFilterLabels.includes(l.id))) return false;
+        }
+
+        return true;
+    });
 
     return (
         <Draggable draggableId={list.id} index={index} isDragDisabled={isViewer || !canModify}>
@@ -342,7 +381,7 @@ export default function CardList({ list, index }: CardListProps) {
                                     className={`px-1 pb-1 overflow-y-auto overflow-x-hidden min-h-[10px] transition-colors scrollbar-board ${snapshot.isDraggingOver ? 'bg-black/5' : ''}`}
                                     style={{ maxHeight: 'calc(100vh - 200px)' }}
                                 >
-                                    {list.cards.map((card, idx) => (
+                                    {filteredCards.map((card, idx) => (
                                         <Card key={card.id} card={card} index={idx} />
                                     ))}
                                     {provided.placeholder}

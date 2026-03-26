@@ -88,7 +88,7 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify
     return (
         <motion.div 
             style={{ rotate: springRotate }}
-            onClick={onOpenDetails}
+            onClick={isViewer ? undefined : onOpenDetails}
             className={`
                 rounded-xl flex flex-col items-stretch gap-0 group shadow-sm transition-all border overflow-hidden cursor-pointer
                 ${isDragging 
@@ -104,6 +104,20 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify
             )}
             <div className={`p-3 flex justify-between ${isMultiLine ? 'items-start' : 'items-center'} gap-3 w-full`}>
                 <div className="flex-1 min-w-0">
+                    {card.labels && card.labels.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-1.5">
+                            {card.labels.map(label => (
+                                <div 
+                                    key={label.id} 
+                                    className="px-2 py-0.5 text-[10px] font-medium leading-tight rounded-sm"
+                                    style={{ backgroundColor: label.color, color: '#fff' }}
+                                    title={label.title}
+                                >
+                                    {label.title}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     <div 
                         ref={contentRef}
                         className={`text-sm font-medium break-all whitespace-pre-wrap ${card.completed ? "line-through opacity-50 select-none" : "text-foreground"}`}
@@ -171,7 +185,7 @@ export default function Card({ card, index }: CardProps) {
     
     const [detailsOpen, setDetailsOpen] = useState(false);
 
-    const isViewer = currentUserRole === 'viewer';
+    const isViewer = !user || currentUserRole === 'viewer';
 
     const list = lists.find(l => l.id === card.listId);
     const rolePriority: Record<string, number> = { 'owner': 4, 'admin': 3, 'member': 2, 'viewer': 1 };

@@ -31,6 +31,7 @@ export interface Board {
     projectId?: string;
     lastViewed?: number;
     members?: { id: string; name: string; email: string; role: string; isAdmin?: boolean; avatarUrl?: string | null }[];
+    visibility?: 'private' | 'workspace' | 'public';
 }
 
 export interface Project {
@@ -51,6 +52,13 @@ export interface UserImage {
     createdAt: Date;
 }
 
+export interface Label {
+    id: string;
+    title: string;
+    color: string;
+    projectId?: string | null;
+}
+
 export interface Card {
     id: string;
     content: string;
@@ -64,6 +72,7 @@ export interface Card {
     listId: string;
     position: number;
     completed?: boolean;
+    labels?: Label[];
 }
 
 export interface List {
@@ -75,6 +84,9 @@ export interface List {
     ownerId?: string;
     color?: string;
 }
+
+export type BoardFilterDueOption = 'all' | 'next-7-days' | 'next-14-days' | 'overdue' | 'no-due-date';
+export type BoardFilterStatusOption = 'all' | 'completed' | 'not-completed';
 
 interface BoardState {
     user: User | null;
@@ -110,10 +122,11 @@ interface BoardState {
 
     // Board Actions
     fetchBoards: () => Promise<void>;
-    createBoard: (title: string, projectId?: string) => Promise<Board | null>;
+    createBoard: (title: string, projectId?: string, visibility?: 'private' | 'workspace' | 'public') => Promise<Board | null>;
     fetchBoard: (boardId: string, silent?: boolean) => Promise<void>;
     deleteBoard: (boardId: string) => Promise<void>;
     updateMemberRole: (userId: string, role: string) => Promise<void>;
+    updateBoardVisibility: (boardId: string, visibility: 'private' | 'workspace' | 'public') => Promise<void>;
 
     // Data Actions
     fetchData: () => Promise<void>;
@@ -159,6 +172,27 @@ interface BoardState {
     fetchUserImages: () => Promise<void>;
     uploadImage: (file: File) => Promise<UserImage | null>;
     deleteImage: (imageId: string) => Promise<void>;
+
+    // Label & Search Actions
+    fetchProjectLabels: (projectId: string) => Promise<Label[]>;
+    createProjectLabel: (projectId: string, title: string, color: string) => Promise<Label | null>;
+    updateProjectLabel: (labelId: string, updates: Partial<Label>) => Promise<void>;
+    deleteProjectLabel: (labelId: string) => Promise<void>;
+    assignLabelToCard: (cardId: string, label: Label) => Promise<void>;
+    removeLabelFromCard: (cardId: string, labelId: string) => Promise<void>;
+    searchCards: (q: string, dueSoon: boolean) => Promise<Card[]>;
+
+    // Board Filter System
+    boardFilterQuery: string;
+    boardFilterDue: BoardFilterDueOption;
+    boardFilterStatus: BoardFilterStatusOption;
+    boardFilterLabels: string[]; // array of label IDs
+    
+    setBoardFilterQuery: (q: string) => void;
+    setBoardFilterDue: (due: BoardFilterDueOption) => void;
+    setBoardFilterStatus: (status: BoardFilterStatusOption) => void;
+    toggleBoardFilterLabel: (labelId: string) => void;
+    clearBoardFilters: () => void;
 }
 
 // 3. Create Store
@@ -178,6 +212,27 @@ export const useStore = create<BoardState>((set, get) => ({
     socket: null,
     socketRetryCount: 0,
 
+
+    // Board Filter initial state
+    boardFilterQuery: '',
+    boardFilterDue: 'all',
+    boardFilterStatus: 'all',
+    boardFilterLabels: [],
+    
+    setBoardFilterQuery: (q) => set({ boardFilterQuery: q }),
+    setBoardFilterDue: (due) => set({ boardFilterDue: due }),
+    setBoardFilterStatus: (status) => set({ boardFilterStatus: status }),
+    toggleBoardFilterLabel: (labelId) => set(state => ({
+        boardFilterLabels: state.boardFilterLabels.includes(labelId)
+            ? state.boardFilterLabels.filter(id => id !== labelId)
+            : [...state.boardFilterLabels, labelId]
+    })),
+    clearBoardFilters: () => set({ 
+        boardFilterQuery: '', 
+        boardFilterDue: 'all', 
+        boardFilterStatus: 'all', 
+        boardFilterLabels: [] 
+    }),
 
     activeProjectId: null, // Track active project for WS updates
     projectBoardPage: 0,
@@ -455,9 +510,9 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
-    createBoard: async (title, projectId) => {
+    createBoard: async (title, projectId, visibility) => {
         try {
-            const { data, error } = await client.boards.post({ title, projectId });
+            const { data, error } = await client.boards.post({ title, projectId, visibility });
             if (error) throw error;
             if (data) {
                 const newBoard = data as Board;
@@ -478,6 +533,7 @@ export const useStore = create<BoardState>((set, get) => ({
     },
 
     fetchBoard: async (boardId, silent = false) => {
+        const isNewBoard = boardId !== get().activeBoardId;
         if (!silent) {
             set({ activeBoardId: boardId, boardName: 'Loading...', lists: [], activeMembers: [], currentUserRole: null });
             // Update recently viewed
@@ -503,7 +559,9 @@ export const useStore = create<BoardState>((set, get) => ({
                     activeMembers: data.activeMembers || [],
                     activeBoardOwnerId: data.ownerId,
                     activeProjectId: data.projectId,
-                    currentUserRole: data.currentUserRole
+                    currentUserRole: data.currentUserRole,
+                    // reset filters on new board
+                    ...(isNewBoard ? { boardFilterQuery: '', boardFilterDue: 'all' as BoardFilterDueOption, boardFilterStatus: 'all' as BoardFilterStatusOption, boardFilterLabels: [] } : {})
                 });
 
                 if (data.projectId) {
@@ -551,6 +609,21 @@ export const useStore = create<BoardState>((set, get) => ({
             get().fetchBoard(boardId, true);
         } catch (e) {
             console.error('Update Member Role failed:', e);
+            throw e;
+        }
+    },
+
+    updateBoardVisibility: async (boardId, visibility) => {
+        const oldBoards = get().boards;
+        set(state => ({
+            boards: state.boards.map(b => b.id === boardId ? { ...b, visibility } : b)
+        }));
+        try {
+            const { error } = await client.boards[boardId].patch({ visibility });
+            if (error) throw error;
+        } catch (e) {
+            set({ boards: oldBoards });
+            console.error('Update Board Visibility failed:', e);
             throw e;
         }
     },
@@ -1132,6 +1205,121 @@ export const useStore = create<BoardState>((set, get) => ({
             set(state => ({ userImages: state.userImages.filter(img => img.id !== imageId) }));
         } catch (e) {
             console.error('Delete Image Error', e);
+        }
+    },
+
+    // --- Labels & Search Implementation ---
+
+    fetchProjectLabels: async (projectId) => {
+        try {
+            const { data, error } = await client.projects[projectId].labels.get();
+            if (error) throw error;
+            return data as Label[];
+        } catch (e) {
+            console.error('Fetch Labels Error', e);
+            return [];
+        }
+    },
+
+    createProjectLabel: async (projectId, title, color) => {
+        try {
+            const { data, error } = await client.projects[projectId].labels.post({ title, color });
+            if (error) throw error;
+            return data as Label;
+        } catch (e) {
+            console.error('Create Label Error', e);
+            return null;
+        }
+    },
+
+    updateProjectLabel: async (labelId, updates) => {
+        try {
+            await client.labels[labelId].patch(updates);
+            set(state => ({
+                lists: state.lists.map(list => ({
+                    ...list,
+                    cards: list.cards.map(card => ({
+                        ...card,
+                        labels: card.labels?.map(l => l.id === labelId ? { ...l, ...updates } : l)
+                    }))
+                }))
+            }));
+        } catch (e) {
+            console.error('Update Label Error', e);
+        }
+    },
+
+    deleteProjectLabel: async (labelId) => {
+        set(state => ({
+            lists: state.lists.map(list => ({
+                ...list,
+                cards: list.cards.map(card => ({
+                    ...card,
+                    labels: card.labels?.filter(l => l.id !== labelId)
+                }))
+            }))
+        }));
+        try {
+            await client.labels[labelId].delete();
+        } catch (e) {
+            console.error('Delete Label Error', e);
+        }
+    },
+
+    assignLabelToCard: async (cardId, label) => {
+        const oldLists = get().lists;
+        set(state => ({
+            lists: state.lists.map(list => ({
+                ...list,
+                cards: list.cards.map(card => 
+                    card.id === cardId 
+                        ? { ...card, labels: [...(card.labels || []), label] }
+                        : card
+                )
+            }))
+        }));
+        try {
+            const { error } = await client.cards[cardId].labels.post({ labelId: label.id });
+            if (error) throw error;
+        } catch (e) {
+            set({ lists: oldLists });
+            console.error('Assign Label Error', e);
+        }
+    },
+
+    removeLabelFromCard: async (cardId, labelId) => {
+        const oldLists = get().lists;
+        set(state => ({
+            lists: state.lists.map(list => ({
+                ...list,
+                cards: list.cards.map(card => 
+                    card.id === cardId 
+                        ? { ...card, labels: card.labels?.filter(l => l.id !== labelId) }
+                        : card
+                )
+            }))
+        }));
+        try {
+            const { error } = await client.cards[cardId].labels[labelId].delete();
+            if (error) throw error;
+        } catch (e) {
+            set({ lists: oldLists });
+            console.error('Remove Label Error', e);
+        }
+    },
+
+    searchCards: async (q, dueSoon) => {
+        try {
+            const query: any = {};
+            if (q) query.q = q;
+            if (dueSoon) query.dueSoon = 'true';
+            
+            const { data, error } = await client.cards.search.get({ $query: query });
+            if (error) throw error;
+            return data as Card[];
+        } catch (e) {
+            console.error('Search Cards Error', e);
+            return [];
         }
     }
 }));

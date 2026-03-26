@@ -32,11 +32,11 @@ export default function SharedBoards() {
                         <Card 
                             key={board.id} 
                             className="group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all border-none overflow-hidden"
+                            style={{ backgroundColor: '#0079bf' }}
                             onClick={() => navigate(`/boards/${board.id}`)}
                         >
                             <CardContent 
-                                className="h-[120px] p-4 flex flex-col justify-between text-white relative"
-                                style={{ backgroundColor: '#0079bf' }}
+                                className="h-full min-h-[120px] p-4 flex flex-col justify-between text-white relative"
                             >
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                                 <div className="flex justify-between items-start relative z-10">

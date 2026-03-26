@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
-import { GoPerson, GoMail, GoImage, GoCheck, GoTrash, GoCopy, GoUpload, GoLock, GoSync, GoCircle, GoClock, GoCalendar } from 'react-icons/go';
+import { GoPerson, GoMail, GoImage, GoCheck, GoTrash, GoCopy, GoUpload, GoLock, GoSync, GoClock, GoCalendar } from 'react-icons/go';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { AvatarCropDialog } from '../components/AvatarCropDialog';

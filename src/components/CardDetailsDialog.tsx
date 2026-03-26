@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useStore, type Card } from '../store';
+import { useStore, type Card, type Label as StoreLabel } from '../store';
 import {
     Dialog,
     DialogContent,
@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { GoLocation, GoClock, GoTrash, GoEye, GoSearch, GoX } from "react-icons/go";
+import { GoLocation, GoClock, GoTrash, GoEye, GoSearch, GoX, GoTag, GoPlus } from "react-icons/go";
 import ReactMarkdown from 'react-markdown';
 import { DateInput } from "./ui/date-input";
 import { TimeInput } from "./ui/time-input";
@@ -66,7 +66,19 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
     const updateCard = useStore(state => state.updateCard);
     const deleteCard = useStore(state => state.deleteCard);
     const uploadImage = useStore(state => state.uploadImage);
+    const activeProjectId = useStore(state => state.activeProjectId);
+    const fetchProjectLabels = useStore(state => state.fetchProjectLabels);
+    const createProjectLabel = useStore(state => state.createProjectLabel);
+    const assignLabelToCard = useStore(state => state.assignLabelToCard);
+    const removeLabelFromCard = useStore(state => state.removeLabelFromCard);
+
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    
+    // Label states
+    const [projectLabels, setProjectLabels] = useState<StoreLabel[]>([]);
+    const [isCreatingLabel, setIsCreatingLabel] = useState(false);
+    const [newLabelTitle, setNewLabelTitle] = useState('');
+    const [newLabelColor, setNewLabelColor] = useState('#3b82f6');
     
     // Basic fields
     const [content, setContent] = useState('');
@@ -96,6 +108,12 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
             textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
         }
     }, [description, previewMarkdown, open]);
+
+    useEffect(() => {
+        if (open && activeProjectId) {
+            fetchProjectLabels(activeProjectId).then(setProjectLabels);
+        }
+    }, [open, activeProjectId, fetchProjectLabels]);
 
     useEffect(() => {
         if (card) {
@@ -201,6 +219,16 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
         }
     };
 
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const uploaded = await uploadImage(file);
+            if (uploaded) {
+                setImageUrl(uploaded.filename);
+            }
+        }
+    };
+
     const handleGeocode = async () => {
         if (!location.trim()) {
             setLocationLat(null);
@@ -258,6 +286,117 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                         <Input id="content" value={content} onChange={(e) => setContent(e.target.value)} />
                     </div>
                     
+                    {/* Labels Section */}
+                    {activeProjectId && (
+                        <div className="grid gap-2">
+                            <Label>Labels</Label>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {card.labels?.map(label => (
+                                    <div 
+                                        key={label.id} 
+                                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md text-white shadow-sm"
+                                        style={{ backgroundColor: label.color }}
+                                    >
+                                        <GoTag className="w-3 h-3 opacity-80" />
+                                        {label.title}
+                                        <button 
+                                            onClick={() => removeLabelFromCard(card.id, label.id)}
+                                            className="ml-1 hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                                        >
+                                            <GoX className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ))}
+
+                                <Select 
+                                    value="" 
+                                    onValueChange={(val) => {
+                                        if (val === 'create_new') {
+                                            setIsCreatingLabel(true);
+                                        } else {
+                                            const lbl = projectLabels.find(l => l.id === val);
+                                            if (lbl && !card.labels?.find(l => l.id === lbl.id)) {
+                                                assignLabelToCard(card.id, lbl);
+                                            }
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger className="w-auto h-7 px-3 text-xs bg-zinc-100 dark:bg-zinc-800 border-dashed hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
+                                        <div className="flex items-center gap-1.5 min-w-[80px] justify-center"><GoPlus /> Add Label</div>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {projectLabels.filter(pl => !card.labels?.find(cl => cl.id === pl.id)).map(label => (
+                                            <SelectItem key={label.id} value={label.id}>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: label.color }} />
+                                                    {label.title}
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                        {projectLabels.length === 0 && (
+                                            <div className="px-2 py-1.5 text-xs text-zinc-500 italic">No project labels found</div>
+                                        )}
+                                        <SelectItem value="create_new" className="text-blue-500 font-medium border-t mt-1">
+                                            + Create New Label
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Create Label Inline Form */}
+                            {isCreatingLabel && (
+                                <div className="mt-2 p-3 border rounded-md bg-zinc-50 dark:bg-zinc-900/50 flex flex-col gap-3 shadow-sm">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-sm font-medium">Create Project Label</h4>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsCreatingLabel(false)}>
+                                            <GoX className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                    <div className="flex gap-2 items-end">
+                                        <div className="flex-1 space-y-1.5">
+                                            <Label className="text-xs">Title</Label>
+                                            <Input 
+                                                value={newLabelTitle} 
+                                                onChange={e => setNewLabelTitle(e.target.value)} 
+                                                className="h-8 text-sm"
+                                                placeholder="e.g. Bug, Feature"
+                                                autoFocus
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5 shrink-0">
+                                            <Label className="text-xs">Color</Label>
+                                            <div className="flex items-center gap-1">
+                                                <input 
+                                                    type="color" 
+                                                    value={newLabelColor} 
+                                                    onChange={e => setNewLabelColor(e.target.value)}
+                                                    className="w-8 h-8 p-0 border-0 rounded cursor-pointer overflow-hidden"
+                                                />
+                                            </div>
+                                        </div>
+                                        <Button 
+                                            size="sm" 
+                                            className="h-8 shrink-0"
+                                            disabled={!newLabelTitle.trim()}
+                                            onClick={async () => {
+                                                if (!activeProjectId || !newLabelTitle.trim()) return;
+                                                const lbl = await createProjectLabel(activeProjectId, newLabelTitle.trim(), newLabelColor);
+                                                if (lbl) {
+                                                    setProjectLabels(prev => [...prev, lbl]);
+                                                    assignLabelToCard(card.id, lbl);
+                                                    setIsCreatingLabel(false);
+                                                    setNewLabelTitle('');
+                                                }
+                                            }}
+                                        >
+                                            Create
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    
                     <div className="grid gap-2">
                         <div className="flex justify-between items-center">
                             <Label htmlFor="description">Description (Markdown Supported)</Label>
@@ -311,8 +450,26 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                                     </div>
                                     <div className="text-center">
                                         <p className="text-sm font-medium">Drag & Drop Image</p>
-                                        <p className="text-xs text-zinc-500">Upload to gallery and set as cover</p>
+                                        <p className="text-xs text-zinc-500 mb-2">or upload from your device</p>
+                                        <Button 
+                                            type="button" 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                document.getElementById('cover-image-upload')?.click();
+                                            }}
+                                        >
+                                            Choose File
+                                        </Button>
                                     </div>
+                                    <input 
+                                        id="cover-image-upload"
+                                        type="file" 
+                                        accept="image/*" 
+                                        className="hidden"
+                                        onChange={handleFileChange}
+                                    />
                                 </>
                             )}
                         </div>
