@@ -13,10 +13,16 @@ export default function DashboardPage() {
     useEffect(() => {
         fetchBoards();
         fetchProjects();
+        
+        // Prevent scrolling on the dashboard page
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
     }, [fetchBoards, fetchProjects]);
 
     return (
-        <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 relative px-4">
+        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative px-4 flex flex-col h-[calc(100vh-8rem)]">
             <RecentBoards />
             
             <div className="space-y-6">

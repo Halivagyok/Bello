@@ -79,7 +79,7 @@ export default function Auth() {
                                     <form onSubmit={(e) => { e.preventDefault(); handleAuth(true); }}>
                                         <CardHeader>
                                             <CardTitle className="text-2xl">Welcome back</CardTitle>
-                                            <CardDescription>
+                                            <CardDescription className="text-slate-700 dark:text-zinc-400 font-medium">
                                                 Enter your credentials to access your account.
                                             </CardDescription>
                                         </CardHeader>
@@ -130,7 +130,7 @@ export default function Auth() {
                                     <form onSubmit={(e) => { e.preventDefault(); handleAuth(false); }}>
                                         <CardHeader>
                                             <CardTitle className="text-2xl">Create an account</CardTitle>
-                                            <CardDescription>
+                                            <CardDescription className="text-slate-700 dark:text-zinc-400 font-medium">
                                                 Join Bello to start managing your projects efficiently.
                                             </CardDescription>
                                         </CardHeader>
