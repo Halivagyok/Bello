@@ -238,20 +238,19 @@ export default function ProjectDetails() {
                 {projectBoards.map(board => (
                     <Card 
                         key={board.id} 
-                        className="group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all border-none overflow-hidden"
-                        style={{ backgroundColor: '#0079bf' }}
+                        className="group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all border border-[#0079bf]/20 dark:border-[#0079bf]/20 overflow-hidden bg-[#0079bf]/10 dark:bg-[#0079bf]/10 backdrop-blur-md"
                         onClick={() => navigate(`/boards/${board.id}`)}
                     >
                         <CardContent 
-                            className="h-full min-h-[120px] p-4 flex flex-col justify-between text-white relative"
+                            className="h-full min-h-[120px] p-4 flex flex-col justify-between relative"
                         >
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                            <div className="flex justify-between items-start relative z-10">
+                            <div className="absolute inset-0 bg-transparent group-hover:bg-black/5 dark:group-hover:bg-white/5 transition-colors" />
+                            <div className="flex justify-between items-start relative z-10 text-slate-900 dark:text-blue-50">
                                 <h3 className="font-bold text-lg leading-tight line-clamp-2 flex items-center gap-2">
                                     <Layout className="w-4 h-4" />
                                     {board.title}
                                 </h3>
-                                <Avatar className="w-6 h-6 border border-white/20 shrink-0">
+                                <Avatar className="w-6 h-6 border border-white/40 shrink-0">
                                     {board.ownerAvatarUrl && (
                                         <AvatarImage src={`${API_URL}/uploads/${board.ownerAvatarUrl}`} />
                                     )}

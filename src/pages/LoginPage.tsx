@@ -49,10 +49,10 @@ export default function Auth() {
         <div className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden p-4">
             <ShaderBackground />
             <div className="flex items-center gap-2 mb-8 animate-in fade-in slide-in-from-top-4 duration-1000 z-10">
-                <div className="bg-primary p-2 rounded-xl">
-                    <Layout className="w-8 h-8 text-primary-foreground" />
+                <div className="bg-white p-2 rounded-xl">
+                    <Layout className="w-8 h-8 text-black" />
                 </div>
-                <h1 className="text-4xl font-black tracking-tighter text-foreground">Bello</h1>
+                <h1 className="text-4xl font-black tracking-tighter text-white">Bello</h1>
             </div>
 
             <Tabs 
