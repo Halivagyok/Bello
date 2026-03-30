@@ -16,7 +16,7 @@ export default function DashboardPage() {
     }, [fetchBoards, fetchProjects]);
 
     return (
-        <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+        <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 relative px-4">
             <RecentBoards />
             
             <div className="space-y-6">
