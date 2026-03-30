@@ -35,9 +35,11 @@ export default function MainLayout() {
     };
 
     return (
-        <div className="min-h-screen bg-background">
+        <div 
+            className="min-h-screen relative bg-gradient-to-br from-[#DBEAFE] via-[#0EA5E9] to-[#0F172A] dark:from-[#0F172A] dark:via-[#0EA5E9] dark:to-[#082f49]"
+        >
             {/* Top Bar */}
-            <header className="border-b bg-card text-card-foreground px-4 sm:px-6 h-16 flex items-center justify-between sticky top-0 z-50 shadow-sm">
+            <header className="border-b bg-card/60 backdrop-blur-md text-card-foreground px-4 sm:px-6 h-16 flex items-center justify-between sticky top-0 z-50 shadow-sm">
                 <Link to="/boards" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
                     <div className="bg-primary p-1.5 rounded-lg">
                         <Layout className="w-5 h-5 text-primary-foreground" />
