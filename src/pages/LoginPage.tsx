@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../store';
 import { Button } from "@/components/ui/button"
+import { ShaderBackground } from "@/components/ui/ShaderBackground";
 import {
   Card,
   CardContent,
@@ -45,8 +46,9 @@ export default function Auth() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col justify-center items-center bg-zinc-50 dark:bg-zinc-950 p-4">
-            <div className="flex items-center gap-2 mb-8 animate-in fade-in slide-in-from-top-4 duration-1000">
+        <div className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden p-4">
+            <ShaderBackground />
+            <div className="flex items-center gap-2 mb-8 animate-in fade-in slide-in-from-top-4 duration-1000 z-10">
                 <div className="bg-primary p-2 rounded-xl">
                     <Layout className="w-8 h-8 text-primary-foreground" />
                 </div>
@@ -56,9 +58,9 @@ export default function Auth() {
             <Tabs 
                 value={activeTab} 
                 onValueChange={setActiveTab} 
-                className="w-full max-w-md"
+                className="w-full max-w-md z-10"
             >
-                <TabsList className="grid w-full grid-cols-2 mb-8">
+                <TabsList className="grid w-full grid-cols-2 mb-8 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-xl border border-white/10">
                     <TabsTrigger value="login">Login</TabsTrigger>
                     <TabsTrigger value="signup">Sign Up</TabsTrigger>
                 </TabsList>
@@ -73,7 +75,7 @@ export default function Auth() {
                                 exit={{ opacity: 0, x: 20, scale: 0.95 }}
                                 transition={{ duration: 0.2, ease: "easeInOut" }}
                             >
-                                <Card className="border-none shadow-xl bg-card">
+                                <Card className="border border-white/10 shadow-2xl bg-white/40 dark:bg-zinc-950/40 backdrop-blur-xl">
                                     <form onSubmit={(e) => { e.preventDefault(); handleAuth(true); }}>
                                         <CardHeader>
                                             <CardTitle className="text-2xl">Welcome back</CardTitle>
@@ -90,7 +92,7 @@ export default function Auth() {
                                                     placeholder="m@example.com" 
                                                     value={email}
                                                     onChange={(e) => setEmail(e.target.value)}
-                                                    className="bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                                                    className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-white/20 focus-visible:ring-1 focus-visible:ring-primary"
                                                     required 
                                                 />
                                             </div>
@@ -101,7 +103,7 @@ export default function Auth() {
                                                     type="password" 
                                                     value={password}
                                                     onChange={(e) => setPassword(e.target.value)}
-                                                    className="bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                                                    className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-white/20 focus-visible:ring-1 focus-visible:ring-primary"
                                                     required 
                                                 />
                                             </div>
@@ -124,7 +126,7 @@ export default function Auth() {
                                 exit={{ opacity: 0, x: -20, scale: 0.95 }}
                                 transition={{ duration: 0.2, ease: "easeInOut" }}
                             >
-                                <Card className="border-none shadow-xl bg-card">
+                                <Card className="border border-white/10 shadow-2xl bg-white/40 dark:bg-zinc-950/40 backdrop-blur-xl">
                                     <form onSubmit={(e) => { e.preventDefault(); handleAuth(false); }}>
                                         <CardHeader>
                                             <CardTitle className="text-2xl">Create an account</CardTitle>
@@ -140,7 +142,7 @@ export default function Auth() {
                                                     placeholder="John Doe" 
                                                     value={name}
                                                     onChange={(e) => setName(e.target.value)}
-                                                    className="bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                                                    className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-white/20 focus-visible:ring-1 focus-visible:ring-primary"
                                                     required 
                                                 />
                                             </div>
@@ -152,7 +154,7 @@ export default function Auth() {
                                                     placeholder="m@example.com" 
                                                     value={email}
                                                     onChange={(e) => setEmail(e.target.value)}
-                                                    className="bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                                                    className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-white/20 focus-visible:ring-1 focus-visible:ring-primary"
                                                     required 
                                                 />
                                             </div>
@@ -163,7 +165,7 @@ export default function Auth() {
                                                     type="password" 
                                                     value={password}
                                                     onChange={(e) => setPassword(e.target.value)}
-                                                    className="bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary"
+                                                    className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-white/20 focus-visible:ring-1 focus-visible:ring-primary"
                                                     required 
                                                 />
                                             </div>
