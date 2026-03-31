@@ -77,7 +77,7 @@ export function GlobalSearch({ onOpenChange }: { onOpenChange?: (open: boolean) 
                 ) : (
                     <button 
                         onClick={() => { setIsOpen(true); onOpenChange?.(true); }}
-                        className="w-9 h-9 flex shrink-0 items-center justify-center rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors"
+                        className="w-9 h-9 flex shrink-0 items-center justify-center rounded-md transition-colors text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20"
                         title="Global Search"
                     >
                         <GoSearch className="w-4 h-4" />

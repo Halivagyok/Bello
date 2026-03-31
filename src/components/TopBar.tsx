@@ -226,7 +226,7 @@ export default function TopBar() {
                                     canCreate={isOwnerOrAdmin}
                                 />
                             ) : (
-                                <h1 className="text-lg font-bold text-white whitespace-nowrap drop-shadow-sm truncate">
+                                <h1 className="text-lg font-bold text-zinc-900 dark:text-white whitespace-nowrap drop-shadow-sm truncate">
                                     {boardName}
                                 </h1>
                             )}
@@ -273,7 +273,7 @@ export default function TopBar() {
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-9 w-9 bg-white/10 hover:bg-white/20 text-white shrink-0 transition-colors ml-1"
+                                className="h-9 w-9 shrink-0 transition-colors ml-1 text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20"
                                 onClick={() => setCreateBoardOpen(true)}
                             >
                                 <Plus className="w-4 h-4" />
@@ -284,7 +284,7 @@ export default function TopBar() {
 
                 <div className="flex items-center justify-between overflow-visible pb-1 relative w-full gap-2">
                     {!isMobileSearchOpen && (
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-white bg-white/10 hover:bg-white/20 shrink-0 transition-colors" onClick={() => navigate('/boards')}>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 transition-colors text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20" onClick={() => navigate('/boards')}>
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                     )}
@@ -293,14 +293,14 @@ export default function TopBar() {
                         {!isViewer && <GlobalSearch onOpenChange={setIsMobileSearchOpen} />}
                         {!isMobileSearchOpen && !isViewer && activeProjectId && <BoardFilter />}
                         {!isMobileSearchOpen && activeBoardId && <BoardVisibilityMenu />}
-                        {!isMobileSearchOpen && <ModeToggle variant="ghost" className="text-white bg-white/10 hover:bg-white/20 h-9 w-9 shrink-0" />}
+                        {!isMobileSearchOpen && <ModeToggle variant="ghost" className="h-9 w-9 shrink-0 text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20" />}
                     </div>
 
                     {!isMobileSearchOpen && (
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="text-white bg-white/10 hover:bg-white/20 h-9 w-9 shrink-0"
+                            className="h-9 w-9 shrink-0 text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20"
                             onClick={() => {
                                 setEditBoardTitle(boardName);
                                 setSettingsOpen(true);
@@ -324,7 +324,7 @@ export default function TopBar() {
                             canCreate={isOwnerOrAdmin}
                         />
                     ) : (
-                        <h1 className="text-xl font-bold text-white whitespace-nowrap drop-shadow-sm">
+                        <h1 className="text-xl font-bold text-zinc-900 dark:text-white whitespace-nowrap drop-shadow-sm">
                             {boardName}
                         </h1>
                     )}
@@ -375,7 +375,7 @@ export default function TopBar() {
                         {activeProjectId && isOwnerOrAdmin && (
                             <Button
                                 onClick={() => setInviteOpen(true)}
-                                className="bg-white text-black hover:bg-white/90 h-9 gap-2 px-3 sm:px-4"
+                                className="h-9 gap-2 px-3 sm:px-4 bg-zinc-900 text-white hover:bg-zinc-900/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
                             >
                                 <Share className="w-4 h-4" />
                                 <span className="hidden [@media(min-width:900px)]:inline">Invite to Workspace</span>
@@ -387,7 +387,7 @@ export default function TopBar() {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="text-white bg-white/10 hover:bg-white/20 h-9 w-9"
+                            className="h-9 w-9 text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20"
                             onClick={() => {
                                 setEditBoardTitle(boardName);
                                 setSettingsOpen(true);
@@ -397,7 +397,7 @@ export default function TopBar() {
                             <Settings className="w-4 h-4" />
                         </Button>
 
-                        <ModeToggle variant="ghost" className="text-white bg-white/10 hover:bg-white/20 h-9 w-9 shrink-0" />
+                        <ModeToggle variant="ghost" className="h-9 w-9 shrink-0 text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20" />
                     </div>
                 </div>
             </div>

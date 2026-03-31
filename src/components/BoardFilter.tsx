@@ -46,7 +46,7 @@ export function BoardFilter() {
             <Button 
                 variant={hasFilters ? "default" : "ghost"} 
                 size="icon" 
-                className={`h-9 w-9 relative transition-colors ${!hasFilters ? 'text-white bg-white/10 hover:bg-white/20' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                className={`h-9 w-9 relative transition-colors ${!hasFilters ? 'text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
                 onClick={() => setIsOpen(!isOpen)}
                 title="Board Filter"
             >

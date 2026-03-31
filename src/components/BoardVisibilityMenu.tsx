@@ -50,7 +50,7 @@ export function BoardVisibilityMenu() {
             <DropdownMenuTrigger asChild>
                 <Button 
                     variant="ghost" 
-                    className="bg-white/10 hover:bg-white/20 text-white shrink-0 h-9 w-9 p-0 sm:w-auto sm:px-3 flex items-center justify-center gap-2 transition-colors" 
+                    className="shrink-0 h-9 w-9 p-0 sm:w-auto sm:px-3 flex items-center justify-center gap-2 transition-colors text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20" 
                     disabled={disabled}
                     title={disabled ? "Only board admins can change visibility" : "Change visibility"}
                 >

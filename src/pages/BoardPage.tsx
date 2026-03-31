@@ -8,6 +8,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus, Layout, ArrowLeft } from 'lucide-react';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { LiquidGradient } from "@/components/ui/LiquidGradient";
 
 export default function Board() {
     const { boardId } = useParams<{ boardId: string }>();
@@ -131,21 +132,26 @@ export default function Board() {
     };
 
     return (
-        <div className="h-screen flex bg-gradient-to-br from-[#0079bf] to-[#5067c5] dark:from-[#0c2b4e] dark:to-[#1d546c] overflow-hidden">
+        <div className={`h-screen flex overflow-hidden relative ${!isDesktop ? 'bg-gradient-to-br from-[#0079bf] to-[#5067c5] dark:from-[#0c2b4e] dark:to-[#1d546c]' : ''}`}>
+            {isDesktop && (
+                <div className="absolute inset-0 -z-10">
+                    <LiquidGradient />
+                </div>
+            )}
             {/* Sidebar */}
             <aside className="hidden lg:flex w-[260px] transition-all duration-300 shrink-0 border-r border-white/10 bg-black/15 backdrop-blur-sm flex-col p-4">
                 <div 
                     className="flex items-center gap-2 mb-8 px-2 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate('/boards')}
                 >
-                    <Layout className="w-6 h-6 text-white shrink-0" />
-                    <span className="text-xl font-bold text-white tracking-tight">Bello</span>
+                    <Layout className="w-6 h-6 text-zinc-900 dark:text-white shrink-0" />
+                    <span className="text-xl font-bold text-zinc-900 dark:text-white tracking-tight">Bello</span>
                 </div>
 
                 <nav className="space-y-1">
                     <Button
                         variant="ghost"
-                        className="w-full justify-center lg:justify-start text-white hover:bg-white/10 gap-2 font-medium px-0 lg:px-4"
+                        className="w-full justify-center lg:justify-start gap-2 font-medium px-0 lg:px-4 text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-transparent dark:hover:bg-white/10"
                         onClick={() => navigate('/boards')}
                         title="Back to Boards"
                     >
@@ -185,7 +191,7 @@ export default function Board() {
                                 <div className="hidden lg:block w-[280px] shrink-0">
                                     <Button
                                         onClick={() => addList("New List")}
-                                        className="w-full justify-start bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-md h-auto py-3 px-4 font-medium"
+                                        className="w-full justify-start border-0 backdrop-blur-md h-auto py-3 px-4 font-medium bg-black/5 text-zinc-900 hover:bg-black/10 dark:bg-white/20 dark:hover:bg-white/30 dark:text-white"
                                     >
                                         <Plus className="w-5 h-5 mr-2" />
                                         Add another list
