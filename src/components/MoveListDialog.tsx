@@ -171,7 +171,7 @@ export default function MoveListDialog({ open, onClose, listId }: MoveListDialog
                             </Select>
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="gap-2 sm:gap-0">
                         <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
                         <Button type="submit" disabled={!targetBoardId}>
                             Move
