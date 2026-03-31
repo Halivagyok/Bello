@@ -33,7 +33,7 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate,
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 1100);
+        const checkMobile = () => setIsMobile(window.innerWidth < 1024);
         checkMobile();
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
@@ -122,32 +122,20 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate,
 
     if (isMobile) {
         return (
-            <div className="flex items-center w-full gap-2">
-                <Select
-                    value={activeBoardId || ''}
-                    onValueChange={(val) => val && navigate(`/boards/${val}`)}
-                >
-                    <SelectTrigger className="flex-1 bg-white/20 dark:bg-white/5 border-0 text-white h-9">
-                        <SelectValue placeholder="Select board" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {boards.length === 0 && <SelectItem value="none" disabled>No boards</SelectItem>}
-                        {boards.map(board => (
-                            <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                {canCreate && (
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={onCreate}
-                        className="shrink-0 h-9 w-9 bg-white/20 dark:bg-white/5 text-white hover:bg-white/30"
-                    >
-                        <Plus className="w-4 h-4" />
-                    </Button>
-                )}
-            </div>
+            <Select
+                value={activeBoardId || ''}
+                onValueChange={(val) => val && navigate(`/boards/${val}`)}
+            >
+                <SelectTrigger className="w-full bg-white/10 dark:bg-white/10 border-0 text-white h-8 hover:bg-white/20 transition-colors">
+                    <SelectValue placeholder="Select board" />
+                </SelectTrigger>
+                <SelectContent>
+                    {boards.length === 0 && <SelectItem value="none" disabled>No boards</SelectItem>}
+                    {boards.map(board => (
+                        <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
         );
     }
 

@@ -225,7 +225,7 @@ export default function CardList({ list, index }: CardListProps) {
                 <div
                     {...provided.draggableProps}
                     ref={provided.innerRef}
-                    className="w-[300px] shrink-0 h-fit"
+                    className="w-full lg:w-[300px] shrink-0 h-fit"
                 >
                     <div 
                         className="rounded-xl flex flex-col max-h-[calc(100vh-100px)] shadow-sm border border-black/5 dark:border-white/5 overflow-hidden"

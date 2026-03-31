@@ -57,7 +57,7 @@ export function BoardFilter() {
             </Button>
 
             {isOpen && (
-                <div className="absolute top-12 right-0 w-[300px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl rounded-xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2">
+                <div className="absolute top-12 left-1/2 sm:left-auto sm:right-0 -translate-x-1/2 sm:translate-x-0 w-[300px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl rounded-xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2">
                     <div className="p-3 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center text-sm font-semibold">
                         <span>Filter Board</span>
                         {hasFilters && (

@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { format } from 'date-fns';
 import { CardDetailsDialog } from './CardDetailsDialog';
 
-export function GlobalSearch() {
+export function GlobalSearch({ onOpenChange }: { onOpenChange?: (open: boolean) => void }) {
     const searchCards = useStore(state => state.searchCards);
     const [query, setQuery] = useState('');
     const [dueSoon, setDueSoon] = useState(false);
@@ -20,6 +20,7 @@ export function GlobalSearch() {
         const handleClickOutside = (e: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
                 setIsOpen(false);
+                onOpenChange?.(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -44,8 +45,8 @@ export function GlobalSearch() {
     }, [query, dueSoon, searchCards, isOpen]);
 
     return (
-        <div className="relative z-50 flex items-center" ref={containerRef}>
-            <div className={`flex items-center transition-all duration-300 ${isOpen ? 'w-64 sm:w-80' : 'w-9'}`}>
+        <div className={`relative z-50 flex items-center ${isOpen ? 'w-full' : 'w-9 sm:w-auto'}`} ref={containerRef}>
+            <div className={`flex items-center transition-all duration-300 ${isOpen ? 'w-full sm:w-64 md:w-80' : 'w-9'}`}>
                 {isOpen ? (
                     <div className="relative w-full">
                         <GoSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
@@ -66,7 +67,7 @@ export function GlobalSearch() {
                                 7d
                             </button>
                             <button 
-                                onClick={() => { setIsOpen(false); setQuery(''); setDueSoon(false); }}
+                                onClick={() => { setIsOpen(false); onOpenChange?.(false); setQuery(''); setDueSoon(false); }}
                                 className="p-1 rounded hover:bg-white/20 text-white/60 hover:text-white"
                             >
                                 <GoX className="w-4 h-4" />
@@ -75,8 +76,8 @@ export function GlobalSearch() {
                     </div>
                 ) : (
                     <button 
-                        onClick={() => setIsOpen(true)}
-                        className="w-9 h-9 flex items-center justify-center rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors"
+                        onClick={() => { setIsOpen(true); onOpenChange?.(true); }}
+                        className="w-9 h-9 flex shrink-0 items-center justify-center rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors"
                         title="Global Search"
                     >
                         <GoSearch className="w-4 h-4" />
@@ -85,7 +86,7 @@ export function GlobalSearch() {
             </div>
 
             {isOpen && (query || dueSoon || isSearching) && (
-                <div className="absolute top-12 right-0 w-[400px] max-w-[90vw] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl rounded-xl overflow-hidden flex flex-col max-h-[70vh]">
+                <div className="absolute top-12 left-1/2 sm:left-auto sm:right-0 -translate-x-1/2 sm:translate-x-0 w-[400px] max-w-[90vw] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl rounded-xl overflow-hidden flex flex-col max-h-[70vh]">
                     <div className="p-2 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 flex justify-between items-center text-xs font-medium text-zinc-500">
                         <span>Search Results</span>
                         {isSearching && <span className="animate-pulse">Searching...</span>}
@@ -103,6 +104,7 @@ export function GlobalSearch() {
                                 key={card.id}
                                 onClick={() => {
                                     setIsOpen(false);
+                                    onOpenChange?.(false);
                                     setSelectedCard(card);
                                 }}
                                 className="p-3 rounded-lg border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-blue-200 dark:hover:border-blue-900 hover:shadow-md cursor-pointer transition-all flex flex-col gap-2 group"

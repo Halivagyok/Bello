@@ -7,10 +7,12 @@ import CardList from '../components/CardList';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus, Layout, ArrowLeft } from 'lucide-react';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 export default function Board() {
     const { boardId } = useParams<{ boardId: string }>();
     const navigate = useNavigate();
+    const isDesktop = useMediaQuery("(min-width: 1024px)");
 
     const lists = useStore((state) => state.lists);
     const moveList = useStore((state) => state.moveList);
@@ -131,13 +133,13 @@ export default function Board() {
     return (
         <div className="h-screen flex bg-gradient-to-br from-[#0079bf] to-[#5067c5] dark:from-[#0c2b4e] dark:to-[#1d546c] overflow-hidden">
             {/* Sidebar */}
-            <aside className="w-[70px] lg:w-[260px] transition-all duration-300 shrink-0 border-r border-white/10 bg-black/15 backdrop-blur-sm flex flex-col p-3 lg:p-4">
+            <aside className="hidden lg:flex w-[260px] transition-all duration-300 shrink-0 border-r border-white/10 bg-black/15 backdrop-blur-sm flex-col p-4">
                 <div 
                     className="flex items-center gap-2 mb-8 px-2 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate('/boards')}
                 >
                     <Layout className="w-6 h-6 text-white shrink-0" />
-                    <span className="text-xl font-bold text-white tracking-tight hidden lg:block">Bello</span>
+                    <span className="text-xl font-bold text-white tracking-tight">Bello</span>
                 </div>
 
                 <nav className="space-y-1">
@@ -148,7 +150,7 @@ export default function Board() {
                         title="Back to Boards"
                     >
                         <ArrowLeft className="w-4 h-4 shrink-0" />
-                        <span className="hidden lg:block">Back to Boards</span>
+                        <span className="">Back to Boards</span>
                     </Button>
                 </nav>
             </aside>
@@ -160,16 +162,16 @@ export default function Board() {
                         <TopBar />
                     </div>
                     
-                    <div className="flex-1 flex gap-4 overflow-x-auto overflow-y-hidden p-4 items-start scrollbar-board">
-                        <Droppable droppableId="board" direction="horizontal" type="list">
+                    <div className="flex-1 flex gap-4 overflow-y-auto lg:overflow-x-auto lg:overflow-y-hidden p-4 items-start scrollbar-board flex-col lg:flex-row">
+                        <Droppable droppableId="board" direction={isDesktop ? "horizontal" : "vertical"} type="list">
                             {(provided) => (
                                 <div
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
-                                    className="flex gap-4 items-start h-full"
+                                    className="flex gap-4 lg:items-start h-full flex-col lg:flex-row w-full lg:w-auto"
                                 >
                                     {lists.map((list, index) => (
-                                        <div key={list.id}>
+                                        <div key={list.id} className="w-full lg:w-auto">
                                             <CardList list={list} index={index} />
                                         </div>
                                     ))}
@@ -179,15 +181,25 @@ export default function Board() {
                         </Droppable>
 
                         {!isViewer && (
-                            <div className="w-[280px] shrink-0">
-                                <Button
-                                    onClick={() => addList("New List")}
-                                    className="w-full justify-start bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-md h-auto py-3 px-4 font-medium"
-                                >
-                                    <Plus className="w-5 h-5 mr-2" />
-                                    Add another list
-                                </Button>
-                            </div>
+                            <>
+                                <div className="hidden lg:block w-[280px] shrink-0">
+                                    <Button
+                                        onClick={() => addList("New List")}
+                                        className="w-full justify-start bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-md h-auto py-3 px-4 font-medium"
+                                    >
+                                        <Plus className="w-5 h-5 mr-2" />
+                                        Add another list
+                                    </Button>
+                                </div>
+                                <div className="lg:hidden fixed bottom-6 right-6 z-40">
+                                    <Button
+                                        onClick={() => addList("New List")}
+                                        className="w-14 h-14 rounded-full shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground flex items-center justify-center p-0"
+                                    >
+                                        <Plus className="w-6 h-6" />
+                                    </Button>
+                                </div>
+                            </>
                         )}
                     </div>
                 </main>
