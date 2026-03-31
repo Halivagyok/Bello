@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState, useRef } from "react";
+import { motion, useMotionValue, useSpring } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
 
@@ -21,9 +21,30 @@ export function LiquidGradient({
   const [isClient, setIsClient] = useState(false);
   const { theme } = useTheme();
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const smoothX = useSpring(mouseX, { damping: 40, stiffness: 150, mass: 0.8 });
+  const smoothY = useSpring(mouseY, { damping: 40, stiffness: 150, mass: 0.8 });
+
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    
+    // Set initial position out of view or center
+    mouseX.set(typeof window !== "undefined" ? window.innerWidth / 2 : 0);
+    mouseY.set(typeof window !== "undefined" ? window.innerHeight / 2 : 0);
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const { left, top } = containerRef.current.getBoundingClientRect();
+      mouseX.set(e.clientX - left);
+      mouseY.set(e.clientY - top);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
 
   if (!isClient) return null;
 
@@ -35,6 +56,7 @@ export function LiquidGradient({
 
   return (
     <div 
+      ref={containerRef}
       className={cn(
         "relative w-full h-full overflow-hidden flex items-center justify-center transform-gpu", 
         className
@@ -48,6 +70,19 @@ export function LiquidGradient({
         className="absolute inset-[0] filter blur-[90px] md:blur-[120px] opacity-100 saturate-[1.2] transform-gpu"
         style={{ transform: 'translate3d(0, 0, 0)' }}
       >
+        {/* Interactive blob following cursor */}
+        <motion.div
+          className="absolute w-[60%] md:w-[45%] h-[60%] md:h-[45%] rounded-[100%] opacity-80 z-20 transform-gpu"
+          style={{ 
+              backgroundColor: activeColors[0], 
+              left: smoothX,
+              top: smoothY,
+              x: "-50%",
+              y: "-50%",
+              translateZ: 0
+          }}
+        />
+
         {/* Main large fluid blob */}
         <motion.div
           animate={{
