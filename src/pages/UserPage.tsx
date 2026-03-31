@@ -185,7 +185,7 @@ export default function UserPage() {
     };
 
     return (
-        <div className="p-8 max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative p-4 lg:p-8">
             <div className="flex items-center gap-6 mb-8">
                 <div className="relative group">
                     <Avatar className="w-20 h-20 shadow-md shrink-0 border-2 border-background">
@@ -237,11 +237,11 @@ export default function UserPage() {
             </div>
 
             <Tabs defaultValue="gallery" className="w-full">
-                <TabsList className="mb-8">
-                    <TabsTrigger value="gallery" className="gap-2">
+                <TabsList className="mb-8 bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/20 dark:border-white/10">
+                    <TabsTrigger value="gallery" className="gap-2 data-[state=active]:bg-white/60 dark:data-[state=active]:bg-black/60">
                         <GoImage className="w-4 h-4" /> Gallery
                     </TabsTrigger>
-                    <TabsTrigger value="settings" className="gap-2">
+                    <TabsTrigger value="settings" className="gap-2 data-[state=active]:bg-white/60 dark:data-[state=active]:bg-black/60">
                         <GoPerson className="w-4 h-4" /> Account Settings
                     </TabsTrigger>
                 </TabsList>
@@ -255,10 +255,10 @@ export default function UserPage() {
                             onDrop={handleDrop}
                             className={`
                                 p-12 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-4 transition-all
-                                ${dragging ? "border-primary bg-primary/5 scale-[0.99]" : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900"}
+                                ${dragging ? "border-primary bg-primary/10 scale-[0.99]" : "border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md"}
                             `}
                         >
-                            <div className="p-4 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400">
+                            <div className="p-4 rounded-full bg-primary/10 text-primary">
                                 <GoUpload className="w-8 h-8" />
                             </div>
                             <div className="text-center">
@@ -277,7 +277,7 @@ export default function UserPage() {
 
                         {/* Image Grid */}
                         {userImages.filter(img => img.originalName !== 'avatar.jpg').length === 0 ? (
-                            <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border">
+                            <div className="text-center py-20 bg-white/40 dark:bg-black/40 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/10">
                                 <p className="text-zinc-500">You haven't uploaded any images yet.</p>
                             </div>
                         ) : (
@@ -285,8 +285,8 @@ export default function UserPage() {
                                 {userImages
                                     .filter(img => img.originalName !== 'avatar.jpg')
                                     .map((img) => (
-                                    <Card key={img.id} className="overflow-hidden group border-zinc-200 dark:border-zinc-800">
-                                        <div className="aspect-video relative overflow-hidden bg-zinc-100 dark:bg-zinc-950">
+                                    <Card key={img.id} className="overflow-hidden group border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md">
+                                        <div className="aspect-video relative overflow-hidden bg-black/5 dark:bg-white/5">
                                             <img 
                                                 src={`${API_URL}/uploads/${img.filename}`} 
                                                 alt={img.originalName} 
@@ -336,7 +336,7 @@ export default function UserPage() {
                     <div className="grid gap-8 max-w-2xl">
                         {/* Profile Info Form */}
                         <form onSubmit={handleUpdate}>
-                            <Card>
+                            <Card className="overflow-hidden border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md">
                                 <CardHeader>
                                     <CardTitle>Profile Information</CardTitle>
                                     <CardDescription>Update your account details and how others see you.</CardDescription>
@@ -403,7 +403,7 @@ export default function UserPage() {
                                         </div>
                                     </div>
                                 </CardContent>
-                                <CardFooter className="flex justify-between border-t p-6 bg-zinc-50 dark:bg-zinc-900/50">
+                                <CardFooter className="flex justify-between border-t border-white/20 dark:border-white/10 p-6 bg-white/50 dark:bg-black/50 backdrop-blur-md">
                                     <p className="text-xs text-zinc-500">Your profile is visible to other board members.</p>
                                     <Button type="submit" disabled={loading} className="gap-2">
                                         {loading ? "Saving..." : (success ? <><GoCheck className="w-4 h-4" /> Saved</> : "Save Changes")}
@@ -414,7 +414,7 @@ export default function UserPage() {
 
                         {/* Password Change Form */}
                         <form onSubmit={handlePasswordChange}>
-                            <Card>
+                            <Card className="overflow-hidden border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md">
                                 <CardHeader>
                                     <CardTitle>Change Password</CardTitle>
                                     <CardDescription>Ensure your account is using a long, random password to stay secure.</CardDescription>
@@ -468,7 +468,7 @@ export default function UserPage() {
                                         </div>
                                     </div>
                                 </CardContent>
-                                <CardFooter className="flex justify-end border-t p-6 bg-zinc-50 dark:bg-zinc-900/50">
+                                <CardFooter className="flex justify-end border-t border-white/20 dark:border-white/10 p-6 bg-white/50 dark:bg-black/50 backdrop-blur-md">
                                     <Button type="submit" disabled={passwordLoading} className="gap-2">
                                         {passwordLoading ? "Updating..." : (passwordSuccess ? <><GoCheck className="w-4 h-4" /> Updated</> : "Update Password")}
                                     </Button>
