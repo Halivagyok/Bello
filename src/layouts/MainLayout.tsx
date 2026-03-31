@@ -8,6 +8,7 @@ import {
     AvatarFallback,
     AvatarImage,
 } from "@/components/ui/avatar"
+import { LiquidGradient } from '@/components/ui/LiquidGradient';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -35,9 +36,13 @@ export default function MainLayout() {
     };
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen relative flex flex-col">
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <LiquidGradient />
+            </div>
+            
             {/* Top Bar */}
-            <header className="border-b bg-card text-card-foreground px-4 sm:px-6 h-16 flex items-center justify-between sticky top-0 z-50 shadow-sm">
+            <header className="border-b bg-card/60 backdrop-blur-md text-card-foreground px-4 sm:px-6 h-16 flex items-center justify-between sticky top-0 z-50 shadow-sm relative">
                 <Link to="/boards" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
                     <div className="bg-primary p-1.5 rounded-lg">
                         <Layout className="w-5 h-5 text-primary-foreground" />
@@ -90,7 +95,7 @@ export default function MainLayout() {
             </header>
 
             {/* Page Content */}
-            <main className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <main className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 relative z-10 flex-1">
                 <Outlet />
             </main>
         </div>

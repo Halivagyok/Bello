@@ -50,7 +50,7 @@ export function BoardVisibilityMenu() {
             <DropdownMenuTrigger asChild>
                 <Button 
                     variant="ghost" 
-                    className="bg-white/10 hover:bg-white/20 text-white h-9 px-3 flex items-center gap-2" 
+                    className="shrink-0 h-9 w-9 p-0 sm:w-auto sm:px-3 flex items-center justify-center gap-2 transition-colors text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20" 
                     disabled={disabled}
                     title={disabled ? "Only board admins can change visibility" : "Change visibility"}
                 >
@@ -60,7 +60,7 @@ export function BoardVisibilityMenu() {
                     </span>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-80 p-0" align="end">
+            <DropdownMenuContent className="w-80 p-0" align="center">
                 <div className="flex items-center justify-between p-3 pb-2 border-b">
                     <span className="font-semibold text-sm w-full text-center">Change visibility</span>
                     <Button variant="ghost" size="icon" className="h-6 w-6 absolute right-2 top-2" onClick={() => setOpen(false)}>

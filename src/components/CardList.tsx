@@ -20,9 +20,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-    DropdownMenuSub,
-    DropdownMenuSubTrigger,
-    DropdownMenuSubContent,
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -225,7 +222,7 @@ export default function CardList({ list, index }: CardListProps) {
                 <div
                     {...provided.draggableProps}
                     ref={provided.innerRef}
-                    className="w-[300px] shrink-0 h-fit"
+                    className="w-full lg:w-[300px] shrink-0 h-fit"
                 >
                     <div 
                         className="rounded-xl flex flex-col max-h-[calc(100vh-100px)] shadow-sm border border-black/5 dark:border-white/5 overflow-hidden"
@@ -296,56 +293,52 @@ export default function CardList({ list, index }: CardListProps) {
                                                     
                                                     <DropdownMenuSeparator />
                                                     
-                                                    <DropdownMenuSub>
-                                                        <DropdownMenuSubTrigger className="gap-2">
-                                                            <SortAsc className="w-4 h-4" /> Sort cards
-                                                        </DropdownMenuSubTrigger>
-                                                        <DropdownMenuSubContent>
-                                                            <DropdownMenuItem onClick={() => handleSort('oldest')}>Date Created (Oldest)</DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleSort('newest')}>Date Created (Newest)</DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleSort('abc')}>Alphabetically</DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleSort('checked-first')}>Checked First</DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleSort('checked-last')}>Checked Last</DropdownMenuItem>
-                                                        </DropdownMenuSubContent>
-                                                    </DropdownMenuSub>
+                                                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                                                        <SortAsc className="w-4 h-4" /> Sort cards
+                                                    </div>
+                                                    <DropdownMenuItem onClick={() => handleSort('oldest')}>Date Created (Oldest)</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleSort('newest')}>Date Created (Newest)</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleSort('abc')}>Alphabetically</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleSort('checked-first')}>Checked First</DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleSort('checked-last')}>Checked Last</DropdownMenuItem>
 
-                                                    <DropdownMenuSub>
-                                                        <DropdownMenuSubTrigger className="gap-2">
-                                                            <Palette className="w-4 h-4" /> Change color
-                                                        </DropdownMenuSubTrigger>
-                                                        <DropdownMenuSubContent className="p-3 w-[180px]">
-                                                            <div className="grid grid-cols-4 gap-2 mb-3">
-                                                                {[
-                                                                    '#F4F5F7', // Neutral Gray (Bright)
-                                                                    '#4BCE97', // Vibrant Green
-                                                                    '#F5CD47', // Vibrant Yellow
-                                                                    '#FEA362', // Vibrant Orange
-                                                                    '#F87168', // Vibrant Red
-                                                                    '#9F8FEF', // Vibrant Purple
-                                                                    '#579DFF', // Vibrant Blue
-                                                                    '#60C6D2', // Vibrant Teal
-                                                                ].map(color => (
-                                                                    <div
-                                                                        key={color}
-                                                                        onClick={() => handleColorChange(color)}
-                                                                        className={`w-7 h-7 rounded-md cursor-pointer border-2 transition-all hover:scale-110 active:scale-95 ${list.color === color ? 'border-primary ring-1 ring-primary shadow-sm' : 'border-transparent hover:border-zinc-300 dark:hover:border-zinc-600'}`}
-                                                                        style={{ backgroundColor: color }}
-                                                                        title={color}
-                                                                    />
-                                                                ))}
-                                                            </div>
-                                                            <DropdownMenuSeparator />
-                                                            <div className="flex items-center justify-between mt-3 px-1">
-                                                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Custom</span>
-                                                                <input
-                                                                    type="color"
-                                                                    value={list.color || '#F4F5F7'}
-                                                                    onChange={(e) => handleColorChange(e.target.value)}
-                                                                    className="w-8 h-8 p-0.5 border border-zinc-200 dark:border-zinc-800 bg-card cursor-pointer rounded-md transition-shadow hover:shadow-sm"
+                                                    <DropdownMenuSeparator />
+
+                                                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground flex items-center gap-2">
+                                                        <Palette className="w-4 h-4" /> Change color
+                                                    </div>
+                                                    <div className="px-2 py-2">
+                                                        <div className="grid grid-cols-4 gap-2 mb-3">
+                                                            {[
+                                                                '#F4F5F7', // Neutral Gray (Bright)
+                                                                '#4BCE97', // Vibrant Green
+                                                                '#F5CD47', // Vibrant Yellow
+                                                                '#FEA362', // Vibrant Orange
+                                                                '#F87168', // Vibrant Red
+                                                                '#9F8FEF', // Vibrant Purple
+                                                                '#579DFF', // Vibrant Blue
+                                                                '#60C6D2', // Vibrant Teal
+                                                            ].map(color => (
+                                                                <div
+                                                                    key={color}
+                                                                    onClick={() => handleColorChange(color)}
+                                                                    className={`w-7 h-7 rounded-md cursor-pointer border-2 transition-all hover:scale-110 active:scale-95 ${list.color === color ? 'border-primary ring-1 ring-primary shadow-sm' : 'border-transparent hover:border-zinc-300 dark:hover:border-zinc-600'}`}
+                                                                    style={{ backgroundColor: color }}
+                                                                    title={color}
                                                                 />
-                                                            </div>
-                                                        </DropdownMenuSubContent>
-                                                    </DropdownMenuSub>
+                                                            ))}
+                                                        </div>
+                                                        <DropdownMenuSeparator />
+                                                        <div className="flex items-center justify-between mt-3 px-1">
+                                                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Custom</span>
+                                                            <input
+                                                                type="color"
+                                                                value={list.color || '#F4F5F7'}
+                                                                onChange={(e) => handleColorChange(e.target.value)}
+                                                                className="w-8 h-8 p-0.5 border border-zinc-200 dark:border-zinc-800 bg-card cursor-pointer rounded-md transition-shadow hover:shadow-sm"
+                                                            />
+                                                        </div>
+                                                    </div>
 
                                                     {canTransfer && (
                                                         <DropdownMenuItem onClick={() => setOpenTransfer(true)} className="gap-2">
@@ -466,7 +459,7 @@ export default function CardList({ list, index }: CardListProps) {
                                         autoFocus
                                     />
                                 </div>
-                                <DialogFooter>
+                                <DialogFooter className="gap-2 sm:gap-0">
                                     <Button type="button" variant="outline" onClick={() => setOpenDuplicate(false)}>Cancel</Button>
                                     <Button type="submit">Duplicate</Button>
                                 </DialogFooter>
@@ -501,7 +494,7 @@ export default function CardList({ list, index }: CardListProps) {
                                         Note: Members with a lower role than the new owner will no longer be able to modify this list.
                                     </p>
                                 </div>
-                                <DialogFooter>
+                                <DialogFooter className="gap-2 sm:gap-0">
                                     <Button type="button" variant="outline" onClick={() => setOpenTransfer(false)}>Cancel</Button>
                                     <Button type="submit" disabled={!targetOwnerId}>Transfer</Button>
                                 </DialogFooter>

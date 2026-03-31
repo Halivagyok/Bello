@@ -1,5 +1,6 @@
 import { useStore, client } from '../store';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ProjectTabs from './ProjectTabs';
 import { ModeToggle } from './mode-toggle';
 import { Button } from './ui/button';
@@ -40,7 +41,9 @@ import {
     User as UserIcon,
     Eye,
     Lock,
-    Globe
+    Globe,
+    ArrowLeft,
+    Plus
 } from 'lucide-react';
 import { AlertDialog } from './AlertDialog';
 import { GlobalSearch } from './GlobalSearch';
@@ -50,6 +53,7 @@ import { BoardVisibilityMenu } from './BoardVisibilityMenu';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function TopBar() {
+    const navigate = useNavigate();
     const boardName = useStore((state) => state.boardName);
     const activeMembers = useStore((state) => state.activeMembers);
     const updateMemberRole = useStore((state) => state.updateMemberRole);
@@ -76,6 +80,7 @@ export default function TopBar() {
     const [newBoardTitle, setNewBoardTitle] = useState('');
     const [newBoardVisibility, setNewBoardVisibility] = useState<string>('workspace');
     const [editBoardTitle, setEditBoardTitle] = useState('');
+    const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
     // Alert Dialog States
     const [alertDialog, setAlertDialog] = useState<{
@@ -177,7 +182,7 @@ export default function TopBar() {
 
     const handleCreateBoard = async () => {
         if (!newBoardTitle.trim() || !activeProjectId) return;
-        await createBoard(newBoardTitle, activeProjectId, newBoardVisibility as 'private'|'workspace'|'public');
+        await createBoard(newBoardTitle, activeProjectId, newBoardVisibility as 'private' | 'workspace' | 'public');
         setNewBoardTitle('');
         setNewBoardVisibility('workspace');
         setCreateBoardOpen(false);
@@ -207,8 +212,109 @@ export default function TopBar() {
 
     return (
         <div className="w-full mb-4">
-            <div className="flex items-center justify-between gap-4 px-3 py-2 bg-white/15 dark:bg-black/15 backdrop-blur-md rounded-xl shadow-sm relative z-50">
-                <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden">
+            {/* Mobile View Topbar */}
+            <div className="lg:hidden flex flex-col gap-3 px-3 py-2.5 bg-white/15 dark:bg-black/15 backdrop-blur-md rounded-xl shadow-sm relative z-50">
+                <div className="flex items-center justify-between min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <div className="min-w-0 flex-1">
+                            {activeProjectId ? (
+                                <ProjectTabs
+                                    boards={projectBoards}
+                                    activeBoardId={activeBoardId}
+                                    onRename={renameBoard}
+                                    onCreate={() => setCreateBoardOpen(true)}
+                                    canCreate={isOwnerOrAdmin}
+                                />
+                            ) : (
+                                <h1 className="text-lg font-bold text-zinc-900 dark:text-white whitespace-nowrap drop-shadow-sm truncate">
+                                    {boardName}
+                                </h1>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                        {/* Avatars */}
+                        <div
+                            onClick={() => setMembersOpen(true)}
+                            className="flex -space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
+                        >
+                            <TooltipProvider>
+                                {(activeMembers || []).slice(0, 3).map((member) => (
+                                    <Tooltip key={member.id}>
+                                        <TooltipTrigger asChild>
+                                            <Avatar className="w-7 h-7 border-2 border-white dark:border-zinc-900 ring-offset-background">
+                                                {member.avatarUrl && (
+                                                    <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} />
+                                                )}
+                                                <AvatarFallback
+                                                    style={{ backgroundColor: stringToColor(member.name || member.email) }}
+                                                    className="text-[10px] text-white font-bold"
+                                                >
+                                                    {member.name ? member.name[0].toUpperCase() : member.email[0].toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{member.name || member.email} ({member.role})</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                ))}
+                                {activeMembers && activeMembers.length > 3 && (
+                                    <div className="flex items-center justify-center w-7 h-7 rounded-full bg-zinc-700 text-white text-[10px] font-bold border-2 border-white dark:border-zinc-900">
+                                        +{activeMembers.length - 3}
+                                    </div>
+                                )}
+                            </TooltipProvider>
+                        </div>
+                        
+                        {/* Plus button relocated to corner */}
+                        {activeProjectId && isOwnerOrAdmin && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 transition-colors ml-1 text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20"
+                                onClick={() => setCreateBoardOpen(true)}
+                            >
+                                <Plus className="w-4 h-4" />
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between overflow-visible pb-1 relative w-full gap-2">
+                    {!isMobileSearchOpen && (
+                        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 transition-colors text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20" onClick={() => navigate('/boards')}>
+                            <ArrowLeft className="w-5 h-5" />
+                        </Button>
+                    )}
+                    
+                    <div className={`flex items-center gap-2 flex-1 ${isMobileSearchOpen ? 'w-full' : 'justify-center'}`}>
+                        {!isViewer && <GlobalSearch onOpenChange={setIsMobileSearchOpen} />}
+                        {!isMobileSearchOpen && !isViewer && activeProjectId && <BoardFilter />}
+                        {!isMobileSearchOpen && activeBoardId && <BoardVisibilityMenu />}
+                        {!isMobileSearchOpen && <ModeToggle variant="ghost" className="h-9 w-9 shrink-0 text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20" />}
+                    </div>
+
+                    {!isMobileSearchOpen && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 shrink-0 text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20"
+                            onClick={() => {
+                                setEditBoardTitle(boardName);
+                                setSettingsOpen(true);
+                            }}
+                        >
+                            <Settings className="w-4 h-4" />
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            {/* Desktop View Topbar */}
+            <div className="hidden lg:flex items-center justify-between gap-4 px-3 py-2 bg-white/15 dark:bg-black/15 backdrop-blur-md rounded-xl shadow-sm relative z-50">
+                <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden shrink-0">
                     {activeProjectId ? (
                         <ProjectTabs
                             boards={projectBoards}
@@ -218,13 +324,13 @@ export default function TopBar() {
                             canCreate={isOwnerOrAdmin}
                         />
                     ) : (
-                        <h1 className="text-xl font-bold text-white whitespace-nowrap drop-shadow-sm">
+                        <h1 className="text-xl font-bold text-zinc-900 dark:text-white whitespace-nowrap drop-shadow-sm">
                             {boardName}
                         </h1>
                     )}
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-3 shrink-0 ml-auto">
                     {/* Avatars */}
                     <div
                         onClick={() => setMembersOpen(true)}
@@ -238,7 +344,7 @@ export default function TopBar() {
                                             {member.avatarUrl && (
                                                 <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} />
                                             )}
-                                            <AvatarFallback 
+                                            <AvatarFallback
                                                 style={{ backgroundColor: stringToColor(member.name || member.email) }}
                                                 className="text-[10px] text-white font-bold"
                                             >
@@ -261,36 +367,38 @@ export default function TopBar() {
 
                     <div className="w-px h-6 bg-white/30" />
 
-                    {!isViewer && <GlobalSearch />}
+                    <div className="flex items-center gap-2">
+                        {!isViewer && <GlobalSearch />}
 
-                    {!isViewer && activeProjectId && <BoardFilter />}
+                        {!isViewer && activeProjectId && <BoardFilter />}
 
-                    {activeProjectId && isOwnerOrAdmin && (
+                        {activeProjectId && isOwnerOrAdmin && (
+                            <Button
+                                onClick={() => setInviteOpen(true)}
+                                className="h-9 gap-2 px-3 sm:px-4 bg-zinc-900 text-white hover:bg-zinc-900/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
+                            >
+                                <Share className="w-4 h-4" />
+                                <span className="hidden [@media(min-width:900px)]:inline">Invite to Workspace</span>
+                            </Button>
+                        )}
+
+                        {activeBoardId && <BoardVisibilityMenu />}
+
                         <Button
-                            onClick={() => setInviteOpen(true)}
-                            className="bg-white text-black hover:bg-white/90 h-9 gap-2 px-3 sm:px-4"
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20"
+                            onClick={() => {
+                                setEditBoardTitle(boardName);
+                                setSettingsOpen(true);
+                            }}
+                            title="Board Settings"
                         >
-                            <Share className="w-4 h-4" />
-                            <span className="hidden [@media(min-width:900px)]:inline">Invite to Workspace</span>
+                            <Settings className="w-4 h-4" />
                         </Button>
-                    )}
 
-                    {activeBoardId && <BoardVisibilityMenu />}
-
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-white bg-white/10 hover:bg-white/20 h-9 w-9"
-                        onClick={() => {
-                            setEditBoardTitle(boardName);
-                            setSettingsOpen(true);
-                        }}
-                        title="Board Settings"
-                    >
-                        <Settings className="w-4 h-4" />
-                    </Button>
-
-                    <ModeToggle variant="ghost" className="text-white bg-white/10 hover:bg-white/20 h-9 w-9" />
+                        <ModeToggle variant="ghost" className="h-9 w-9 shrink-0 text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20" />
+                    </div>
                 </div>
             </div>
 
@@ -368,7 +476,7 @@ export default function TopBar() {
                                 </Select>
                             </div>
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="gap-2 sm:gap-0">
                             <Button type="button" variant="outline" onClick={() => setInviteOpen(false)}>Cancel</Button>
                             <Button type="submit">Invite</Button>
                         </DialogFooter>
@@ -423,7 +531,7 @@ export default function TopBar() {
                                 </Select>
                             </div>
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="gap-2 sm:gap-0">
                             <Button type="button" variant="outline" onClick={() => setCreateBoardOpen(false)}>Cancel</Button>
                             <Button type="submit">Create</Button>
                         </DialogFooter>
@@ -473,12 +581,12 @@ export default function TopBar() {
                                             <p className="text-xs text-muted-foreground mt-1">{member.email}</p>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="flex items-center gap-2">
                                         {canManageMember && (
                                             <>
-                                                <Select 
-                                                    defaultValue={member.role} 
+                                                <Select
+                                                    defaultValue={member.role}
                                                     onValueChange={(val) => handleRoleChange(member.id, val)}
                                                 >
                                                     <SelectTrigger className="h-8 w-[100px] text-xs">
@@ -491,9 +599,9 @@ export default function TopBar() {
                                                     </SelectContent>
                                                 </Select>
 
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
                                                     className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
                                                     onClick={() => handleRemoveMember(member.id)}
                                                 >
@@ -506,13 +614,13 @@ export default function TopBar() {
                             );
                         })}
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="gap-2 sm:gap-0">
                         <Button variant="outline" onClick={() => setMembersOpen(false)} className="w-full">Close</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog 
+            <AlertDialog
                 open={alertDialog.open}
                 onClose={() => setAlertDialog(prev => ({ ...prev, open: false }))}
                 title={alertDialog.title}

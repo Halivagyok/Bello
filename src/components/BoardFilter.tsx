@@ -46,7 +46,7 @@ export function BoardFilter() {
             <Button 
                 variant={hasFilters ? "default" : "ghost"} 
                 size="icon" 
-                className={`h-9 w-9 relative transition-colors ${!hasFilters ? 'text-white bg-white/10 hover:bg-white/20' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                className={`h-9 w-9 relative transition-colors ${!hasFilters ? 'text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
                 onClick={() => setIsOpen(!isOpen)}
                 title="Board Filter"
             >
@@ -57,7 +57,7 @@ export function BoardFilter() {
             </Button>
 
             {isOpen && (
-                <div className="absolute top-12 right-0 w-[300px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl rounded-xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2">
+                <div className="absolute top-12 left-1/2 sm:left-auto sm:right-0 -translate-x-1/2 sm:translate-x-0 w-[300px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl rounded-xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-2">
                     <div className="p-3 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center text-sm font-semibold">
                         <span>Filter Board</span>
                         {hasFilters && (

@@ -33,7 +33,7 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate,
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 1100);
+        const checkMobile = () => setIsMobile(window.innerWidth < 1024);
         checkMobile();
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
@@ -95,7 +95,7 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate,
                 min-w-[120px] max-w-[160px]  flex-none h-9 px-3 rounded-lg flex items-center cursor-pointer transition-all relative group outline-none focus-visible:ring-2 focus-visible:ring-white/50
                 ${board.id === activeBoardId
                     ? 'bg-white/90 dark:bg-white/20 text-zinc-900 dark:text-white font-bold shadow-sm'
-                    : 'bg-white/30 dark:bg-white/5 text-white/90 hover:bg-white/40 dark:hover:bg-white/10'
+                    : 'bg-black/5 dark:bg-white/5 text-zinc-900/90 dark:text-white/90 hover:bg-black/10 dark:hover:bg-white/10'
                 }
                 ${snapshot.isDragging ? 'z-50 shadow-xl ring-2 ring-primary opacity-90 scale-105' : ''}
             `}
@@ -122,32 +122,20 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate,
 
     if (isMobile) {
         return (
-            <div className="flex items-center w-full gap-2">
-                <Select
-                    value={activeBoardId || ''}
-                    onValueChange={(val) => val && navigate(`/boards/${val}`)}
-                >
-                    <SelectTrigger className="flex-1 bg-white/20 dark:bg-white/5 border-0 text-white h-9">
-                        <SelectValue placeholder="Select board" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {boards.length === 0 && <SelectItem value="none" disabled>No boards</SelectItem>}
-                        {boards.map(board => (
-                            <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                {canCreate && (
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={onCreate}
-                        className="shrink-0 h-9 w-9 bg-white/20 dark:bg-white/5 text-white hover:bg-white/30"
-                    >
-                        <Plus className="w-4 h-4" />
-                    </Button>
-                )}
-            </div>
+            <Select
+                value={activeBoardId || ''}
+                onValueChange={(val) => val && navigate(`/boards/${val}`)}
+            >
+                <SelectTrigger className="w-full border-0 h-8 transition-colors text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20">
+                    <SelectValue placeholder="Select board" />
+                </SelectTrigger>
+                <SelectContent>
+                    {boards.length === 0 && <SelectItem value="none" disabled>No boards</SelectItem>}
+                    {boards.map(board => (
+                        <SelectItem key={board.id} value={board.id}>{board.title}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
         );
     }
 
@@ -158,7 +146,7 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate,
                 size="icon"
                 onClick={() => setPage(Math.max(0, page - 1))}
                 disabled={!hasPrev}
-                className={`h-7 w-7 shrink-0 text-white hover:bg-white/20 ${!hasPrev ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}
+                className={`h-7 w-7 shrink-0 text-zinc-900 hover:bg-black/10 dark:text-white dark:hover:bg-white/20 ${!hasPrev ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}
             >
                 <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -197,7 +185,7 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate,
                 size="icon"
                 onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                 disabled={!hasNext}
-                className={`h-7 w-7 shrink-0 text-white hover:bg-white/20 ${!hasNext ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}
+                className={`h-7 w-7 shrink-0 text-zinc-900 hover:bg-black/10 dark:text-white dark:hover:bg-white/20 ${!hasNext ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}
             >
                 <ChevronRight className="w-4 h-4" />
             </Button>
@@ -206,7 +194,7 @@ export default function ProjectTabs({ boards, activeBoardId, onRename, onCreate,
                 <Button
                     variant="ghost"
                     onClick={onCreate}
-                    className="ml-1 shrink-0 gap-1.5 text-white/80 hover:text-white hover:bg-white/20 whitespace-nowrap h-8 px-2.5"
+                    className="ml-1 shrink-0 gap-1.5 whitespace-nowrap h-8 px-2.5 text-zinc-900 hover:bg-black/10 dark:text-white/80 dark:hover:text-white dark:hover:bg-white/20"
                 >
                     <Plus className="w-3.5 h-3.5" />
                     <span className="text-[11px] font-bold uppercase tracking-wider">New</span>

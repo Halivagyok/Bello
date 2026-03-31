@@ -189,7 +189,7 @@ export default function MoveCardsDialog({ open, onClose, sourceListId }: MoveCar
                             </Select>
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="gap-2 sm:gap-0">
                         <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
                         <Button type="submit" disabled={!targetListId || targetListId === 'none'}>
                             Move Cards
