@@ -276,13 +276,13 @@ export default function UserPage() {
                         </div>
 
                         {/* Image Grid */}
-                        {userImages.filter(img => img.originalName !== 'avatar.jpg').length === 0 ? (
+                        {(Array.isArray(userImages) ? userImages : []).filter(img => img.originalName !== 'avatar.jpg').length === 0 ? (
                             <div className="text-center py-20 bg-white/40 dark:bg-black/40 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/10">
                                 <p className="text-zinc-500">You haven't uploaded any images yet.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                {userImages
+                                {(Array.isArray(userImages) ? userImages : [])
                                     .filter(img => img.originalName !== 'avatar.jpg')
                                     .map((img) => (
                                     <Card key={img.id} className="overflow-hidden group border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md">

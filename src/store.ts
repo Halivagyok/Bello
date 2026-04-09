@@ -1180,7 +1180,12 @@ export const useStore = create<BoardState>((set, get) => ({
     fetchUserImages: async () => {
         try {
             const { data } = await client.images.get();
-            if (data) set({ userImages: data });
+            if (Array.isArray(data)) {
+                set({ userImages: data });
+            } else {
+                console.error("Expected data to be an array but got:", data);
+                set({ userImages: [] });
+            }
         } catch (e) {
             console.error('Fetch Images Error', e);
         }
