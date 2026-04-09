@@ -27,9 +27,21 @@ import {
     Trash2,
     Ban,
     UserCheck,
-    Users
+    Users,
+    Search,
+    LayoutDashboard,
+    Folder,
+    UserPlus
 } from 'lucide-react';
 import { AlertDialog } from '../components/AlertDialog';
+
+interface AdminStats {
+    totalUsers: number;
+    totalProjects: number;
+    totalBoards: number;
+    totalBanned: number;
+    recentSignups: number;
+}
 
 interface AdminUser {
     id: string;
@@ -45,6 +57,8 @@ interface AdminUser {
 export default function AdminPage() {
     const navigate = useNavigate();
     const [users, setUsers] = useState<AdminUser[]>([]);
+    const [stats, setStats] = useState<AdminStats | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
 
     // Edit Name Dialog
@@ -94,7 +108,10 @@ export default function AdminPage() {
                 console.error(error);
                 showAlert('Error', 'Failed to fetch users');
             } else if (data) {
-                setUsers(data as AdminUser[]);
+                // @ts-ignore - Eden handles this but typescript needs a reload
+                setUsers(data.users as AdminUser[]);
+                // @ts-ignore
+                setStats(data.stats as AdminStats);
             }
         } catch (e) {
             console.error(e);
@@ -109,6 +126,7 @@ export default function AdminPage() {
             if (error) throw error;
             if (data?.isBanned !== undefined) {
                 setUsers(users.map(u => u.id === userId ? { ...u, isBanned: data.isBanned } : u));
+                setStats(prev => prev ? { ...prev, totalBanned: prev.totalBanned + (data.isBanned ? 1 : -1) } : prev);
             } else {
                 fetchUsers();
             }
@@ -204,6 +222,59 @@ export default function AdminPage() {
                 </div>
             </div>
 
+            {stats && (
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className="bg-card border rounded-xl p-4 flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                            <Users className="w-4 h-4 text-blue-500" />
+                            <span className="text-xs font-semibold uppercase">Total Users</span>
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight">{stats.totalUsers}</span>
+                    </div>
+                    <div className="bg-card border rounded-xl p-4 flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                            <UserPlus className="w-4 h-4 text-green-500" />
+                            <span className="text-xs font-semibold uppercase">New Signups</span>
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight">{stats.recentSignups}</span>
+                        <span className="text-[10px] text-muted-foreground">Last 7 days</span>
+                    </div>
+                    <div className="bg-card border rounded-xl p-4 flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                            <Folder className="w-4 h-4 text-amber-500" />
+                            <span className="text-xs font-semibold uppercase">Total Projects</span>
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight">{stats.totalProjects}</span>
+                    </div>
+                    <div className="bg-card border rounded-xl p-4 flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                            <LayoutDashboard className="w-4 h-4 text-purple-500" />
+                            <span className="text-xs font-semibold uppercase">Total Boards</span>
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight">{stats.totalBoards}</span>
+                    </div>
+                    <div className="bg-card border rounded-xl p-4 flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                            <Ban className="w-4 h-4 text-red-500" />
+                            <span className="text-xs font-semibold uppercase">Banned Users</span>
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight">{stats.totalBanned}</span>
+                    </div>
+                </div>
+            )}
+
+            <div className="flex items-center gap-2 mb-2">
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search users by name or email..."
+                        className="pl-9 bg-card"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </div>
+
             <div className="rounded-md border bg-card">
                 <Table>
                     <TableHead>
@@ -218,7 +289,7 @@ export default function AdminPage() {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {users.map((user) => (
+                        {users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase())).map((user) => (
                             <TableRow key={user.id}>
                                 <TableCell className="font-medium">
                                     <div className="flex items-center gap-2">
