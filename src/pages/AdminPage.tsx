@@ -6,6 +6,7 @@ import {
     TableBody,
     TableCell,
     TableHead,
+    TableHeader,
     TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -59,6 +60,8 @@ export default function AdminPage() {
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [stats, setStats] = useState<AdminStats | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 20;
     const [loading, setLoading] = useState(true);
 
     // Edit Name Dialog
@@ -205,6 +208,14 @@ export default function AdminPage() {
         }, 'destructive');
     };
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const filteredUsers = users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase()));
+    const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+    const paginatedUsers = filteredUsers.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
     if (loading) return <div className="p-8 text-center text-muted-foreground">Loading Users...</div>;
 
     return (
@@ -277,19 +288,19 @@ export default function AdminPage() {
 
             <div className="rounded-md border bg-card">
                 <Table>
-                    <TableHead>
+                    <TableHeader>
                         <TableRow className="bg-muted/50">
-                            <TableHead className="font-semibold">Name</TableHead>
-                            <TableHead className="font-semibold">Email</TableHead>
-                            <TableHead className="font-semibold">Registered</TableHead>
-                            <TableHead className="text-center font-semibold">Projects</TableHead>
-                            <TableHead className="text-center font-semibold">Boards</TableHead>
-                            <TableHead className="text-center font-semibold">Status</TableHead>
-                            <TableHead className="text-right font-semibold">Actions</TableHead>
+                            <TableHead className="font-semibold w-[250px]">Name</TableHead>
+                            <TableHead className="font-semibold min-w-[200px]">Email</TableHead>
+                            <TableHead className="font-semibold w-[120px]">Registered</TableHead>
+                            <TableHead className="text-center font-semibold w-[100px]">Projects</TableHead>
+                            <TableHead className="text-center font-semibold w-[100px]">Boards</TableHead>
+                            <TableHead className="text-center font-semibold w-[100px]">Status</TableHead>
+                            <TableHead className="text-right font-semibold w-[120px]">Actions</TableHead>
                         </TableRow>
-                    </TableHead>
+                    </TableHeader>
                     <TableBody>
-                        {users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase())).map((user) => (
+                        {paginatedUsers.map((user) => (
                             <TableRow key={user.id}>
                                 <TableCell className="font-medium">
                                     <div className="flex items-center gap-2">
@@ -329,6 +340,19 @@ export default function AdminPage() {
                     </TableBody>
                 </Table>
             </div>
+
+            {filteredUsers.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
+                    <div className="text-sm text-muted-foreground">
+                        Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} users
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Previous</Button>
+                        <div className="text-sm font-medium mx-2 min-w-[80px] text-center">Page {currentPage} of {Math.max(1, totalPages)}</div>
+                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages || totalPages === 0}>Next</Button>
+                    </div>
+                </div>
+            )}
 
             {/* Edit Name Dialog */}
             <Dialog open={editOpen} onOpenChange={(val) => !val && setEditOpen(false)}>
