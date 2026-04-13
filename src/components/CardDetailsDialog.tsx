@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore, type Card, type Label as StoreLabel } from '../store';
 import {
     Dialog,
@@ -15,10 +15,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { GoLocation, GoClock, GoTrash, GoEye, GoSearch, GoX, GoTag, GoPlus } from "react-icons/go";
+import { GoLocation, GoClock, GoTrash, GoEye, GoSearch, GoX, GoTag, GoPlus, GoImage, GoCheck, GoUpload } from "react-icons/go";
 import ReactMarkdown from 'react-markdown';
 import { DateInput } from "./ui/date-input";
 import { TimeInput } from "./ui/time-input";
+import { CheckCircle2 } from 'lucide-react';
 
 // Fix for leaflet default marker icon
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -71,6 +72,8 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
     const createProjectLabel = useStore(state => state.createProjectLabel);
     const assignLabelToCard = useStore(state => state.assignLabelToCard);
     const removeLabelFromCard = useStore(state => state.removeLabelFromCard);
+    const userImages = useStore(state => state.userImages);
+    const fetchUserImages = useStore(state => state.fetchUserImages);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     
@@ -85,6 +88,7 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
     const [description, setDescription] = useState('');
     const [imageUrl, setImageUrl] = useState('');
     const [previewMarkdown, setPreviewMarkdown] = useState(true); // Default to preview
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     
     // Due Date fields
     const [dueDate, setDueDate] = useState<string>('');
@@ -274,6 +278,7 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
         : null;
 
     return (
+        <>
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[700px] max-h-[95vh] overflow-y-auto">
                 <DialogHeader>
@@ -451,6 +456,7 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                                     <div className="text-center">
                                         <p className="text-sm font-medium">Drag & Drop Image</p>
                                         <p className="text-xs text-zinc-500 mb-2">or upload from your device</p>
+                                    <div className="flex gap-2">
                                         <Button 
                                             type="button" 
                                             variant="outline" 
@@ -460,8 +466,21 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                                                 document.getElementById('cover-image-upload')?.click();
                                             }}
                                         >
-                                            Choose File
+                                            Upload File
                                         </Button>
+                                        <Button 
+                                            type="button" 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                fetchUserImages();
+                                                setIsGalleryOpen(true);
+                                            }}
+                                        >
+                                            Choose from Gallery
+                                        </Button>
+                                    </div>
                                     </div>
                                     <input 
                                         id="cover-image-upload"
@@ -595,5 +614,55 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
+            <DialogContent className="sm:max-w-[700px] rounded-xl border-white/20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-2xl">
+                <DialogHeader>
+                    <DialogTitle className="text-2xl font-black">Select Image</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-6 py-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        <label className="aspect-video rounded-xl border-2 border-dashed border-white/20 hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer group">
+                            <GoUpload className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                            <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Upload New</span>
+                            <input 
+                                type="file" 
+                                className="hidden" 
+                                accept="image/*" 
+                                onChange={async (e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                        const file = e.target.files[0];
+                                        const uploaded = await uploadImage(file);
+                                        if (uploaded) {
+                                            setImageUrl(uploaded.filename);
+                                            setIsGalleryOpen(false);
+                                        }
+                                    }
+                                }} 
+                            />
+                        </label>
+                        {userImages.filter(img => img.originalName !== 'avatar.jpg').map(img => (
+                            <div 
+                                key={img.id} 
+                                className="aspect-video rounded-xl overflow-hidden cursor-pointer border-2 border-transparent hover:border-primary transition-all relative group"
+                                onClick={() => {
+                                    setImageUrl(img.filename);
+                                    setIsGalleryOpen(false);
+                                }}
+                            >
+                                <img src={`${API_URL}/uploads/${img.filename}`} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <CheckCircle2 className="w-6 h-6 text-white" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => setIsGalleryOpen(false)}>Cancel</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    </>
     );
 }
