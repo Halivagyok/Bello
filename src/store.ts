@@ -886,6 +886,7 @@ export const useStore = create<BoardState>((set, get) => ({
 
     toggleCardCompletion: async (cardId, completed) => {
         const oldLists = get().lists;
+        const oldBoardTasks = get().boardTasks;
 
         // Optimistic Update
         set(state => ({
@@ -894,13 +895,16 @@ export const useStore = create<BoardState>((set, get) => ({
                 cards: list.cards.map(card =>
                     card.id === cardId ? { ...card, completed } : card
                 )
-            }))
+            })),
+            boardTasks: state.boardTasks.map(bt => 
+                bt.id === cardId ? { ...bt, completed } : bt
+            )
         }));
 
         try {
             await client.cards[cardId].patch({ completed });
         } catch (e) {
-            set({ lists: oldLists });
+            set({ lists: oldLists, boardTasks: oldBoardTasks });
             console.error('Toggle Completion failed:', e);
         }
     },
