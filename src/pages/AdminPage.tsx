@@ -32,7 +32,9 @@ import {
     Search,
     LayoutDashboard,
     Folder,
-    UserPlus
+    UserPlus,
+    Shield,
+    ShieldQuestion
 } from 'lucide-react';
 import { AlertDialog } from '../components/AlertDialog';
 
@@ -135,6 +137,21 @@ export default function AdminPage() {
             }
         } catch (e) {
             showAlert('Error', 'Failed to ban/unban user');
+            console.error(e);
+        }
+    };
+
+    const handleToggleAdmin = async (userId: string, currentStatus: boolean) => {
+        try {
+            const { data, error } = await client.admin.users[userId].admin.post({ isAdmin: !currentStatus });
+            if (error) throw error;
+            if (data?.isAdmin !== undefined) {
+                setUsers(users.map(u => u.id === userId ? { ...u, isAdmin: data.isAdmin } : u));
+            } else {
+                fetchUsers();
+            }
+        } catch (e) {
+            showAlert('Error', 'Failed to toggle admin status');
             console.error(e);
         }
     };
@@ -303,9 +320,12 @@ export default function AdminPage() {
                         {paginatedUsers.map((user) => (
                             <TableRow key={user.id}>
                                 <TableCell className="font-medium">
-                                    <div className="flex items-center gap-2">
-                                        {user.name} 
-                                        {user.isAdmin && <Badge variant="default" className="text-[10px] px-1.5 h-4 uppercase">Admin</Badge>}
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-2">
+                                            {user.name} 
+                                            {user.isAdmin && <Badge variant="default" className="text-[10px] px-1.5 h-4 uppercase">Admin</Badge>}
+                                        </div>
+                                        <span className="text-[10px] text-muted-foreground font-mono bg-muted/50 w-fit px-1 rounded" title="User ID">{user.id}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
@@ -332,6 +352,15 @@ export default function AdminPage() {
                                             onClick={() => handleBan(user.id)}
                                         >
                                             {user.isBanned ? <UserCheck className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className={`h-8 w-8 ${user.isAdmin ? 'text-amber-600 hover:text-amber-700' : 'text-zinc-400 hover:text-amber-600'}`}
+                                            onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
+                                            title={user.isAdmin ? "Remove Admin" : "Make Admin"}
+                                        >
+                                            {user.isAdmin ? <Shield className="w-4 h-4" /> : <ShieldQuestion className="w-4 h-4" />}
                                         </Button>
                                     </div>
                                 </TableCell>
