@@ -1,7 +1,7 @@
 import { useStore } from '../store';
 import { useNavigate, Outlet, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, ShieldCheck, Layout } from 'lucide-react';
+import { LogOut, ShieldCheck, Layout, Calendar } from 'lucide-react';
 import { ModeToggle } from '@/components/mode-toggle';
 import {
     Avatar,
@@ -43,12 +43,19 @@ export default function MainLayout() {
             
             {/* Top Bar */}
             <header className="border-b bg-card/60 backdrop-blur-md text-card-foreground px-4 sm:px-6 h-16 flex items-center justify-between sticky top-0 z-50 shadow-sm relative">
-                <Link to="/boards" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-                    <div className="bg-primary p-1.5 rounded-lg">
-                        <Layout className="w-5 h-5 text-primary-foreground" />
-                    </div>
-                    <span className="text-xl font-bold tracking-tight hidden sm:inline">Bello</span>
-                </Link>
+                <div className="flex items-center gap-6">
+                    <Link to="/boards" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                        <div className="bg-primary p-1.5 rounded-lg">
+                            <Layout className="w-5 h-5 text-primary-foreground" />
+                        </div>
+                        <span className="text-xl font-bold tracking-tight hidden sm:inline">Bello</span>
+                    </Link>
+
+                    <Link to="/calendar" className="flex items-center gap-2 hover:opacity-90 transition-opacity text-muted-foreground hover:text-foreground">
+                        <Calendar className="w-4 h-4" />
+                        <span className="text-sm font-medium hidden md:inline">Personal Calendar</span>
+                    </Link>
+                </div>
 
                 <div className="flex items-center gap-4">
                     <div 

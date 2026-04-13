@@ -3,14 +3,7 @@ import { edenTreaty } from '@elysiajs/eden';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-// 1. Initialize Eden Client
-export const client = edenTreaty<any>(API_URL, {
-    $fetch: {
-        credentials: 'include'
-    }
-}) as any;
-
-// 2. Define Types
+// 1. Define Types
 export interface User {
     id: string;
     email: string;
@@ -85,8 +78,29 @@ export interface List {
     color?: string;
 }
 
+export interface PersonalTask {
+    id: string;
+    userId: string;
+    title: string;
+    description?: string | null;
+    dueTime?: string | null;
+    daysOfWeek?: string | null;
+    date?: string | null;
+    location?: string | null;
+    imageUrl?: string | null;
+    completed?: boolean;
+    createdAt: string;
+}
+
 export type BoardFilterDueOption = 'all' | 'next-7-days' | 'next-14-days' | 'overdue' | 'no-due-date';
 export type BoardFilterStatusOption = 'all' | 'completed' | 'not-completed';
+
+// 2. Initialize Eden Client
+export const client = edenTreaty<any>(API_URL, {
+    $fetch: {
+        credentials: 'include'
+    }
+}) as any;
 
 interface BoardState {
     user: User | null;
@@ -184,6 +198,16 @@ interface BoardState {
     assignMemberToCard: (cardId: string, user: { id: string; name: string; email: string; avatarUrl?: string | null }) => Promise<void>;
     removeMemberFromCard: (cardId: string, userId: string) => Promise<void>;
     searchCards: (q: string, dueSoon: boolean) => Promise<Card[]>;
+
+    // Personal Task Actions
+    personalTasks: PersonalTask[];
+    boardTasks: Card[];
+    fetchPersonalTasks: (date?: string) => Promise<void>;
+    fetchBoardTasks: (date?: string) => Promise<void>;
+    createPersonalTask: (task: Partial<PersonalTask>) => Promise<void>;
+    updatePersonalTask: (id: string, updates: Partial<PersonalTask>) => Promise<void>;
+    deletePersonalTask: (id: string) => Promise<void>;
+    togglePersonalTask: (id: string, date?: string) => Promise<void>;
 
     // Board Filter System
     boardFilterQuery: string;
@@ -1411,6 +1435,79 @@ export const useStore = create<BoardState>((set, get) => ({
         } catch (e) {
             console.error('Search Cards Error', e);
             return [];
+        }
+    },
+
+    personalTasks: [],
+    boardTasks: [],
+    fetchPersonalTasks: async (date) => {
+        try {
+            const { data, error } = await client['personal-tasks'].get({ $query: { date } });
+            if (error) throw error;
+            set({ personalTasks: data as PersonalTask[] });
+        } catch (e) {
+            console.error('Fetch Personal Tasks Error', e);
+        }
+    },
+    fetchBoardTasks: async (date) => {
+        try {
+            const { data, error } = await client.cards.search.get({ $query: { date } });
+            if (error) throw error;
+            set({ boardTasks: data as Card[] });
+        } catch (e) {
+            console.error('Fetch Board Tasks Error', e);
+        }
+    },
+    createPersonalTask: async (task) => {
+        try {
+            const { data, error } = await client['personal-tasks'].post(task);
+            if (error) throw error;
+            set(state => ({ personalTasks: [...state.personalTasks, { ...data, completed: false }] }));
+        } catch (e) {
+            console.error('Create Personal Task Error', e);
+        }
+    },
+    updatePersonalTask: async (id, updates) => {
+        try {
+            const { error } = await client['personal-tasks'][id].patch(updates);
+            if (error) throw error;
+            set(state => ({
+                personalTasks: state.personalTasks.map(t => t.id === id ? { ...t, ...updates } : t)
+            }));
+        } catch (e) {
+            console.error('Update Personal Task Error', e);
+        }
+    },
+    deletePersonalTask: async (id) => {
+        try {
+            const { error } = await client['personal-tasks'][id].delete();
+            if (error) throw error;
+            set(state => ({
+                personalTasks: state.personalTasks.filter(t => t.id !== id)
+            }));
+        } catch (e) {
+            console.error('Delete Personal Task Error', e);
+        }
+    },
+    togglePersonalTask: async (id, date) => {
+        // Optimistic
+        set(state => ({
+            personalTasks: state.personalTasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t)
+        }));
+        try {
+            const { data, error } = await client['personal-tasks'][id].toggle.post({ date });
+            if (error) throw error;
+            if (data) {
+                set(state => ({
+                    personalTasks: state.personalTasks.map(t => t.id === id ? { ...t, completed: data.completed } : t)
+                }));
+            }
+        } catch (e) {
+            // Revert
+            set(state => ({
+                personalTasks: state.personalTasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t)
+            }));
+            console.error('Toggle Personal Task Error', e);
         }
     }
 }));
