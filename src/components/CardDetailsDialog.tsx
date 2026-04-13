@@ -207,6 +207,15 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
         }
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            // Only save if NOT in a textarea or if shift is not pressed
+            if ((e.target as HTMLElement).tagName === 'TEXTAREA') return;
+            e.preventDefault();
+            handleSave();
+        }
+    };
+
     const handleDelete = async () => {
         if (!card) return;
         if (confirm('Are you sure you want to delete this card?')) {
@@ -291,7 +300,10 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
     return (
         <>
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[700px] max-h-[95vh] overflow-y-auto">
+            <DialogContent 
+                className="sm:max-w-[700px] max-h-[95vh] overflow-y-auto"
+                onKeyDown={handleKeyDown}
+            >
                 <DialogHeader>
                     <DialogTitle>Card Details</DialogTitle>
                 </DialogHeader>

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useStore, type PersonalTask } from '../store';
 import { Button } from '@/components/ui/button';
 import { format, isValid } from 'date-fns';
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -34,7 +35,8 @@ import {
     RotateCcw,
     MapPin,
     Image as ImageIcon,
-    ExternalLink
+    ExternalLink,
+    CalendarDays
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog } from '@/components/AlertDialog';
@@ -59,6 +61,8 @@ export default function CalendarPage() {
     const fetchUserImages = useStore(state => state.fetchUserImages);
     const uploadImage = useStore(state => state.uploadImage);
 
+    const datePickerRef = useRef<HTMLInputElement>(null);
+
     const formatTime = (timeStr: string | null | undefined) => {
         if (!timeStr) return '';
         if (user?.timeFormat === '12h') {
@@ -79,6 +83,7 @@ export default function CalendarPage() {
     };
 
     const [selectedDate, setSelectedDate] = useState(new Date());
+    const [currentTime, setCurrentTime] = useState(new Date());
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<PersonalTask | null>(null);
@@ -119,16 +124,20 @@ export default function CalendarPage() {
             fetchBoardTasks(dateStr);
         }
         
-        // Refresh every minute to check for date changes if app stays open
         const interval = setInterval(() => {
             const now = new Date();
-            if (now.getDate() !== selectedDate.getDate() && selectedDate.toDateString() === new Date(Date.now() - 60000).toDateString()) {
-                // If it was today and now it's a new day, maybe auto-refresh?
-                // But let's keep it simple for now.
+            setCurrentTime(now);
+            
+            // Auto-refresh if the day changes while the page is open
+            const newDateStr = format(now, 'yyyy-MM-dd');
+            const isTodaySelected = dateStr === format(new Date(), 'yyyy-MM-dd');
+            
+            if (isTodaySelected && newDateStr !== dateStr) {
+                setSelectedDate(now);
             }
-        }, 60000);
+        }, 10000); // Check every 10s for better accuracy
         return () => clearInterval(interval);
-    }, [fetchPersonalTasks, fetchBoardTasks, dateStr, selectedDate, showBoardTasks]);
+    }, [fetchPersonalTasks, fetchBoardTasks, dateStr, showBoardTasks]);
 
     const handlePrevDay = () => {
         const d = new Date(selectedDate);
@@ -261,10 +270,30 @@ export default function CalendarPage() {
                                 <Button variant="outline" size="icon" onClick={handlePrevDay} className="rounded-xl hover:bg-primary hover:text-white transition-colors">
                                     <ChevronLeft className="w-5 h-5" />
                                 </Button>
-                                <div className="text-center">
+                                <div 
+                                    className="text-center cursor-pointer group relative"
+                                    onClick={() => datePickerRef.current?.showPicker?.()}
+                                    title="Click to select date"
+                                >
+                                    <div className="absolute inset-0 bg-primary/5 rounded-2xl scale-125 opacity-0 group-hover:opacity-100 transition-opacity -z-10" />
                                     <p className="text-sm font-bold text-primary uppercase tracking-widest">{format(selectedDate, 'MMM')}</p>
-                                    <h4 className="text-4xl font-black">{selectedDate.getDate()}</h4>
+                                    <h4 className="text-4xl font-black group-hover:text-primary transition-colors">{selectedDate.getDate()}</h4>
                                     <p className="text-xs font-medium text-muted-foreground">{format(selectedDate, 'EEEE')}</p>
+                                    
+                                    <input
+                                        ref={datePickerRef}
+                                        type="date"
+                                        className="absolute inset-0 w-0 h-0 opacity-0 pointer-events-none"
+                                        value={dateStr}
+                                        onChange={(e) => {
+                                            if (e.target.value) {
+                                                const d = new Date(e.target.value);
+                                                setSelectedDate(d);
+                                                if (showBoardTasks) fetchBoardTasks(e.target.value);
+                                            }
+                                        }}
+                                        style={{ colorScheme: 'dark' }}
+                                    />
                                 </div>
                                 <Button variant="outline" size="icon" onClick={handleNextDay} className="rounded-xl hover:bg-primary hover:text-white transition-colors">
                                     <ChevronRight className="w-5 h-5" />
@@ -328,163 +357,220 @@ export default function CalendarPage() {
                         const boardDisplayTasks = showBoardTasks ? boardTasks.map(bt => {
                             let d: Date | null = null;
                             if (bt.dueDate) {
-                                const val = Number(bt.dueDate);
-                                d = val < 10000000000 ? new Date(val * 1000) : new Date(val);
+                                const parsed = new Date(bt.dueDate);
+                                if (isValid(parsed)) {
+                                    // If year is < 1980, it's likely a seconds-based timestamp from SQLite
+                                    d = parsed.getFullYear() < 1980 ? new Date(parsed.getTime() * 1000) : parsed;
+                                }
                             }
                             
+                            // Show time if it exists
+                            const formattedDueTime = (d && isValid(d)) ? format(d, 'HH:mm') : null;
+
                             return {
                                 ...bt,
                                 title: bt.content,
                                 description: bt.description,
-                                dueTime: (d && isValid(d) && bt.dueDateMode !== 'date-only') ? format(d, 'HH:mm') : null,
+                                dueTime: formattedDueTime,
                                 completed: bt.completed,
                                 boardId: bt.boardId,
                                 isBoardTask: true
                             };
                         }) : [];
 
+                        // 1. Sort ALL tasks strictly by dueTime (HH:mm)
                         const allDisplayTasks = [
                             ...relevantTasks.map(t => ({ ...t, isBoardTask: false })),
                             ...boardDisplayTasks
                         ].sort((a, b) => {
-                            // Sort by completed first, then by dueTime
-                            if (a.completed !== b.completed) return a.completed ? 1 : -1;
-                            return (a.dueTime || '99:99').localeCompare(b.dueTime || '99:99');
+                            const timeA = a.dueTime || '99:99';
+                            const timeB = b.dueTime || '99:99';
+                            return timeA.localeCompare(timeB);
                         });
+
+                        const isToday = dateStr === format(currentTime, 'yyyy-MM-dd');
+                        const nowStr = format(currentTime, 'HH:mm');
+
+                        const renderTimeIndicator = (key: string) => (
+                            <motion.div 
+                                key={key} 
+                                layoutId="time-indicator"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                className="relative py-2 flex items-center gap-4 z-20"
+                            >
+                                <div className="shrink-0 bg-primary/20 text-primary text-[10px] font-black px-2 py-0.5 rounded-md border border-primary/20 backdrop-blur-sm shadow-sm">
+                                    {format(currentTime, user?.timeFormat === '12h' ? 'hh:mm a' : 'HH:mm')}
+                                </div>
+                                <div className="flex-1 h-px bg-gradient-to-r from-primary/50 via-primary/20 to-transparent relative">
+                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
+                                </div>
+                            </motion.div>
+                        );
 
                         if (allDisplayTasks.length === 0) {
                             return (
-                                <div className="text-center py-24 bg-white/10 dark:bg-black/10 backdrop-blur-sm rounded-[2rem] border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-6 shadow-inner">
-                                    <div className="bg-primary/5 p-8 rounded-full border border-primary/10 animate-pulse">
-                                        <CheckCircle2 className="w-12 h-12 text-primary opacity-30" />
+                                <div className="space-y-4 w-full">
+                                    {isToday && renderTimeIndicator('empty-indicator')}
+                                    <div className="text-center py-24 bg-white/10 dark:bg-black/10 backdrop-blur-sm rounded-[2rem] border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-6 shadow-inner">
+                                        <div className="bg-primary/5 p-8 rounded-full border border-primary/10 animate-pulse">
+                                            <CheckCircle2 className="w-12 h-12 text-primary opacity-30" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <h3 className="text-2xl font-bold text-zinc-900 dark:text-white">Clear Schedule</h3>
+                                            <p className="text-muted-foreground max-w-xs mx-auto">You have no tasks scheduled for this day. Perfect time to start something new!</p>
+                                        </div>
+                                        <Button variant="outline" size="lg" onClick={openCreateDialog} className="mt-4 rounded-2xl border-primary/20 hover:bg-primary hover:text-white transition-all font-bold">
+                                            <Plus className="w-5 h-5 mr-2" />
+                                            Schedule a Task
+                                        </Button>
                                     </div>
-                                    <div className="space-y-2">
-                                        <h3 className="text-2xl font-bold text-zinc-900 dark:text-white">Clear Schedule</h3>
-                                        <p className="text-muted-foreground max-w-xs mx-auto">You have no tasks scheduled for this day. Perfect time to start something new!</p>
-                                    </div>
-                                    <Button variant="outline" size="lg" onClick={openCreateDialog} className="mt-4 rounded-2xl border-primary/20 hover:bg-primary hover:text-white transition-all font-bold">
-                                        <Plus className="w-5 h-5 mr-2" />
-                                        Schedule a Task
-                                    </Button>
                                 </div>
                             );
                         }
 
+                        let indicatorRendered = false;
+
                         return (
-                            <div className="grid gap-4">
-                                {allDisplayTasks.map(task => (
-                                    <div 
-                                        key={task.id} 
-                                        className={`group relative flex flex-col gap-0 rounded-[1.5rem] border transition-all duration-300 overflow-hidden ${task.completed ? 'bg-white/5 border-transparent opacity-60 grayscale-[0.5]' : 'bg-white/60 dark:bg-black/40 border-white/20 hover:border-primary/50 shadow-lg hover:shadow-xl hover:-translate-y-1'}`}
-                                    >
-                                        {(task as any).imageUrl && (
-                                            <div className="w-full h-32 overflow-hidden bg-black/5">
-                                                <img 
-                                                    src={(task as any).imageUrl.startsWith('http') ? (task as any).imageUrl : `${API_URL}/uploads/${(task as any).imageUrl}`} 
-                                                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" 
-                                                />
-                                            </div>
-                                        )}
-                                        <div className="flex items-center gap-6 p-6">
-                                            <button 
-                                                onClick={() => {
+                            <div className="grid gap-4 w-full relative">
+                                <AnimatePresence mode="popLayout">
+                                {allDisplayTasks.flatMap((task, index) => {
+                                    const taskTime = task.dueTime || '99:99';
+                                    const nextTask = allDisplayTasks[index + 1];
+                                    const nextTaskTime = nextTask?.dueTime || '99:99';
+                                    const elements = [];
+
+                                    if (!indicatorRendered && isToday && index === 0 && taskTime > nowStr) {
+                                        elements.push(renderTimeIndicator('indicator-start'));
+                                        indicatorRendered = true;
+                                    }
+
+                                    elements.push(
+                                        <motion.div 
+                                            key={task.id} 
+                                            layout
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            className={`group relative flex flex-col gap-0 rounded-[1.5rem] border transition-all duration-300 overflow-hidden ${task.completed ? 'bg-white/5 border-transparent opacity-60 grayscale-[0.5]' : 'bg-white/60 dark:bg-black/40 border-white/20 hover:border-primary/50 shadow-lg hover:shadow-xl'}`}
+                                        >
+
+                                            {(task as any).imageUrl && (
+                                                <div className="w-full h-32 overflow-hidden bg-black/5">
+                                                    <img 
+                                                        src={(task as any).imageUrl.startsWith('http') ? (task as any).imageUrl : `${API_URL}/uploads/${(task as any).imageUrl}`} 
+                                                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" 
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-6 p-6">
+                                                <button 
+                                                    onClick={() => {
+                                                        if (task.isBoardTask) {
+                                                            toggleCardCompletion(task.id, !task.completed);
+                                                        } else {
+                                                            togglePersonalTask(task.id, dateStr);
+                                                        }
+                                                    }}
+                                                    className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 border-2 ${task.completed ? 'bg-primary border-primary text-white' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-transparent hover:border-primary'}`}
+                                                >
+                                                    <CheckCircle2 className={`w-5 h-5 ${task.completed ? 'opacity-100' : 'opacity-0'}`} />
+                                                </button>
+
+                                                <div className="flex-1 min-w-0" onClick={() => {
                                                     if (task.isBoardTask) {
                                                         toggleCardCompletion(task.id, !task.completed);
                                                     } else {
                                                         togglePersonalTask(task.id, dateStr);
                                                     }
-                                                }}
-                                                className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 border-2 ${task.completed ? 'bg-primary border-primary text-white' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-transparent hover:border-primary'}`}
-                                            >
-                                                <CheckCircle2 className={`w-5 h-5 ${task.completed ? 'opacity-100' : 'opacity-0'}`} />
-                                            </button>
-
-                                            <div className="flex-1 min-w-0" onClick={() => {
-                                                if (task.isBoardTask) {
-                                                    toggleCardCompletion(task.id, !task.completed);
-                                                    // Optimistically update boardTasks in store
-                                                    useStore.setState(state => ({
-                                                        boardTasks: state.boardTasks.map(bt => bt.id === task.id ? { ...bt, completed: !task.completed } : bt)
-                                                    }));
-                                                } else {
-                                                    togglePersonalTask(task.id, dateStr);
-                                                }
-                                            }}>
-                                                <div className="flex items-center gap-3">
-                                                    <h3 className={`text-xl font-bold truncate transition-all ${task.completed ? 'line-through text-muted-foreground' : 'text-zinc-900 dark:text-white'}`}>
-                                                        {task.title}
-                                                    </h3>
-                                                    {task.isBoardTask && (
-                                                        <Badge variant="outline" className="text-[10px] uppercase font-black tracking-tighter border-primary/30 text-primary">
-                                                            Board Task
-                                                        </Badge>
+                                                }}>
+                                                    <div className="flex items-center gap-3">
+                                                        <h3 className={`text-xl font-bold truncate transition-all ${task.completed ? 'line-through text-muted-foreground' : 'text-zinc-900 dark:text-white'}`}>
+                                                            {task.title}
+                                                        </h3>
+                                                        {task.isBoardTask && (
+                                                            <Badge variant="outline" className="text-[10px] uppercase font-black tracking-tighter border-primary/30 text-primary">
+                                                                Board Task
+                                                            </Badge>
+                                                        )}
+                                                        {task.dueTime && (
+                                                            <Badge variant="secondary" className="gap-1.5 px-2 py-0.5 rounded-lg bg-primary/10 text-primary border-none text-xs font-bold whitespace-nowrap">
+                                                                <Clock className="w-3.5 h-3.5" />
+                                                                {formatTime(task.dueTime)}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    {(task as any).location && (
+                                                        <div className="flex items-center gap-1.5 mt-1 text-primary">
+                                                            <MapPin className="w-3.5 h-3.5" />
+                                                            <span className="text-xs font-bold truncate">{(task as any).location}</span>
+                                                        </div>
                                                     )}
-                                                    {task.dueTime && (
-                                                        <Badge variant="secondary" className="gap-1.5 px-2 py-0.5 rounded-lg bg-primary/10 text-primary border-none text-xs font-bold whitespace-nowrap">
-                                                            <Clock className="w-3.5 h-3.5" />
-                                                            {formatTime(task.dueTime)}
-                                                        </Badge>
+                                                    {task.description && (
+                                                        <p className={`text-sm mt-1.5 line-clamp-2 leading-relaxed ${task.completed ? 'text-muted-foreground/60' : 'text-muted-foreground'}`}>
+                                                            {task.description}
+                                                        </p>
+                                                    )}
+                                                    {!task.isBoardTask && (task as any).daysOfWeek && (
+                                                        <div className="flex gap-1.5 mt-4">
+                                                            {(task as any).daysOfWeek?.split(',').map((d: string) => (
+                                                                <span key={d} className={`text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase transition-colors ${Number(d) === dayOfWeek ? 'bg-primary text-white' : 'bg-black/5 dark:bg-white/5 text-muted-foreground/40'}`}>
+                                                                    {DAYS[Number(d)].substring(0, 3)}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {!task.isBoardTask && !(task as any).daysOfWeek && (
+                                                        <div className="flex gap-1.5 mt-4">
+                                                            <span className="text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase bg-zinc-100 dark:bg-zinc-800 text-muted-foreground">
+                                                                One-time
+                                                            </span>
+                                                        </div>
                                                     )}
                                                 </div>
-                                                {(task as any).location && (
-                                                    <div className="flex items-center gap-1.5 mt-1 text-primary">
-                                                        <MapPin className="w-3.5 h-3.5" />
-                                                        <span className="text-xs font-bold truncate">{(task as any).location}</span>
-                                                    </div>
-                                                )}
-                                                {task.description && (
-                                                    <p className={`text-sm mt-1.5 line-clamp-2 leading-relaxed ${task.completed ? 'text-muted-foreground/60' : 'text-muted-foreground'}`}>
-                                                        {task.description}
-                                                    </p>
-                                                )}
-                                                {!task.isBoardTask && (task as any).daysOfWeek && (
-                                                    <div className="flex gap-1.5 mt-4">
-                                                        {(task as any).daysOfWeek?.split(',').map((d: string) => (
-                                                            <span key={d} className={`text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase transition-colors ${Number(d) === dayOfWeek ? 'bg-primary text-white' : 'bg-black/5 dark:bg-white/5 text-muted-foreground/40'}`}>
-                                                                {DAYS[Number(d)].substring(0, 3)}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                {!task.isBoardTask && !(task as any).daysOfWeek && (
-                                                    <div className="flex gap-1.5 mt-4">
-                                                        <span className="text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase bg-zinc-100 dark:bg-zinc-800 text-muted-foreground">
-                                                            One-time
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
 
-                                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                                                {task.isBoardTask && (task as any).boardId && (
-                                                    <Button 
-                                                        variant="secondary" 
-                                                        size="icon" 
-                                                        className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-white/20" 
-                                                        onClick={(e) => { 
-                                                            e.stopPropagation(); 
-                                                            window.history.pushState({}, '', `/boards/${(task as any).boardId}`);
-                                                            window.dispatchEvent(new Event('popstate'));
-                                                        }}
-                                                        title="Go to Board"
-                                                    >
-                                                        <ExternalLink className="w-4 h-4" />
-                                                    </Button>
-                                                )}
-                                                {!task.isBoardTask && (
-                                                    <>
-                                                        <Button variant="secondary" size="icon" className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-white/20" onClick={(e) => { e.stopPropagation(); openEditDialog(task as any); }}>
-                                                            <Edit2 className="w-4 h-4" />
+                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                                    {task.isBoardTask && (task as any).boardId && (
+                                                        <Button 
+                                                            variant="secondary" 
+                                                            size="icon" 
+                                                            className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-white/20" 
+                                                            onClick={(e) => { 
+                                                                e.stopPropagation(); 
+                                                                window.history.pushState({}, '', `/boards/${(task as any).boardId}`);
+                                                                window.dispatchEvent(new Event('popstate'));
+                                                            }}
+                                                            title="Go to Board"
+                                                        >
+                                                            <ExternalLink className="w-4 h-4" />
                                                         </Button>
-                                                        <Button variant="destructive" size="icon" className="h-10 w-10 rounded-xl shadow-lg shadow-destructive/20" onClick={(e) => { e.stopPropagation(); handleDelete(task.id); }}>
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </Button>
-                                                    </>
-                                                )}
+                                                    )}
+                                                    {!task.isBoardTask && (
+                                                        <>
+                                                            <Button variant="secondary" size="icon" className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-white/20" onClick={(e) => { e.stopPropagation(); openEditDialog(task as any); }}>
+                                                                <Edit2 className="w-4 h-4" />
+                                                            </Button>
+                                                            <Button variant="destructive" size="icon" className="h-10 w-10 rounded-xl shadow-lg shadow-destructive/20" onClick={(e) => { e.stopPropagation(); handleDelete(task.id); }}>
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                ))}
+                                        </motion.div>
+                                    );
+
+                                    if (!indicatorRendered && isToday && taskTime <= nowStr && nextTaskTime > nowStr) {
+                                        elements.push(renderTimeIndicator('indicator-mid'));
+                                        indicatorRendered = true;
+                                    }
+
+                                    return elements;
+                                })}
+                                {!indicatorRendered && isToday && renderTimeIndicator('indicator-end')}
+                                </AnimatePresence>
                             </div>
                         );
                     })()}
