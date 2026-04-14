@@ -42,7 +42,7 @@ export default function SharedBoards() {
                                     <h3 className="font-bold text-lg leading-tight line-clamp-2">{board.title}</h3>
                                     <Avatar className="w-6 h-6 border border-white/40 shrink-0">
                                         {board.ownerAvatarUrl && (
-                                            <AvatarImage src={`${API_URL}/uploads/${board.ownerAvatarUrl}`} />
+                                            <AvatarImage src={`${API_URL}/uploads/${board.ownerAvatarUrl}`} crossOrigin="anonymous" />
                                         )}
                                         <AvatarFallback 
                                             style={{ backgroundColor: stringToColor(board.ownerName || board.ownerId) }}

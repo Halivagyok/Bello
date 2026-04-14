@@ -245,7 +245,7 @@ export default function TopBar() {
                                         <TooltipTrigger asChild>
                                             <Avatar className="w-7 h-7 border-2 border-white dark:border-zinc-900 ring-offset-background">
                                                 {member.avatarUrl && (
-                                                    <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} />
+                                                    <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} crossOrigin="anonymous" />
                                                 )}
                                                 <AvatarFallback
                                                     style={{ backgroundColor: stringToColor(member.name || member.email) }}
@@ -342,7 +342,7 @@ export default function TopBar() {
                                     <TooltipTrigger asChild>
                                         <Avatar className="w-8 h-8 border-2 border-white dark:border-zinc-900 ring-offset-background">
                                             {member.avatarUrl && (
-                                                <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} />
+                                                <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} crossOrigin="anonymous" />
                                             )}
                                             <AvatarFallback
                                                 style={{ backgroundColor: stringToColor(member.name || member.email) }}
@@ -558,7 +558,7 @@ export default function TopBar() {
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-9 w-9">
                                             {member.avatarUrl && (
-                                                <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} />
+                                                <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} crossOrigin="anonymous" />
                                             )}
                                             <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-white">
                                                 {member.name ? member.name[0] : member.email[0]}

@@ -252,10 +252,9 @@ export default function ProjectDetails() {
                                 </h3>
                                 <Avatar className="w-6 h-6 border border-white/40 shrink-0">
                                     {board.ownerAvatarUrl && (
-                                        <AvatarImage src={`${API_URL}/uploads/${board.ownerAvatarUrl}`} />
+                                        <AvatarImage src={`${API_URL}/uploads/${board.ownerAvatarUrl}`} crossOrigin="anonymous" />
                                     )}
-                                    <AvatarFallback 
-                                        style={{ backgroundColor: stringToColor(board.ownerName || board.ownerId) }}
+                                    <AvatarFallback                                        style={{ backgroundColor: stringToColor(board.ownerName || board.ownerId) }}
                                         className="text-[8px] text-white font-bold"
                                     >
                                         {(board.ownerName || 'U')[0].toUpperCase()}
@@ -383,7 +382,7 @@ export default function ProjectDetails() {
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-9 w-9">
                                             {member.avatarUrl && (
-                                                <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} />
+                                                <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} crossOrigin="anonymous" />
                                             )}
                                             <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-white">
                                                 {(member.name || member.email)[0].toUpperCase()}

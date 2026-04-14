@@ -13,16 +13,10 @@ export default function DashboardPage() {
     useEffect(() => {
         fetchBoards();
         fetchProjects();
-        
-        // Prevent scrolling on the dashboard page
-        document.body.style.overflow = 'hidden';
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
     }, [fetchBoards, fetchProjects]);
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative px-4 flex flex-col h-[calc(100vh-8rem)]">
+        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative px-4 flex flex-col">
             <RecentBoards />
             
             <div className="space-y-6">
@@ -50,8 +44,15 @@ export default function DashboardPage() {
                         <p className="text-sm text-muted-foreground">Workspaces you've been invited to.</p>
                     </div>
                 </div>
-                <div className="grid gap-4">
+                <div className="flex flex-col gap-6">
                     <SharedProjects />
+                    
+                    <div className="flex items-center gap-4 opacity-50">
+                        <div className="h-px bg-border flex-1" />
+                        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Or Individual Boards</span>
+                        <div className="h-px bg-border flex-1" />
+                    </div>
+                    
                     <SharedBoards />
                 </div>
             </div>
