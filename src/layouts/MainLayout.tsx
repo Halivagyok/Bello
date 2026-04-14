@@ -57,7 +57,7 @@ export default function MainLayout() {
                     >
                         <Avatar className="w-6 h-6">
                             {user?.avatarUrl && (
-                                <AvatarImage src={`${API_URL}/uploads/${user.avatarUrl}`} />
+                                <AvatarImage src={`${API_URL}/uploads/${user.avatarUrl}`} crossOrigin="anonymous" />
                             )}
                             <AvatarFallback style={{ backgroundColor: stringToColor(user?.name || user?.email || 'User') }} className="text-[10px] text-white">
                                 {(user?.name || user?.email || 'U')[0].toUpperCase()}

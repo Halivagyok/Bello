@@ -36,6 +36,15 @@ export default function Auth() {
 
     const handleAuth = async (isLogin: boolean) => {
         setError('');
+
+        if (!isLogin) {
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+            if (!passwordRegex.test(password)) {
+                setError('Password must be at least 8 characters long, with an uppercase, lowercase, and number.');
+                return;
+            }
+        }
+
         setLoading(true);
         try {
             if (isLogin) await login(email, password);

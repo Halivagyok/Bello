@@ -6,6 +6,7 @@ import {
     TableBody,
     TableCell,
     TableHead,
+    TableHeader,
     TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -27,9 +28,23 @@ import {
     Trash2,
     Ban,
     UserCheck,
-    Users
+    Users,
+    Search,
+    LayoutDashboard,
+    Folder,
+    UserPlus,
+    Shield,
+    ShieldQuestion
 } from 'lucide-react';
 import { AlertDialog } from '../components/AlertDialog';
+
+interface AdminStats {
+    totalUsers: number;
+    totalProjects: number;
+    totalBoards: number;
+    totalBanned: number;
+    recentSignups: number;
+}
 
 interface AdminUser {
     id: string;
@@ -45,6 +60,10 @@ interface AdminUser {
 export default function AdminPage() {
     const navigate = useNavigate();
     const [users, setUsers] = useState<AdminUser[]>([]);
+    const [stats, setStats] = useState<AdminStats | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 20;
     const [loading, setLoading] = useState(true);
 
     // Edit Name Dialog
@@ -94,7 +113,10 @@ export default function AdminPage() {
                 console.error(error);
                 showAlert('Error', 'Failed to fetch users');
             } else if (data) {
-                setUsers(data as AdminUser[]);
+                // @ts-ignore - Eden handles this but typescript needs a reload
+                setUsers(data.users as AdminUser[]);
+                // @ts-ignore
+                setStats(data.stats as AdminStats);
             }
         } catch (e) {
             console.error(e);
@@ -109,11 +131,27 @@ export default function AdminPage() {
             if (error) throw error;
             if (data?.isBanned !== undefined) {
                 setUsers(users.map(u => u.id === userId ? { ...u, isBanned: data.isBanned } : u));
+                setStats(prev => prev ? { ...prev, totalBanned: prev.totalBanned + (data.isBanned ? 1 : -1) } : prev);
             } else {
                 fetchUsers();
             }
         } catch (e) {
             showAlert('Error', 'Failed to ban/unban user');
+            console.error(e);
+        }
+    };
+
+    const handleToggleAdmin = async (userId: string, currentStatus: boolean) => {
+        try {
+            const { data, error } = await client.admin.users[userId].admin.post({ isAdmin: !currentStatus });
+            if (error) throw error;
+            if (data?.isAdmin !== undefined) {
+                setUsers(users.map(u => u.id === userId ? { ...u, isAdmin: data.isAdmin } : u));
+            } else {
+                fetchUsers();
+            }
+        } catch (e) {
+            showAlert('Error', 'Failed to toggle admin status');
             console.error(e);
         }
     };
@@ -187,6 +225,14 @@ export default function AdminPage() {
         }, 'destructive');
     };
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
+    const filteredUsers = users.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase()));
+    const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+    const paginatedUsers = filteredUsers.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
     if (loading) return <div className="p-8 text-center text-muted-foreground">Loading Users...</div>;
 
     return (
@@ -204,26 +250,82 @@ export default function AdminPage() {
                 </div>
             </div>
 
+            {stats && (
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className="bg-card border rounded-xl p-4 flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                            <Users className="w-4 h-4 text-blue-500" />
+                            <span className="text-xs font-semibold uppercase">Total Users</span>
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight">{stats.totalUsers}</span>
+                    </div>
+                    <div className="bg-card border rounded-xl p-4 flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                            <UserPlus className="w-4 h-4 text-green-500" />
+                            <span className="text-xs font-semibold uppercase">New Signups</span>
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight">{stats.recentSignups}</span>
+                        <span className="text-[10px] text-muted-foreground">Last 7 days</span>
+                    </div>
+                    <div className="bg-card border rounded-xl p-4 flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                            <Folder className="w-4 h-4 text-amber-500" />
+                            <span className="text-xs font-semibold uppercase">Total Projects</span>
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight">{stats.totalProjects}</span>
+                    </div>
+                    <div className="bg-card border rounded-xl p-4 flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                            <LayoutDashboard className="w-4 h-4 text-purple-500" />
+                            <span className="text-xs font-semibold uppercase">Total Boards</span>
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight">{stats.totalBoards}</span>
+                    </div>
+                    <div className="bg-card border rounded-xl p-4 flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                            <Ban className="w-4 h-4 text-red-500" />
+                            <span className="text-xs font-semibold uppercase">Banned Users</span>
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight">{stats.totalBanned}</span>
+                    </div>
+                </div>
+            )}
+
+            <div className="flex items-center gap-2 mb-2">
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search users by name or email..."
+                        className="pl-9 bg-card"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </div>
+
             <div className="rounded-md border bg-card">
                 <Table>
-                    <TableHead>
+                    <TableHeader>
                         <TableRow className="bg-muted/50">
-                            <TableHead className="font-semibold">Name</TableHead>
-                            <TableHead className="font-semibold">Email</TableHead>
-                            <TableHead className="font-semibold">Registered</TableHead>
-                            <TableHead className="text-center font-semibold">Projects</TableHead>
-                            <TableHead className="text-center font-semibold">Boards</TableHead>
-                            <TableHead className="text-center font-semibold">Status</TableHead>
-                            <TableHead className="text-right font-semibold">Actions</TableHead>
+                            <TableHead className="font-semibold w-[250px]">Name</TableHead>
+                            <TableHead className="font-semibold min-w-[200px]">Email</TableHead>
+                            <TableHead className="font-semibold w-[120px]">Registered</TableHead>
+                            <TableHead className="text-center font-semibold w-[100px]">Projects</TableHead>
+                            <TableHead className="text-center font-semibold w-[100px]">Boards</TableHead>
+                            <TableHead className="text-center font-semibold w-[100px]">Status</TableHead>
+                            <TableHead className="text-right font-semibold w-[120px]">Actions</TableHead>
                         </TableRow>
-                    </TableHead>
+                    </TableHeader>
                     <TableBody>
-                        {users.map((user) => (
+                        {paginatedUsers.map((user) => (
                             <TableRow key={user.id}>
                                 <TableCell className="font-medium">
-                                    <div className="flex items-center gap-2">
-                                        {user.name} 
-                                        {user.isAdmin && <Badge variant="default" className="text-[10px] px-1.5 h-4 uppercase">Admin</Badge>}
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-2">
+                                            {user.name} 
+                                            {user.isAdmin && <Badge variant="default" className="text-[10px] px-1.5 h-4 uppercase">Admin</Badge>}
+                                        </div>
+                                        <span className="text-[10px] text-muted-foreground font-mono bg-muted/50 w-fit px-1 rounded" title="User ID">{user.id}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
@@ -251,6 +353,15 @@ export default function AdminPage() {
                                         >
                                             {user.isBanned ? <UserCheck className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
                                         </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className={`h-8 w-8 ${user.isAdmin ? 'text-amber-600 hover:text-amber-700' : 'text-zinc-400 hover:text-amber-600'}`}
+                                            onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
+                                            title={user.isAdmin ? "Remove Admin" : "Make Admin"}
+                                        >
+                                            {user.isAdmin ? <Shield className="w-4 h-4" /> : <ShieldQuestion className="w-4 h-4" />}
+                                        </Button>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -258,6 +369,19 @@ export default function AdminPage() {
                     </TableBody>
                 </Table>
             </div>
+
+            {filteredUsers.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
+                    <div className="text-sm text-muted-foreground">
+                        Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} users
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Previous</Button>
+                        <div className="text-sm font-medium mx-2 min-w-[80px] text-center">Page {currentPage} of {Math.max(1, totalPages)}</div>
+                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages || totalPages === 0}>Next</Button>
+                    </div>
+                </div>
+            )}
 
             {/* Edit Name Dialog */}
             <Dialog open={editOpen} onOpenChange={(val) => !val && setEditOpen(false)}>

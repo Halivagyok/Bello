@@ -132,8 +132,9 @@ export default function UserPage() {
             return;
         }
 
-        if (newPassword.length < 6) {
-            setPasswordError('New password must be at least 6 characters');
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+        if (!passwordRegex.test(newPassword)) {
+            setPasswordError('New password must be at least 8 characters long, with an uppercase, lowercase, and number.');
             return;
         }
 
