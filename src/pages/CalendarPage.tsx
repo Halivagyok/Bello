@@ -7,12 +7,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { 
-    Dialog, 
-    DialogContent, 
-    DialogHeader, 
-    DialogTitle, 
-    DialogFooter 
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter
 } from "@/components/ui/dialog"
 import {
     Select,
@@ -22,14 +22,14 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { 
-    Calendar as CalendarIcon, 
-    ChevronLeft, 
-    ChevronRight, 
-    Plus, 
-    Trash2, 
-    Edit2, 
-    CheckCircle2, 
+import {
+    Calendar as CalendarIcon,
+    ChevronLeft,
+    ChevronRight,
+    Plus,
+    Trash2,
+    Edit2,
+    CheckCircle2,
     Circle,
     Clock,
     RotateCcw,
@@ -65,21 +65,18 @@ export default function CalendarPage() {
 
     const formatTime = (timeStr: string | null | undefined) => {
         if (!timeStr) return '';
-        if (user?.timeFormat === '12h') {
-            const [hours, minutes] = timeStr.split(':');
-            const h = parseInt(hours);
-            const ampm = h >= 12 ? 'PM' : 'AM';
-            const h12 = h % 12 || 12;
-            return `${h12}:${minutes} ${ampm}`;
-        }
+        // if (user?.timeFormat === '12h') {
+        //     const [hours, minutes] = timeStr.split(':');
+        //     const h = parseInt(hours);
+        //     const ampm = h >= 12 ? 'PM' : 'AM';
+        //     const h12 = h % 12 || 12;
+        //     return `${h12}:${minutes} ${ampm}`;
+        // }
         return timeStr; // Default is 24h as stored
     };
 
     const formatDate = (date: Date) => {
-        if (!user?.dateFormat) return format(date, 'MMMM d, yyyy');
-        // date-fns uses different tokens than what might be in DB (e.g. YYYY vs yyyy)
-        let fmt = user.dateFormat.replace(/Y/g, 'y').replace(/D/g, 'd');
-        return format(date, fmt);
+        return format(date, 'MMMM d, yyyy');
     };
 
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -123,15 +120,15 @@ export default function CalendarPage() {
         if (showBoardTasks) {
             fetchBoardTasks(dateStr);
         }
-        
+
         const interval = setInterval(() => {
             const now = new Date();
             setCurrentTime(now);
-            
+
             // Auto-refresh if the day changes while the page is open
             const newDateStr = format(now, 'yyyy-MM-dd');
             const isTodaySelected = dateStr === format(new Date(), 'yyyy-MM-dd');
-            
+
             if (isTodaySelected && newDateStr !== dateStr) {
                 setSelectedDate(now);
             }
@@ -228,14 +225,14 @@ export default function CalendarPage() {
     };
 
     const toggleDay = (day: number) => {
-        setSelectedDays(prev => 
+        setSelectedDays(prev =>
             prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
         );
     };
 
     // Filter tasks that match the selected day of week
     const relevantTasks = personalTasks.filter(task => {
-        if (!task.daysOfWeek) return true; 
+        if (!task.daysOfWeek) return true;
         return task.daysOfWeek.split(',').map(Number).includes(dayOfWeek);
     });
 
@@ -270,7 +267,7 @@ export default function CalendarPage() {
                                 <Button variant="outline" size="icon" onClick={handlePrevDay} className="rounded-xl hover:bg-primary hover:text-white transition-colors">
                                     <ChevronLeft className="w-5 h-5" />
                                 </Button>
-                                <div 
+                                <div
                                     className="text-center cursor-pointer group relative"
                                     onClick={() => datePickerRef.current?.showPicker?.()}
                                     title="Click to select date"
@@ -279,7 +276,7 @@ export default function CalendarPage() {
                                     <p className="text-sm font-bold text-primary uppercase tracking-widest">{format(selectedDate, 'MMM')}</p>
                                     <h4 className="text-4xl font-black group-hover:text-primary transition-colors">{selectedDate.getDate()}</h4>
                                     <p className="text-xs font-medium text-muted-foreground">{format(selectedDate, 'EEEE')}</p>
-                                    
+
                                     <input
                                         ref={datePickerRef}
                                         type="date"
@@ -317,7 +314,7 @@ export default function CalendarPage() {
                                 const boardDisplayTasksCount = showBoardTasks ? boardTasks.length : 0;
                                 const totalCount = relevantTasks.length + boardDisplayTasksCount;
                                 const completedCount = relevantTasks.filter(t => t.completed).length + (showBoardTasks ? boardTasks.filter(t => t.completed).length : 0);
-                                
+
                                 return (
                                     <>
                                         <div className="flex justify-between items-center">
@@ -332,9 +329,9 @@ export default function CalendarPage() {
                                 );
                             })()}
                             <div className="pt-4 border-t border-primary/10 mt-4">
-                                <Button 
-                                    variant="ghost" 
-                                    size="sm" 
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
                                     className={`w-full justify-between px-2 h-9 rounded-lg transition-all ${showBoardTasks ? 'bg-primary/10 text-primary' : 'hover:bg-primary/5 text-muted-foreground'}`}
                                     onClick={() => setShowBoardTasks(!showBoardTasks)}
                                 >
@@ -363,7 +360,7 @@ export default function CalendarPage() {
                                     d = parsed.getFullYear() < 1980 ? new Date(parsed.getTime() * 1000) : parsed;
                                 }
                             }
-                            
+
                             // Show time if it exists
                             const formattedDueTime = (d && isValid(d)) ? format(d, 'HH:mm') : null;
 
@@ -392,8 +389,8 @@ export default function CalendarPage() {
                         const nowStr = format(currentTime, 'HH:mm');
 
                         const renderTimeIndicator = (key: string) => (
-                            <motion.div 
-                                key={key} 
+                            <motion.div
+                                key={key}
                                 layoutId="time-indicator"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -402,7 +399,7 @@ export default function CalendarPage() {
                                 className="relative py-2 flex items-center gap-4 z-20"
                             >
                                 <div className="shrink-0 bg-primary/20 text-primary text-[10px] font-black px-2 py-0.5 rounded-md border border-primary/20 backdrop-blur-sm shadow-sm">
-                                    {format(currentTime, user?.timeFormat === '12h' ? 'hh:mm a' : 'HH:mm')}
+                                    {format(currentTime, 'HH:mm')}
                                 </div>
                                 <div className="flex-1 h-px bg-gradient-to-r from-primary/50 via-primary/20 to-transparent relative">
                                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
@@ -436,140 +433,140 @@ export default function CalendarPage() {
                         return (
                             <div className="grid gap-4 w-full relative">
                                 <AnimatePresence mode="popLayout">
-                                {allDisplayTasks.flatMap((task, index) => {
-                                    const taskTime = task.dueTime || '99:99';
-                                    const nextTask = allDisplayTasks[index + 1];
-                                    const nextTaskTime = nextTask?.dueTime || '99:99';
-                                    const elements = [];
+                                    {allDisplayTasks.flatMap((task, index) => {
+                                        const taskTime = task.dueTime || '99:99';
+                                        const nextTask = allDisplayTasks[index + 1];
+                                        const nextTaskTime = nextTask?.dueTime || '99:99';
+                                        const elements = [];
 
-                                    if (!indicatorRendered && isToday && index === 0 && taskTime > nowStr) {
-                                        elements.push(renderTimeIndicator('indicator-start'));
-                                        indicatorRendered = true;
-                                    }
+                                        if (!indicatorRendered && isToday && index === 0 && taskTime > nowStr) {
+                                            elements.push(renderTimeIndicator('indicator-start'));
+                                            indicatorRendered = true;
+                                        }
 
-                                    elements.push(
-                                        <motion.div 
-                                            key={task.id} 
-                                            layout
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.95 }}
-                                            className={`group relative flex flex-col gap-0 rounded-[1.5rem] border transition-all duration-300 overflow-hidden ${task.completed ? 'bg-white/5 border-transparent opacity-60 grayscale-[0.5]' : 'bg-white/60 dark:bg-black/40 border-white/20 hover:border-primary/50 shadow-lg hover:shadow-xl'}`}
-                                        >
+                                        elements.push(
+                                            <motion.div
+                                                key={task.id}
+                                                layout
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.95 }}
+                                                className={`group relative flex flex-col gap-0 rounded-[1.5rem] border transition-all duration-300 overflow-hidden ${task.completed ? 'bg-white/5 border-transparent opacity-60 grayscale-[0.5]' : 'bg-white/60 dark:bg-black/40 border-white/20 hover:border-primary/50 shadow-lg hover:shadow-xl'}`}
+                                            >
 
-                                            {(task as any).imageUrl && (
-                                                <div className="w-full h-32 overflow-hidden bg-black/5">
-                                                    <img 
-                                                        src={(task as any).imageUrl.startsWith('http') ? (task as any).imageUrl : `${API_URL}/uploads/${(task as any).imageUrl}`} 
-                                                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" 
-                                                    />
-                                                </div>
-                                            )}
-                                            <div className="flex items-center gap-6 p-6">
-                                                <button 
-                                                    onClick={() => {
+                                                {(task as any).imageUrl && (
+                                                    <div className="w-full h-32 overflow-hidden bg-black/5">
+                                                        <img
+                                                            src={(task as any).imageUrl.startsWith('http') ? (task as any).imageUrl : `${API_URL}/uploads/${(task as any).imageUrl}`}
+                                                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div className="flex items-center gap-6 p-6">
+                                                    <button
+                                                        onClick={() => {
+                                                            if (task.isBoardTask) {
+                                                                toggleCardCompletion(task.id, !task.completed);
+                                                            } else {
+                                                                togglePersonalTask(task.id, dateStr);
+                                                            }
+                                                        }}
+                                                        className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 border-2 ${task.completed ? 'bg-primary border-primary text-white' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-transparent hover:border-primary'}`}
+                                                    >
+                                                        <CheckCircle2 className={`w-5 h-5 ${task.completed ? 'opacity-100' : 'opacity-0'}`} />
+                                                    </button>
+
+                                                    <div className="flex-1 min-w-0" onClick={() => {
                                                         if (task.isBoardTask) {
                                                             toggleCardCompletion(task.id, !task.completed);
                                                         } else {
                                                             togglePersonalTask(task.id, dateStr);
                                                         }
-                                                    }}
-                                                    className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 border-2 ${task.completed ? 'bg-primary border-primary text-white' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-transparent hover:border-primary'}`}
-                                                >
-                                                    <CheckCircle2 className={`w-5 h-5 ${task.completed ? 'opacity-100' : 'opacity-0'}`} />
-                                                </button>
-
-                                                <div className="flex-1 min-w-0" onClick={() => {
-                                                    if (task.isBoardTask) {
-                                                        toggleCardCompletion(task.id, !task.completed);
-                                                    } else {
-                                                        togglePersonalTask(task.id, dateStr);
-                                                    }
-                                                }}>
-                                                    <div className="flex items-center gap-3">
-                                                        <h3 className={`text-xl font-bold truncate transition-all ${task.completed ? 'line-through text-muted-foreground' : 'text-zinc-900 dark:text-white'}`}>
-                                                            {task.title}
-                                                        </h3>
-                                                        {task.isBoardTask && (
-                                                            <Badge variant="outline" className="text-[10px] uppercase font-black tracking-tighter border-primary/30 text-primary">
-                                                                Board Task
-                                                            </Badge>
+                                                    }}>
+                                                        <div className="flex items-center gap-3">
+                                                            <h3 className={`text-xl font-bold truncate transition-all ${task.completed ? 'line-through text-muted-foreground' : 'text-zinc-900 dark:text-white'}`}>
+                                                                {task.title}
+                                                            </h3>
+                                                            {task.isBoardTask && (
+                                                                <Badge variant="outline" className="text-[10px] uppercase font-black tracking-tighter border-primary/30 text-primary">
+                                                                    Board Task
+                                                                </Badge>
+                                                            )}
+                                                            {task.dueTime && (
+                                                                <Badge variant="secondary" className="gap-1.5 px-2 py-0.5 rounded-lg bg-primary/10 text-primary border-none text-xs font-bold whitespace-nowrap">
+                                                                    <Clock className="w-3.5 h-3.5" />
+                                                                    {formatTime(task.dueTime)}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                        {(task as any).location && (
+                                                            <div className="flex items-center gap-1.5 mt-1 text-primary">
+                                                                <MapPin className="w-3.5 h-3.5" />
+                                                                <span className="text-xs font-bold truncate">{(task as any).location}</span>
+                                                            </div>
                                                         )}
-                                                        {task.dueTime && (
-                                                            <Badge variant="secondary" className="gap-1.5 px-2 py-0.5 rounded-lg bg-primary/10 text-primary border-none text-xs font-bold whitespace-nowrap">
-                                                                <Clock className="w-3.5 h-3.5" />
-                                                                {formatTime(task.dueTime)}
-                                                            </Badge>
+                                                        {task.description && (
+                                                            <p className={`text-sm mt-1.5 line-clamp-2 leading-relaxed ${task.completed ? 'text-muted-foreground/60' : 'text-muted-foreground'}`}>
+                                                                {task.description}
+                                                            </p>
+                                                        )}
+                                                        {!task.isBoardTask && (task as any).daysOfWeek && (
+                                                            <div className="flex gap-1.5 mt-4">
+                                                                {(task as any).daysOfWeek?.split(',').map((d: string) => (
+                                                                    <span key={d} className={`text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase transition-colors ${Number(d) === dayOfWeek ? 'bg-primary text-white' : 'bg-black/5 dark:bg-white/5 text-muted-foreground/40'}`}>
+                                                                        {DAYS[Number(d)].substring(0, 3)}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        {!task.isBoardTask && !(task as any).daysOfWeek && (
+                                                            <div className="flex gap-1.5 mt-4">
+                                                                <span className="text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase bg-zinc-100 dark:bg-zinc-800 text-muted-foreground">
+                                                                    One-time
+                                                                </span>
+                                                            </div>
                                                         )}
                                                     </div>
-                                                    {(task as any).location && (
-                                                        <div className="flex items-center gap-1.5 mt-1 text-primary">
-                                                            <MapPin className="w-3.5 h-3.5" />
-                                                            <span className="text-xs font-bold truncate">{(task as any).location}</span>
-                                                        </div>
-                                                    )}
-                                                    {task.description && (
-                                                        <p className={`text-sm mt-1.5 line-clamp-2 leading-relaxed ${task.completed ? 'text-muted-foreground/60' : 'text-muted-foreground'}`}>
-                                                            {task.description}
-                                                        </p>
-                                                    )}
-                                                    {!task.isBoardTask && (task as any).daysOfWeek && (
-                                                        <div className="flex gap-1.5 mt-4">
-                                                            {(task as any).daysOfWeek?.split(',').map((d: string) => (
-                                                                <span key={d} className={`text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase transition-colors ${Number(d) === dayOfWeek ? 'bg-primary text-white' : 'bg-black/5 dark:bg-white/5 text-muted-foreground/40'}`}>
-                                                                    {DAYS[Number(d)].substring(0, 3)}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    {!task.isBoardTask && !(task as any).daysOfWeek && (
-                                                        <div className="flex gap-1.5 mt-4">
-                                                            <span className="text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase bg-zinc-100 dark:bg-zinc-800 text-muted-foreground">
-                                                                One-time
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
 
-                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                                                    {task.isBoardTask && (task as any).boardId && (
-                                                        <Button 
-                                                            variant="secondary" 
-                                                            size="icon" 
-                                                            className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-white/20" 
-                                                            onClick={(e) => { 
-                                                                e.stopPropagation(); 
-                                                                window.history.pushState({}, '', `/boards/${(task as any).boardId}`);
-                                                                window.dispatchEvent(new Event('popstate'));
-                                                            }}
-                                                            title="Go to Board"
-                                                        >
-                                                            <ExternalLink className="w-4 h-4" />
-                                                        </Button>
-                                                    )}
-                                                    {!task.isBoardTask && (
-                                                        <>
-                                                            <Button variant="secondary" size="icon" className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-white/20" onClick={(e) => { e.stopPropagation(); openEditDialog(task as any); }}>
-                                                                <Edit2 className="w-4 h-4" />
+                                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                                        {task.isBoardTask && (task as any).boardId && (
+                                                            <Button
+                                                                variant="secondary"
+                                                                size="icon"
+                                                                className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-white/20"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    window.history.pushState({}, '', `/boards/${(task as any).boardId}`);
+                                                                    window.dispatchEvent(new Event('popstate'));
+                                                                }}
+                                                                title="Go to Board"
+                                                            >
+                                                                <ExternalLink className="w-4 h-4" />
                                                             </Button>
-                                                            <Button variant="destructive" size="icon" className="h-10 w-10 rounded-xl shadow-lg shadow-destructive/20" onClick={(e) => { e.stopPropagation(); handleDelete(task.id); }}>
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </Button>
-                                                        </>
-                                                    )}
+                                                        )}
+                                                        {!task.isBoardTask && (
+                                                            <>
+                                                                <Button variant="secondary" size="icon" className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-white/20" onClick={(e) => { e.stopPropagation(); openEditDialog(task as any); }}>
+                                                                    <Edit2 className="w-4 h-4" />
+                                                                </Button>
+                                                                <Button variant="destructive" size="icon" className="h-10 w-10 rounded-xl shadow-lg shadow-destructive/20" onClick={(e) => { e.stopPropagation(); handleDelete(task.id); }}>
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </motion.div>
-                                    );
+                                            </motion.div>
+                                        );
 
-                                    if (!indicatorRendered && isToday && taskTime <= nowStr && nextTaskTime > nowStr) {
-                                        elements.push(renderTimeIndicator('indicator-mid'));
-                                        indicatorRendered = true;
-                                    }
+                                        if (!indicatorRendered && isToday && taskTime <= nowStr && nextTaskTime > nowStr) {
+                                            elements.push(renderTimeIndicator('indicator-mid'));
+                                            indicatorRendered = true;
+                                        }
 
-                                    return elements;
-                                })}
-                                {!indicatorRendered && isToday && renderTimeIndicator('indicator-end')}
+                                        return elements;
+                                    })}
+                                    {!indicatorRendered && isToday && renderTimeIndicator('indicator-end')}
                                 </AnimatePresence>
                             </div>
                         );
@@ -585,23 +582,23 @@ export default function CalendarPage() {
                     <form onSubmit={handleSubmit} className="space-y-6 py-4">
                         <div className="space-y-3">
                             <Label htmlFor="title" className="text-sm font-bold uppercase tracking-widest opacity-70">Task Title</Label>
-                            <Input 
-                                id="title" 
-                                placeholder="e.g., Morning Yoga" 
+                            <Input
+                                id="title"
+                                placeholder="e.g., Morning Yoga"
                                 className="h-14 rounded-2xl bg-black/5 dark:bg-white/5 border-none text-lg font-medium focus-visible:ring-primary"
-                                value={title} 
-                                onChange={(e) => setTitle(e.target.value)} 
-                                required 
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                required
                                 autoFocus
                             />
                         </div>
                         <div className="space-y-3">
                             <Label htmlFor="description" className="text-sm font-bold uppercase tracking-widest opacity-70">Description</Label>
-                            <Textarea 
-                                id="description" 
-                                placeholder="Any extra details?" 
+                            <Textarea
+                                id="description"
+                                placeholder="Any extra details?"
                                 className="rounded-2xl bg-black/5 dark:bg-white/5 border-none resize-none focus-visible:ring-primary"
-                                value={description} 
+                                value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 rows={3}
                             />
@@ -611,10 +608,10 @@ export default function CalendarPage() {
                             <div className="space-y-3">
                                 <Label htmlFor="dueTime" className="text-sm font-bold uppercase tracking-widest opacity-70 flex justify-between">
                                     <span>Due Time</span>
-                                    <span className="text-[10px] text-primary">({user?.timeFormat || '24h'} display)</span>
+                                    <span className="text-[10px] text-primary">({'24h'} display)</span>
                                 </Label>
-                                <TimeInput 
-                                    value={dueTime} 
+                                <TimeInput
+                                    value={dueTime}
                                     onChange={setDueTime}
                                     className="h-14 rounded-2xl bg-black/5 dark:bg-white/5 border-none font-bold focus-visible:ring-primary"
                                 />
@@ -623,11 +620,11 @@ export default function CalendarPage() {
                                 <Label htmlFor="location" className="text-sm font-bold uppercase tracking-widest opacity-70">Location</Label>
                                 <div className="relative">
                                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                                    <Input 
-                                        id="location" 
-                                        placeholder="Add a location" 
+                                    <Input
+                                        id="location"
+                                        placeholder="Add a location"
                                         className="h-14 pl-12 rounded-2xl bg-black/5 dark:bg-white/5 border-none font-medium focus-visible:ring-primary"
-                                        value={location} 
+                                        value={location}
                                         onChange={(e) => setLocation(e.target.value)}
                                     />
                                 </div>
@@ -646,9 +643,9 @@ export default function CalendarPage() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <Button 
-                                        type="button" 
-                                        variant="outline" 
+                                    <Button
+                                        type="button"
+                                        variant="outline"
                                         className="w-full h-32 rounded-2xl border-dashed border-2 hover:bg-primary/5 hover:border-primary/50 transition-all flex flex-col gap-2"
                                         onClick={() => {
                                             fetchUserImages();
@@ -666,19 +663,19 @@ export default function CalendarPage() {
                             <div className="flex items-center justify-between">
                                 <Label className="text-sm font-bold uppercase tracking-widest opacity-70">Occurrence</Label>
                                 <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl">
-                                    <Button 
-                                        type="button" 
-                                        size="sm" 
-                                        variant="ghost" 
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
                                         className={`h-8 px-4 rounded-lg text-[10px] font-black uppercase transition-all ${!isRepeating ? 'bg-white dark:bg-zinc-800 shadow-sm' : 'opacity-50'}`}
                                         onClick={() => setIsRepeating(false)}
                                     >
                                         One-time
                                     </Button>
-                                    <Button 
-                                        type="button" 
-                                        size="sm" 
-                                        variant="ghost" 
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
                                         className={`h-8 px-4 rounded-lg text-[10px] font-black uppercase transition-all ${isRepeating ? 'bg-white dark:bg-zinc-800 shadow-sm' : 'opacity-50'}`}
                                         onClick={() => setIsRepeating(true)}
                                     >
@@ -708,7 +705,7 @@ export default function CalendarPage() {
                                     <div className="flex-1">
                                         <div className="flex justify-between items-center">
                                             <p className="text-xs font-black uppercase tracking-widest text-primary">Scheduled for</p>
-                                            <span className="text-[10px] text-primary">({user?.dateFormat || 'MMMM d, yyyy'} display)</span>
+                                            <span className="text-[10px] text-primary">({'MMMM d, yyyy'} display)</span>
                                         </div>
                                         <p className="text-sm font-bold">{formatDate(selectedDate)}</p>
                                     </div>
@@ -733,10 +730,10 @@ export default function CalendarPage() {
                             <label className="aspect-video rounded-xl border-2 border-dashed border-white/20 hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer group">
                                 <GoUpload className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
                                 <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Upload New</span>
-                                <input 
-                                    type="file" 
-                                    className="hidden" 
-                                    accept="image/*" 
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*"
                                     onChange={async (e) => {
                                         if (e.target.files && e.target.files[0]) {
                                             const file = e.target.files[0];
@@ -746,12 +743,12 @@ export default function CalendarPage() {
                                                 setIsGalleryOpen(false);
                                             }
                                         }
-                                    }} 
+                                    }}
                                 />
                             </label>
                             {userImages.filter(img => img.originalName !== 'avatar.jpg').map(img => (
-                                <div 
-                                    key={img.id} 
+                                <div
+                                    key={img.id}
                                     className="aspect-video rounded-xl overflow-hidden cursor-pointer border-2 border-transparent hover:border-primary transition-all relative group"
                                     onClick={() => {
                                         setImageUrl(img.filename);
@@ -772,7 +769,7 @@ export default function CalendarPage() {
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog 
+            <AlertDialog
                 open={alertConfig.open}
                 onClose={() => setAlertConfig(prev => ({ ...prev, open: false }))}
                 title={alertConfig.title}

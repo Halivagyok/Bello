@@ -72,8 +72,8 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify
         if (!card.dueDate) return null;
         const d = new Date(card.dueDate);
         
-        const timeFmt = user?.timeFormat === '12h' ? 'hh:mm a' : 'HH:mm';
-        const dateFmt = user?.dateFormat || 'yyyy/MM/dd';
+        const timeFmt = 'HH:mm';
+        const dateFmt = 'yyyy/MM/dd';
         
         if (card.dueDateMode === 'date-only') return format(d, dateFmt);
         if (card.dueDateMode === 'time-only') return format(d, timeFmt);
