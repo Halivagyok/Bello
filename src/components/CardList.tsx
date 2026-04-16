@@ -58,8 +58,6 @@ export default function CardList({ list, index }: CardListProps) {
     const [openMoveCards, setOpenMoveCards] = useState(false);
     const [openDuplicate, setOpenDuplicate] = useState(false);
     const [duplicateTitle, setDuplicateTitle] = useState(`Copy of ${list.title}`);
-    const [openTransfer, setOpenTransfer] = useState(false);
-    const [targetOwnerId, setTargetOwnerId] = useState('');
 
     const addCard = useStore((state) => state.addCard);
     const updateListTitle = useStore((state) => state.updateListTitle);
@@ -67,7 +65,6 @@ export default function CardList({ list, index }: CardListProps) {
     const duplicateList = useStore((state) => state.duplicateList);
     const updateListColor = useStore((state) => state.updateListColor);
     const sortCards = useStore((state) => state.sortCards);
-    const transferListOwnership = useStore((state) => state.transferListOwnership);
     const user = useStore(state => state.user);
     const currentUserRole = useStore(state => state.currentUserRole);
     const isViewer = !user || currentUserRole === 'viewer';
@@ -126,17 +123,6 @@ export default function CardList({ list, index }: CardListProps) {
         if (duplicateTitle.trim()) {
             duplicateList(list.id, duplicateTitle);
             setOpenDuplicate(false);
-        }
-    };
-
-    const handleTransfer = async () => {
-        if (targetOwnerId) {
-            try {
-                await transferListOwnership(list.id, targetOwnerId);
-                setOpenTransfer(false);
-            } catch (e) {
-                showAlert('Error', 'Failed to transfer ownership');
-            }
         }
     };
 
@@ -340,12 +326,6 @@ export default function CardList({ list, index }: CardListProps) {
                                                         </div>
                                                     </div>
 
-                                                    {canTransfer && (
-                                                        <DropdownMenuItem onClick={() => setOpenTransfer(true)} className="gap-2">
-                                                            <UserCircle className="w-4 h-4" /> Give to Someone
-                                                        </DropdownMenuItem>
-                                                    )}
-
                                                     <DropdownMenuSeparator />
                                                     
                                                     <DropdownMenuItem onClick={handleDeleteList} className="gap-2 text-destructive focus:text-destructive">
@@ -462,41 +442,6 @@ export default function CardList({ list, index }: CardListProps) {
                                 <DialogFooter className="gap-2 sm:gap-0">
                                     <Button type="button" variant="outline" onClick={() => setOpenDuplicate(false)}>Cancel</Button>
                                     <Button type="submit">Duplicate</Button>
-                                </DialogFooter>
-                            </form>
-                        </DialogContent>
-                    </Dialog>
-
-                    {/* Transfer Ownership Dialog */}
-                    <Dialog open={openTransfer} onOpenChange={(val) => !val && setOpenTransfer(false)}>
-                        <DialogContent>
-                            <form onSubmit={(e) => { e.preventDefault(); handleTransfer(); }}>
-                                <DialogHeader>
-                                    <DialogTitle>Transfer List Ownership</DialogTitle>
-                                </DialogHeader>
-                                <div className="py-4 space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="target-owner">Select New Owner</Label>
-                                        <Select value={targetOwnerId} onValueChange={setTargetOwnerId}>
-                                            <SelectTrigger id="target-owner">
-                                                <SelectValue placeholder="Select a member" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {activeMembers.filter(m => m.id !== list.ownerId).map(member => (
-                                                    <SelectItem key={member.id} value={member.id}>
-                                                        {member.name || member.email} ({member.role})
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground italic">
-                                        Note: Members with a lower role than the new owner will no longer be able to modify this list.
-                                    </p>
-                                </div>
-                                <DialogFooter className="gap-2 sm:gap-0">
-                                    <Button type="button" variant="outline" onClick={() => setOpenTransfer(false)}>Cancel</Button>
-                                    <Button type="submit" disabled={!targetOwnerId}>Transfer</Button>
                                 </DialogFooter>
                             </form>
                         </DialogContent>

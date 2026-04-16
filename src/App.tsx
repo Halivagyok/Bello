@@ -75,6 +75,7 @@ export const App = () => {
       <Route path="/boards/:boardId" element={<BoardPage />} />
 
       <Route path="/" element={<Navigate to={user ? "/boards" : "/login"} />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
