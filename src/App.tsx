@@ -4,6 +4,7 @@ import { useStore } from './store';
 
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import CalendarPage from './pages/CalendarPage';
 import BoardPage from './pages/BoardPage';
 import ProjectPage from './pages/ProjectPage';
 import AdminPage from './pages/AdminPage';
@@ -66,6 +67,7 @@ export const App = () => {
 
       <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route path="/boards" element={<DashboardPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/projects/:projectId" element={<ProjectPage />} />
         <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/profile" element={<UserPage />} />

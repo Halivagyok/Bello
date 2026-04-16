@@ -3,14 +3,8 @@ import { edenTreaty } from '@elysiajs/eden';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-// 1. Initialize Eden Client
-export const client = edenTreaty<any>(API_URL, {
-    $fetch: {
-        credentials: 'include'
-    }
-}) as any;
-
-// 2. Define Types
+// 1. Define Types
+// 1. Define Types
 export interface User {
     id: string;
     email: string;
@@ -85,8 +79,29 @@ export interface List {
     color?: string;
 }
 
+export interface PersonalTask {
+    id: string;
+    userId: string;
+    title: string;
+    description?: string | null;
+    dueTime?: string | null;
+    daysOfWeek?: string | null;
+    date?: string | null;
+    location?: string | null;
+    imageUrl?: string | null;
+    completed?: boolean;
+    createdAt: string;
+}
+
 export type BoardFilterDueOption = 'all' | 'next-7-days' | 'next-14-days' | 'overdue' | 'no-due-date';
 export type BoardFilterStatusOption = 'all' | 'completed' | 'not-completed';
+
+// 2. Initialize Eden Client
+export const client = edenTreaty<any>(API_URL, {
+    $fetch: {
+        credentials: 'include'
+    }
+}) as any;
 
 interface BoardState {
     user: User | null;
@@ -185,12 +200,22 @@ interface BoardState {
     removeMemberFromCard: (cardId: string, userId: string) => Promise<void>;
     searchCards: (q: string, dueSoon: boolean) => Promise<Card[]>;
 
+    // Personal Task Actions
+    personalTasks: PersonalTask[];
+    boardTasks: Card[];
+    fetchPersonalTasks: (date?: string) => Promise<void>;
+    fetchBoardTasks: (date?: string) => Promise<void>;
+    createPersonalTask: (task: Partial<PersonalTask>) => Promise<void>;
+    updatePersonalTask: (id: string, updates: Partial<PersonalTask>) => Promise<void>;
+    deletePersonalTask: (id: string) => Promise<void>;
+    togglePersonalTask: (id: string, date?: string) => Promise<void>;
+
     // Board Filter System
     boardFilterQuery: string;
     boardFilterDue: BoardFilterDueOption;
     boardFilterStatus: BoardFilterStatusOption;
     boardFilterLabels: string[]; // array of label IDs
-    
+
     setBoardFilterQuery: (q: string) => void;
     setBoardFilterDue: (due: BoardFilterDueOption) => void;
     setBoardFilterStatus: (status: BoardFilterStatusOption) => void;
@@ -222,7 +247,7 @@ export const useStore = create<BoardState>((set, get) => ({
     boardFilterDue: 'all',
     boardFilterStatus: 'all',
     boardFilterLabels: [],
-    
+
     setBoardFilterQuery: (q) => set({ boardFilterQuery: q }),
     setBoardFilterDue: (due) => set({ boardFilterDue: due }),
     setBoardFilterStatus: (status) => set({ boardFilterStatus: status }),
@@ -231,11 +256,11 @@ export const useStore = create<BoardState>((set, get) => ({
             ? state.boardFilterLabels.filter(id => id !== labelId)
             : [...state.boardFilterLabels, labelId]
     })),
-    clearBoardFilters: () => set({ 
-        boardFilterQuery: '', 
-        boardFilterDue: 'all', 
-        boardFilterStatus: 'all', 
-        boardFilterLabels: [] 
+    clearBoardFilters: () => set({
+        boardFilterQuery: '',
+        boardFilterDue: 'all',
+        boardFilterStatus: 'all',
+        boardFilterLabels: []
     }),
 
     activeProjectId: null, // Track active project for WS updates
@@ -598,7 +623,7 @@ export const useStore = create<BoardState>((set, get) => ({
                 boards: state.boards.filter(b => b.id !== boardId),
                 recentBoards: state.recentBoards.filter(b => b.id !== boardId)
             }));
-            
+
             // If deleting the active board, navigate away
             if (get().activeBoardId === boardId) {
                 set({ activeBoardId: null, lists: [], activeMembers: [], currentUserRole: null });
@@ -721,12 +746,12 @@ export const useStore = create<BoardState>((set, get) => ({
 
         const lastCard = list.cards[list.cards.length - 1];
         const position = lastCard ? lastCard.position + 1000 : 1000;
-        const newCard: Card = { 
-            id: `temp-card-${Date.now()}`, 
-            content, 
-            listId, 
-            position, 
-            boardId: list.boardId 
+        const newCard: Card = {
+            id: `temp-card-${Date.now()}`,
+            content,
+            listId,
+            position,
+            boardId: list.boardId
         };
 
         set((state) => ({
@@ -747,7 +772,7 @@ export const useStore = create<BoardState>((set, get) => ({
                         cards: l.cards.map(c => c.id === newCard.id ? { ...c, ...data } : c)
                     } : l
                 ),
-                projectCards: state.projectCards.map(c => 
+                projectCards: state.projectCards.map(c =>
                     c.id === newCard.id ? { ...c, ...data } : c
                 )
             }));
@@ -889,6 +914,7 @@ export const useStore = create<BoardState>((set, get) => ({
     toggleCardCompletion: async (cardId, completed) => {
         const oldLists = get().lists;
         const oldProjectCards = get().projectCards;
+        const oldBoardTasks = get().boardTasks;
 
         // Optimistic Update
         set(state => ({
@@ -900,13 +926,16 @@ export const useStore = create<BoardState>((set, get) => ({
             })),
             projectCards: state.projectCards.map(card =>
                 card.id === cardId ? { ...card, completed } : card
+            ),
+            boardTasks: state.boardTasks.map(bt =>
+                bt.id === cardId ? { ...bt, completed } : bt
             )
         }));
 
         try {
             await client.cards[cardId].patch({ completed });
         } catch (e) {
-            set({ lists: oldLists, projectCards: oldProjectCards });
+            set({ lists: oldLists, projectCards: oldProjectCards, boardTasks: oldBoardTasks });
             console.error('Toggle Completion failed:', e);
         }
     },
@@ -991,8 +1020,8 @@ export const useStore = create<BoardState>((set, get) => ({
                     position: (index + 1) * 1000
                 }));
 
-                return { 
-                    lists: state.lists.map(l => l.id === listId ? { ...l, cards: updatedCards } : l) 
+                return {
+                    lists: state.lists.map(l => l.id === listId ? { ...l, cards: updatedCards } : l)
                 };
             });
         }
@@ -1000,10 +1029,10 @@ export const useStore = create<BoardState>((set, get) => ({
         try {
             // Notify backend about the sort mode
             await client.lists[listId].sort.post({ sortBy });
-            
+
             if (!needsBackendSort) {
                 // Sync positions for locally-sorted cards to ensure persistence
-                await Promise.all(updatedCards.map(card => 
+                await Promise.all(updatedCards.map(card =>
                     client.cards[card.id].patch({ position: card.position })
                 ));
             } else {
@@ -1309,8 +1338,8 @@ export const useStore = create<BoardState>((set, get) => ({
         set(state => ({
             lists: state.lists.map(list => ({
                 ...list,
-                cards: list.cards.map(card => 
-                    card.id === cardId 
+                cards: list.cards.map(card =>
+                    card.id === cardId
                         ? { ...card, labels: [...(card.labels || []), label] }
                         : card
                 )
@@ -1400,17 +1429,91 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
-    searchCards: async (q, dueSoon) => {        try {
+    searchCards: async (q, dueSoon) => {
+        try {
             const query: any = {};
             if (q) query.q = q;
             if (dueSoon) query.dueSoon = 'true';
-            
+
             const { data, error } = await client.cards.search.get({ $query: query });
             if (error) throw error;
             return data as Card[];
         } catch (e) {
             console.error('Search Cards Error', e);
             return [];
+        }
+    },
+
+    personalTasks: [],
+    boardTasks: [],
+    fetchPersonalTasks: async (date) => {
+        try {
+            const { data, error } = await client['personal-tasks'].get({ $query: { date } });
+            if (error) throw error;
+            set({ personalTasks: data as PersonalTask[] });
+        } catch (e) {
+            console.error('Fetch Personal Tasks Error', e);
+        }
+    },
+    fetchBoardTasks: async (date) => {
+        try {
+            const { data, error } = await client.cards.search.get({ $query: { date } });
+            if (error) throw error;
+            set({ boardTasks: data as Card[] });
+        } catch (e) {
+            console.error('Fetch Board Tasks Error', e);
+        }
+    },
+    createPersonalTask: async (task) => {
+        try {
+            const { data, error } = await client['personal-tasks'].post(task);
+            if (error) throw error;
+            set(state => ({ personalTasks: [...state.personalTasks, { ...data, completed: false }] }));
+        } catch (e) {
+            console.error('Create Personal Task Error', e);
+        }
+    },
+    updatePersonalTask: async (id, updates) => {
+        try {
+            const { error } = await client['personal-tasks'][id].patch(updates);
+            if (error) throw error;
+            set(state => ({
+                personalTasks: state.personalTasks.map(t => t.id === id ? { ...t, ...updates } : t)
+            }));
+        } catch (e) {
+            console.error('Update Personal Task Error', e);
+        }
+    },
+    deletePersonalTask: async (id) => {
+        try {
+            const { error } = await client['personal-tasks'][id].delete();
+            if (error) throw error;
+            set(state => ({
+                personalTasks: state.personalTasks.filter(t => t.id !== id)
+            }));
+        } catch (e) {
+            console.error('Delete Personal Task Error', e);
+        }
+    },
+    togglePersonalTask: async (id, date) => {
+        // Optimistic
+        set(state => ({
+            personalTasks: state.personalTasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t)
+        }));
+        try {
+            const { data, error } = await client['personal-tasks'][id].toggle.post({ date });
+            if (error) throw error;
+            if (data) {
+                set(state => ({
+                    personalTasks: state.personalTasks.map(t => t.id === id ? { ...t, completed: data.completed } : t)
+                }));
+            }
+        } catch (e) {
+            // Revert
+            set(state => ({
+                personalTasks: state.personalTasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t)
+            }));
+            console.error('Toggle Personal Task Error', e);
         }
     }
 }));

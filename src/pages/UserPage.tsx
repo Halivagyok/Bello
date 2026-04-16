@@ -5,7 +5,6 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
 import { GoPerson, GoMail, GoImage, GoCheck, GoTrash, GoCopy, GoUpload, GoLock, GoSync, GoClock, GoCalendar } from 'react-icons/go';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { AvatarCropDialog } from '../components/AvatarCropDialog';
 import {
@@ -27,7 +26,7 @@ export default function UserPage() {
     const fetchUserImages = useStore(state => state.fetchUserImages);
     const uploadImage = useStore(state => state.uploadImage);
     const deleteImage = useStore(state => state.deleteImage);
-    
+
     const [name, setName] = useState(user?.name || '');
     const [email, setEmail] = useState(user?.email || '');
     const [loading, setLoading] = useState(false);
@@ -83,7 +82,7 @@ export default function UserPage() {
             // 1. Upload the cropped blob as a new image
             const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
             const uploaded = await uploadImage(file);
-            
+
             if (uploaded) {
                 // 2. Set the new image as avatar
                 await updateUser({ avatarUrl: uploaded.filename });
@@ -191,7 +190,7 @@ export default function UserPage() {
                         ) : user?.avatarUrl ? (
                             <AvatarImage src={`${API_URL}/uploads/${user.avatarUrl}`} crossOrigin="anonymous" />
                         ) : null}
-                        <AvatarFallback 
+                        <AvatarFallback
                             style={{ backgroundColor: stringToColor(user?.name || user?.email || 'User') }}
                             className="text-3xl text-white font-bold"
                         >
@@ -200,10 +199,10 @@ export default function UserPage() {
                     </Avatar>
                     <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-[1px]">
                         <GoSync className="w-6 h-6 text-white" />
-                        <input 
-                            type="file" 
-                            className="hidden" 
-                            accept="image/*" 
+                        <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
                             onChange={async (e) => {
                                 if (e.target.files && e.target.files[0]) {
                                     const file = e.target.files[0];
@@ -214,7 +213,7 @@ export default function UserPage() {
                                     };
                                     reader.readAsDataURL(file);
                                 }
-                            }} 
+                            }}
                         />
                     </label>
                     {(avatarLoading || avatarSuccess) && (
@@ -233,214 +232,212 @@ export default function UserPage() {
                 </div>
             </div>
 
-            <Tabs defaultValue="gallery" className="w-full">
-                <TabsList className="mb-8 bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/20 dark:border-white/10">
-                    <TabsTrigger value="gallery" className="gap-2 data-[state=active]:bg-white/60 dark:data-[state=active]:bg-black/60">
-                        <GoImage className="w-4 h-4" /> Gallery
-                    </TabsTrigger>
-                    <TabsTrigger value="settings" className="gap-2 data-[state=active]:bg-white/60 dark:data-[state=active]:bg-black/60">
-                        <GoPerson className="w-4 h-4" /> Account Settings
-                    </TabsTrigger>
-                </TabsList>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-8">
+                    {/* Profile Info Form */}
+                    <form onSubmit={handleUpdate}>
+                        <Card className="overflow-hidden border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <GoPerson className="w-5 h-5" /> Profile Information
+                                </CardTitle>
+                                <CardDescription>Update your account details and how others see you.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">Display Name</Label>
+                                    <div className="relative">
+                                        <GoPerson className="absolute left-3 top-3 text-zinc-400" />
+                                        <Input
+                                            id="name"
+                                            className="pl-9"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            placeholder="Your Name"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="email">Email Address</Label>
+                                    <div className="relative">
+                                        <GoMail className="absolute left-3 top-3 text-zinc-400" />
+                                        <Input
+                                            id="email"
+                                            className="pl-9"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="email@example.com"
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
+                            <CardFooter className="flex justify-between border-t border-white/20 dark:border-white/10 p-6 bg-white/50 dark:bg-black/50 backdrop-blur-md">
+                                <p className="text-xs text-zinc-500">Your profile is visible to other board members.</p>
+                                <Button type="submit" disabled={loading} className="gap-2">
+                                    {loading ? "Saving..." : (success ? <><GoCheck className="w-4 h-4" /> Saved</> : "Save Changes")}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </form>
 
-                <TabsContent value="gallery">
-                    <div className="space-y-8">
-                        {/* Drop Zone */}
-                        <div 
-                            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-                            onDragLeave={() => setDragging(false)}
-                            onDrop={handleDrop}
-                            className={`
-                                p-12 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-4 transition-all
-                                ${dragging ? "border-primary bg-primary/10 scale-[0.99]" : "border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md"}
-                            `}
-                        >
-                            <div className="p-4 rounded-full bg-primary/10 text-primary">
-                                <GoUpload className="w-8 h-8" />
-                            </div>
-                            <div className="text-center">
-                                <h3 className="text-lg font-semibold">Drag and drop images here</h3>
-                                <p className="text-sm text-zinc-500 mb-4">Only image files are supported.</p>
-                                <label className="cursor-pointer">
-                                    <Button variant="outline" size="sm" className="gap-2" asChild>
-                                        <span>
-                                            <GoUpload className="w-4 h-4" /> Browse Files
-                                            <input type="file" className="hidden" multiple accept="image/*" onChange={handleFileInput} />
-                                        </span>
-                                    </Button>
-                                </label>
-                            </div>
-                        </div>
+                    {/* Password Change Form */}
+                    <form onSubmit={handlePasswordChange}>
+                        <Card className="overflow-hidden border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <GoLock className="w-5 h-5" /> Change Password
+                                </CardTitle>
+                                <CardDescription>Ensure your account is using a long, random password to stay secure.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {passwordError && (
+                                    <div className="p-3 rounded-md bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-sm font-medium">
+                                        {passwordError}
+                                    </div>
+                                )}
+                                <div className="space-y-2">
+                                    <Label htmlFor="currentPassword">Current Password</Label>
+                                    <div className="relative">
+                                        <GoLock className="absolute left-3 top-3 text-zinc-400" />
+                                        <Input
+                                            id="currentPassword"
+                                            type="password"
+                                            className="pl-9"
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="newPassword">New Password</Label>
+                                    <div className="relative">
+                                        <GoLock className="absolute left-3 top-3 text-zinc-400" />
+                                        <Input
+                                            id="newPassword"
+                                            type="password"
+                                            className="pl-9"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                                    <div className="relative">
+                                        <GoLock className="absolute left-3 top-3 text-zinc-400" />
+                                        <Input
+                                            id="confirmPassword"
+                                            type="password"
+                                            className="pl-9"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
+                            <CardFooter className="flex justify-end border-t border-white/20 dark:border-white/10 p-6 bg-white/50 dark:bg-black/50 backdrop-blur-md">
+                                <Button type="submit" disabled={passwordLoading} className="gap-2">
+                                    {passwordLoading ? "Updating..." : (passwordSuccess ? <><GoCheck className="w-4 h-4" /> Updated</> : "Update Password")}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </form>
+                </div>
 
-                        {/* Image Grid */}
-                        {(Array.isArray(userImages) ? userImages : []).filter(img => img.originalName !== 'avatar.jpg').length === 0 ? (
-                            <div className="text-center py-20 bg-white/40 dark:bg-black/40 backdrop-blur-md rounded-2xl border border-white/20 dark:border-white/10">
-                                <p className="text-zinc-500">You haven't uploaded any images yet.</p>
+                <div className="space-y-8">
+                    {/* Gallery Section */}
+                    <Card className="overflow-hidden border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                <GoImage className="w-5 h-5" /> Image Gallery
+                            </CardTitle>
+                            <CardDescription>Upload and manage your personal images.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {/* Drop Zone */}
+                            <div
+                                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                                onDragLeave={() => setDragging(false)}
+                                onDrop={handleDrop}
+                                className={`
+                                    p-6 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-3 transition-all
+                                    ${dragging ? "border-primary bg-primary/10 scale-[0.99]" : "border-white/20 dark:border-white/10 bg-black/5 dark:bg-white/5"}
+                                `}
+                            >
+                                <GoUpload className="w-6 h-6 text-primary" />
+                                <div className="text-center">
+                                    <p className="text-xs font-semibold">Drop images here</p>
+                                    <label className="cursor-pointer">
+                                        <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
+                                            <span>
+                                                or browse
+                                                <input type="file" className="hidden" multiple accept="image/*" onChange={handleFileInput} />
+                                            </span>
+                                        </Button>
+                                    </label>
+                                </div>
                             </div>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                {(Array.isArray(userImages) ? userImages : [])
-                                    .filter(img => img.originalName !== 'avatar.jpg')
-                                    .map((img) => (
-                                    <Card key={img.id} className="overflow-hidden group border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md">
-                                        <div className="aspect-video relative overflow-hidden bg-black/5 dark:bg-white/5">
-                                            <img 
-                                                src={`${API_URL}/uploads/${img.filename}`} 
-                                                alt={img.originalName} 
-                                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                            />
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                                <Button 
-                                                    size="icon" 
-                                                    variant="secondary" 
-                                                    onClick={() => handleSetAvatar(img.filename)}
-                                                    title="Set as profile picture"
-                                                >
-                                                    <GoPerson className="w-4 h-4 text-blue-600" />
-                                                </Button>
-                                                <Button 
-                                                    size="icon" 
-                                                    variant="secondary" 
-                                                    onClick={() => copyToClipboard(img.filename, img.id)}
-                                                    title="Copy filename for card"
-                                                >
-                                                    {copiedId === img.id ? <GoCheck className="w-4 h-4 text-green-600" /> : <GoCopy className="w-4 h-4" />}
-                                                </Button>
-                                                <Button 
-                                                    size="icon" 
-                                                    variant="destructive" 
-                                                    onClick={() => deleteImage(img.id)}
-                                                    title="Delete image"
-                                                >
-                                                    <GoTrash className="w-4 h-4" />
-                                                </Button>
+
+                            {/* Image List (Compact) */}
+                            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                                {(Array.isArray(userImages) ? userImages : []).filter(img => img.originalName !== 'avatar.jpg').length === 0 ? (
+                                    <p className="text-center py-8 text-xs text-zinc-500 italic">No images uploaded yet.</p>
+                                ) : (
+                                    (Array.isArray(userImages) ? userImages : [])
+                                        .filter(img => img.originalName !== 'avatar.jpg')
+                                        .map((img) => (
+                                            <div key={img.id} className="flex items-center gap-3 p-2 rounded-lg bg-black/5 dark:bg-white/5 group relative">
+                                                <div className="w-12 h-12 rounded md overflow-hidden bg-zinc-200 dark:bg-zinc-800 shrink-0">
+                                                    <img
+                                                        src={`${API_URL}/uploads/${img.filename}`}
+                                                        alt={img.originalName}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-medium truncate" title={img.originalName}>{img.originalName}</p>
+                                                    <p className="text-[10px] text-zinc-500">{(img.size / 1024).toFixed(1)} KB</p>
+                                                </div>
+                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className="h-7 w-7"
+                                                        onClick={() => handleSetAvatar(img.filename)}
+                                                        title="Set as avatar"
+                                                    >
+                                                        <GoPerson className="w-3 h-3" />
+                                                    </Button>
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className="h-7 w-7"
+                                                        onClick={() => copyToClipboard(img.filename, img.id)}
+                                                        title="Copy filename"
+                                                    >
+                                                        {copiedId === img.id ? <GoCheck className="w-3 h-3 text-green-600" /> : <GoCopy className="w-3 h-3" />}
+                                                    </Button>
+                                                    <Button
+                                                        size="icon"
+                                                        variant="ghost"
+                                                        className="h-7 w-7 text-red-500 hover:text-red-600"
+                                                        onClick={() => deleteImage(img.id)}
+                                                        title="Delete"
+                                                    >
+                                                        <GoTrash className="w-3 h-3" />
+                                                    </Button>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <CardContent className="p-3">
-                                            <p className="text-xs font-medium truncate" title={img.originalName}>{img.originalName}</p>
-                                            <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-wider">
-                                                {(img.size / 1024).toFixed(1)} KB • {img.mimeType.split('/')[1]}
-                                            </p>
-                                        </CardContent>
-                                    </Card>
-                                ))}
+                                        ))
+                                )}
                             </div>
-                        )}
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="settings">
-                    <div className="grid gap-8 max-w-2xl">
-                        {/* Profile Info Form */}
-                        <form onSubmit={handleUpdate}>
-                            <Card className="overflow-hidden border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md">
-                                <CardHeader>
-                                    <CardTitle>Profile Information</CardTitle>
-                                    <CardDescription>Update your account details and how others see you.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="name">Display Name</Label>
-                                        <div className="relative">
-                                            <GoPerson className="absolute left-3 top-3 text-zinc-400" />
-                                            <Input 
-                                                id="name" 
-                                                className="pl-9"
-                                                value={name} 
-                                                onChange={(e) => setName(e.target.value)} 
-                                                placeholder="Your Name"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email">Email Address</Label>
-                                        <div className="relative">
-                                            <GoMail className="absolute left-3 top-3 text-zinc-400" />
-                                            <Input 
-                                                id="email" 
-                                                className="pl-9"
-                                                value={email} 
-                                                onChange={(e) => setEmail(e.target.value)} 
-                                                placeholder="email@example.com"
-                                            />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                                <CardFooter className="flex justify-between border-t border-white/20 dark:border-white/10 p-6 bg-white/50 dark:bg-black/50 backdrop-blur-md">
-                                    <p className="text-xs text-zinc-500">Your profile is visible to other board members.</p>
-                                    <Button type="submit" disabled={loading} className="gap-2">
-                                        {loading ? "Saving..." : (success ? <><GoCheck className="w-4 h-4" /> Saved</> : "Save Changes")}
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        </form>
-
-                        {/* Password Change Form */}
-                        <form onSubmit={handlePasswordChange}>
-                            <Card className="overflow-hidden border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md">
-                                <CardHeader>
-                                    <CardTitle>Change Password</CardTitle>
-                                    <CardDescription>Ensure your account is using a long, random password to stay secure.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    {passwordError && (
-                                        <div className="p-3 rounded-md bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-sm font-medium">
-                                            {passwordError}
-                                        </div>
-                                    )}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="currentPassword">Current Password</Label>
-                                        <div className="relative">
-                                            <GoLock className="absolute left-3 top-3 text-zinc-400" />
-                                            <Input 
-                                                id="currentPassword" 
-                                                type="password"
-                                                className="pl-9"
-                                                value={currentPassword} 
-                                                onChange={(e) => setCurrentPassword(e.target.value)} 
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="newPassword">New Password</Label>
-                                        <div className="relative">
-                                            <GoLock className="absolute left-3 top-3 text-zinc-400" />
-                                            <Input 
-                                                id="newPassword" 
-                                                type="password"
-                                                className="pl-9"
-                                                value={newPassword} 
-                                                onChange={(e) => setNewPassword(e.target.value)} 
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                                        <div className="relative">
-                                            <GoLock className="absolute left-3 top-3 text-zinc-400" />
-                                            <Input 
-                                                id="confirmPassword" 
-                                                type="password"
-                                                className="pl-9"
-                                                value={confirmPassword} 
-                                                onChange={(e) => setConfirmPassword(e.target.value)} 
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                                <CardFooter className="flex justify-end border-t border-white/20 dark:border-white/10 p-6 bg-white/50 dark:bg-black/50 backdrop-blur-md">
-                                    <Button type="submit" disabled={passwordLoading} className="gap-2">
-                                        {passwordLoading ? "Updating..." : (passwordSuccess ? <><GoCheck className="w-4 h-4" /> Updated</> : "Update Password")}
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        </form>
-                    </div>
-                </TabsContent>
-            </Tabs>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
 
             {selectedImageForCrop && (
                 <AvatarCropDialog

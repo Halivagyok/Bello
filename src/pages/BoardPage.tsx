@@ -6,7 +6,7 @@ import TopBar from '../components/TopBar';
 import CardList from '../components/CardList';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Plus, Layout, ArrowLeft } from 'lucide-react';
+import { Plus, Layout, ArrowLeft, Calendar } from 'lucide-react';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { LiquidGradient } from "@/components/ui/LiquidGradient";
 
@@ -157,6 +157,16 @@ export default function Board() {
                     >
                         <ArrowLeft className="w-4 h-4 shrink-0" />
                         <span className="">Back to Boards</span>
+                    </Button>
+
+                    <Button
+                        variant="ghost"
+                        className="w-full justify-center lg:justify-start gap-2 font-medium px-0 lg:px-4 text-zinc-900 hover:bg-black/10 dark:text-white dark:hover:bg-white/10"
+                        onClick={() => navigate('/calendar')}
+                        title="Personal Calendar"
+                    >
+                        <Calendar className="w-4 h-4 shrink-0" />
+                        <span className="">Personal Calendar</span>
                     </Button>
                 </nav>
             </aside>
