@@ -4,6 +4,7 @@ import { edenTreaty } from '@elysiajs/eden';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // 1. Define Types
+// 1. Define Types
 export interface User {
     id: string;
     email: string;
