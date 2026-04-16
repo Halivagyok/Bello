@@ -14,14 +14,7 @@ import {
     DialogTitle,
     DialogFooter
 } from "@/components/ui/dialog"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import { ScrollArea } from "@/components/ui/scroll-area"
+
 import {
     Calendar as CalendarIcon,
     ChevronLeft,
@@ -35,8 +28,7 @@ import {
     RotateCcw,
     MapPin,
     Image as ImageIcon,
-    ExternalLink,
-    CalendarDays
+    ExternalLink
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog } from '@/components/AlertDialog';
@@ -47,7 +39,6 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function CalendarPage() {
-    const user = useStore(state => state.user);
     const personalTasks = useStore(state => state.personalTasks);
     const boardTasks = useStore(state => state.boardTasks);
     const fetchPersonalTasks = useStore(state => state.fetchPersonalTasks);

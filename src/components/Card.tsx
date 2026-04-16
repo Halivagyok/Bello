@@ -16,7 +16,6 @@ interface CardProps {
 }
 
 function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify, onOpenDetails }: { card: CardType, isDragging: boolean, toggleCardCompletion: (id: string, completed: boolean) => void, isViewer: boolean, canModify: boolean, onOpenDetails: () => void }) {
-    const user = useStore(state => state.user);
     const rotate = useMotionValue(0);
     const springRotate = useSpring(rotate, { stiffness: 400, damping: 25 });
     const lastX = useRef(0);

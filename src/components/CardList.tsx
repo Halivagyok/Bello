@@ -22,13 +22,7 @@ import {
     DropdownMenuTrigger,
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+
 import { 
     Plus, 
     X, 
@@ -42,7 +36,7 @@ import {
     UserCircle
 } from "lucide-react";
 import { AlertDialog } from './AlertDialog';
-import { Label } from "./ui/label";
+
 
 interface CardListProps {
     list: List;
@@ -111,8 +105,7 @@ export default function CardList({ list, index }: CardListProps) {
                       (list.ownerId === user?.id) ||
                       (!list.ownerId);
 
-    const canTransfer = (user?.isAdmin) || 
-                        (user?.id === activeBoardOwnerId) ||
+
                         (myRoleVal >= 3);
 
     const handleTitleClick = () => { 

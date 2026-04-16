@@ -8,13 +8,7 @@ import { GoPerson, GoMail, GoImage, GoCheck, GoTrash, GoCopy, GoUpload, GoLock, 
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { AvatarCropDialog } from '../components/AvatarCropDialog';
 import { AlertDialog } from '../components/AlertDialog';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "../components/ui/select";
+
 import { stringToColor } from '../utils/colors';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
