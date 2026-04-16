@@ -183,6 +183,9 @@ interface BoardState {
     // User Actions
     updateUser: (updates: Partial<User>) => Promise<void>;
     changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+    forgotPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+    resetPassword: (token: string, password: string) => Promise<{ success: boolean; error?: string }>;
+    deleteProfile: () => Promise<{ success: boolean; error?: string }>;
 
     // Image Actions
     fetchUserImages: () => Promise<void>;
@@ -296,6 +299,48 @@ export const useStore = create<BoardState>((set, get) => ({
             return { success: true };
         } catch (e) {
             console.error('Change Password Error', e);
+            return { success: false, error: 'Network error' };
+        }
+    },
+
+    deleteProfile: async () => {
+        try {
+            const { error } = await client.auth.me.delete();
+            if (error) {
+                return { success: false, error: (error as any).value?.error || 'Failed to delete profile' };
+            }
+            set({ user: null, activeBoardId: null, lists: [], boards: [], projects: [], projectCards: [], recentBoards: [], boardName: 'Loading...', currentUserRole: null });
+            get().navigateToBoards(); // This will bounce them to /login
+            return { success: true };
+        } catch (e) {
+            console.error('Delete Profile Error', e);
+            return { success: false, error: 'Network error' };
+        }
+    },
+
+    forgotPassword: async (email) => {
+        try {
+            // Note: client.auth['forgot-password'] might need bracket notation
+            const { error } = await client.auth['forgot-password'].post({ email });
+            if (error) {
+                return { success: false, error: (error as any).value?.error || 'Failed to request password reset' };
+            }
+            return { success: true };
+        } catch (e) {
+            console.error('Forgot Password Error', e);
+            return { success: false, error: 'Network error' };
+        }
+    },
+
+    resetPassword: async (token, password) => {
+        try {
+            const { error } = await client.auth['reset-password'].post({ token, password });
+            if (error) {
+                return { success: false, error: (error as any).value?.error || 'Failed to reset password' };
+            }
+            return { success: true };
+        } catch (e) {
+            console.error('Reset Password Error', e);
             return { success: false, error: 'Network error' };
         }
     },

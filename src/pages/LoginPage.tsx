@@ -30,9 +30,33 @@ export default function Auth() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('login');
+    const [isForgotPassword, setIsForgotPassword] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotSuccess, setForgotSuccess] = useState('');
 
     const login = useStore((state) => state.login);
     const signup = useStore((state) => state.signup);
+    const forgotPassword = useStore((state) => state.forgotPassword);
+
+    const handleForgotPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setForgotSuccess('');
+        setLoading(true);
+        try {
+            const res = await forgotPassword(forgotEmail || email);
+            if (!res.success) {
+                setError(res.error || 'Failed to send reset email');
+            } else {
+                setForgotSuccess('If that email exists, a reset link has been sent!');
+                setForgotEmail('');
+            }
+        } catch (err: any) {
+            setError(err.message || 'An error occurred');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleAuth = async (isLogin: boolean) => {
         setError('');
@@ -79,7 +103,58 @@ export default function Auth() {
 
                 <div className="relative">
                     <AnimatePresence mode="wait">
-                        {activeTab === 'login' ? (
+                        {isForgotPassword ? (
+                            <motion.div
+                                key="forgot-password"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ duration: 0.2, ease: "easeInOut" }}
+                            >
+                                <Card className="border border-white/10 shadow-2xl bg-white/40 dark:bg-zinc-950/40 backdrop-blur-xl">
+                                    <form onSubmit={handleForgotPassword}>
+                                        <CardHeader>
+                                            <CardTitle className="text-2xl">Reset Password</CardTitle>
+                                            <CardDescription className="text-slate-700 dark:text-zinc-400 font-medium">
+                                                Enter your email and we will send you a reset link.
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="forgot-email">Email</Label>
+                                                <Input
+                                                    id="forgot-email"
+                                                    type="email"
+                                                    placeholder="m@example.com"
+                                                    value={forgotEmail || email}
+                                                    onChange={(e) => {
+                                                        setForgotEmail(e.target.value);
+                                                        setEmail(e.target.value);
+                                                    }}
+                                                    className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-white/20 focus-visible:ring-1 focus-visible:ring-primary"
+                                                    required
+                                                />
+                                            </div>
+                                            {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+                                            {forgotSuccess && <p className="text-sm font-medium text-green-600 dark:text-green-400">{forgotSuccess}</p>}
+                                        </CardContent>
+                                        <CardFooter className="flex-col gap-2">
+                                            <Button type="submit" className="w-full h-11" disabled={loading}>
+                                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                Send Reset Link
+                                            </Button>
+                                            <Button type="button" variant="ghost" className="w-full" onClick={() => {
+                                                setIsForgotPassword(false);
+                                                setError('');
+                                                setForgotSuccess('');
+                                            }}>
+                                                Back to Login
+                                            </Button>
+                                        </CardFooter>
+                                    </form>
+                                </Card>
+                            </motion.div>
+                        ) : activeTab === 'login' ? (
                             <motion.div
                                 key="login"
                                 initial={{ opacity: 0, x: -20, scale: 0.95 }}
@@ -121,12 +196,20 @@ export default function Auth() {
                                             </div>
                                             {error && <p className="text-sm font-medium text-destructive">{error}</p>}
                                         </CardContent>
-                                        <CardFooter>
+                                        <CardFooter className="flex-col pb-6">
                                             <Button type="submit" className="w-full h-11" disabled={loading}>
                                                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                                 Login
-
                                             </Button>
+                                            <div className="mt-4 text-center w-full">
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => { setIsForgotPassword(true); setError(''); }}
+                                                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                                >
+                                                    Forgot your password?
+                                                </button>
+                                            </div>
                                         </CardFooter>
                                     </form>
                                 </Card>

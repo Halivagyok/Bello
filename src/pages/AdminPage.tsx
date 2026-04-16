@@ -34,7 +34,8 @@ import {
     Folder,
     UserPlus,
     Shield,
-    ShieldQuestion
+    ShieldQuestion,
+    Mail
 } from 'lucide-react';
 import { AlertDialog } from '../components/AlertDialog';
 
@@ -44,6 +45,7 @@ interface AdminStats {
     totalBoards: number;
     totalBanned: number;
     recentSignups: number;
+    totalEmails: number;
 }
 
 interface AdminUser {
@@ -287,6 +289,13 @@ export default function AdminPage() {
                             <span className="text-xs font-semibold uppercase">Banned Users</span>
                         </div>
                         <span className="text-2xl font-bold tracking-tight">{stats.totalBanned}</span>
+                    </div>
+                    <div className="bg-card border rounded-xl p-4 flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                            <Mail className="w-4 h-4 text-emerald-500" />
+                            <span className="text-xs font-semibold uppercase">Emails Sent</span>
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight">{stats.totalEmails}</span>
                     </div>
                 </div>
             )}

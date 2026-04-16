@@ -4,9 +4,10 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
-import { GoPerson, GoMail, GoImage, GoCheck, GoTrash, GoCopy, GoUpload, GoLock, GoSync, GoClock, GoCalendar } from 'react-icons/go';
+import { GoPerson, GoMail, GoImage, GoCheck, GoTrash, GoCopy, GoUpload, GoLock, GoSync, GoAlert } from 'react-icons/go';
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { AvatarCropDialog } from '../components/AvatarCropDialog';
+import { AlertDialog } from '../components/AlertDialog';
 import {
     Select,
     SelectContent,
@@ -22,6 +23,7 @@ export default function UserPage() {
     const user = useStore(state => state.user);
     const updateUser = useStore(state => state.updateUser);
     const changePassword = useStore(state => state.changePassword);
+    const deleteProfile = useStore(state => state.deleteProfile);
     const userImages = useStore(state => state.userImages);
     const fetchUserImages = useStore(state => state.fetchUserImages);
     const uploadImage = useStore(state => state.uploadImage);
@@ -48,6 +50,10 @@ export default function UserPage() {
     const [passwordLoading, setPasswordLoading] = useState(false);
     const [passwordError, setPasswordError] = useState('');
     const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+    // Danger zone
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     // Clean up preview URL
     useEffect(() => {
@@ -149,6 +155,17 @@ export default function UserPage() {
             setPasswordError('An unexpected error occurred');
         } finally {
             setPasswordLoading(false);
+        }
+    };
+
+    const handleDeleteProfile = async () => {
+        setDeleteLoading(true);
+        try {
+            await deleteProfile();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setDeleteLoading(false);
         }
     };
 
@@ -345,6 +362,35 @@ export default function UserPage() {
                             </CardFooter>
                         </Card>
                     </form>
+
+                    {/* Danger Zone */}
+                    <Card className="overflow-hidden border border-red-500/20 dark:border-red-500/20 bg-red-50/10 dark:bg-red-950/10 backdrop-blur-md">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-500">
+                                <GoAlert className="w-5 h-5" /> Danger Zone
+                            </CardTitle>
+                            <CardDescription>Permanently delete your account and all associated data.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+                                Once you delete your account, there is no going back. Please be certain.
+                            </p>
+                            
+                            <Button variant="destructive" disabled={deleteLoading} onClick={() => setDeleteDialogOpen(true)}>
+                                {deleteLoading ? "Deleting..." : "Delete Account"}
+                            </Button>
+
+                            <AlertDialog
+                                open={deleteDialogOpen}
+                                onClose={() => setDeleteDialogOpen(false)}
+                                title="Delete Account"
+                                description="Are you absolutely sure you want to delete your account? This action cannot be undone and will permanently delete all your projects, boards, and tasks."
+                                confirmText="Yes, delete my account"
+                                onConfirm={handleDeleteProfile}
+                                variant="destructive"
+                            />
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="space-y-8">

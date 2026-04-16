@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useStore } from './store';
 
 import LoginPage from './pages/LoginPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
 import BoardPage from './pages/BoardPage';
@@ -64,6 +65,7 @@ export const App = () => {
   return (
     <Routes>
       <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/boards" />} />
+      <Route path="/reset-password" element={!user ? <ResetPasswordPage /> : <Navigate to="/boards" />} />
 
       <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route path="/boards" element={<DashboardPage />} />
