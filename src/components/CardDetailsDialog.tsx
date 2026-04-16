@@ -12,6 +12,8 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { stringToColor } from "../utils/colors";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -71,8 +73,15 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
     const createProjectLabel = useStore(state => state.createProjectLabel);
     const assignLabelToCard = useStore(state => state.assignLabelToCard);
     const removeLabelFromCard = useStore(state => state.removeLabelFromCard);
+    const assignMemberToCard = useStore(state => state.assignMemberToCard);
+    const removeMemberFromCard = useStore(state => state.removeMemberFromCard);
+    const projects = useStore(state => state.projects);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    
+    // Member state
+    const project = projects.find(p => p.id === activeProjectId);
+    const projectMembers = project?.members || [];
     
     // Label states
     const [projectLabels, setProjectLabels] = useState<StoreLabel[]>([]);
@@ -112,6 +121,8 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
     useEffect(() => {
         if (open && activeProjectId) {
             fetchProjectLabels(activeProjectId).then(setProjectLabels);
+            // Also ensure project members are fetched/updated
+            useStore.getState().fetchProject(activeProjectId);
         }
     }, [open, activeProjectId, fetchProjectLabels]);
 
@@ -286,66 +297,135 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                         <Input id="content" value={content} onChange={(e) => setContent(e.target.value)} />
                     </div>
                     
-                    {/* Labels Section */}
+                    {/* Labels & Members Section */}
                     {activeProjectId && (
-                        <div className="grid gap-2">
-                            <Label>Labels</Label>
-                            <div className="flex flex-wrap items-center gap-2">
-                                {card.labels?.map(label => (
-                                    <div 
-                                        key={label.id} 
-                                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md text-white shadow-sm"
-                                        style={{ backgroundColor: label.color }}
-                                    >
-                                        <GoTag className="w-3 h-3 opacity-80" />
-                                        {label.title}
-                                        <button 
-                                            onClick={() => removeLabelFromCard(card.id, label.id)}
-                                            className="ml-1 hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label>Labels</Label>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {card.labels?.map(label => (
+                                        <div 
+                                            key={label.id} 
+                                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md text-white shadow-sm"
+                                            style={{ backgroundColor: label.color }}
                                         >
-                                            <GoX className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                ))}
+                                            <GoTag className="w-3 h-3 opacity-80" />
+                                            {label.title}
+                                            <button 
+                                                onClick={() => removeLabelFromCard(card.id, label.id)}
+                                                className="ml-1 hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                                            >
+                                                <GoX className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
 
-                                <Select 
-                                    value="" 
-                                    onValueChange={(val) => {
-                                        if (val === 'create_new') {
-                                            setIsCreatingLabel(true);
-                                        } else {
-                                            const lbl = projectLabels.find(l => l.id === val);
-                                            if (lbl && !card.labels?.find(l => l.id === lbl.id)) {
-                                                assignLabelToCard(card.id, lbl);
+                                    <Select 
+                                        value="" 
+                                        onValueChange={(val) => {
+                                            if (val === 'create_new') {
+                                                setIsCreatingLabel(true);
+                                            } else {
+                                                const lbl = projectLabels.find(l => l.id === val);
+                                                if (lbl && !card.labels?.find(l => l.id === lbl.id)) {
+                                                    assignLabelToCard(card.id, lbl);
+                                                }
                                             }
-                                        }
-                                    }}
-                                >
-                                    <SelectTrigger className="w-auto h-7 px-3 text-xs bg-zinc-100 dark:bg-zinc-800 border-dashed hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
-                                        <div className="flex items-center gap-1.5 min-w-[80px] justify-center"><GoPlus /> Add Label</div>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {projectLabels.filter(pl => !card.labels?.find(cl => cl.id === pl.id)).map(label => (
-                                            <SelectItem key={label.id} value={label.id}>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: label.color }} />
-                                                    {label.title}
-                                                </div>
+                                        }}
+                                    >
+                                        <SelectTrigger className="w-auto h-7 px-3 text-xs bg-zinc-100 dark:bg-zinc-800 border-dashed hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
+                                            <div className="flex items-center gap-1.5 min-w-[80px] justify-center"><GoPlus /> Add Label</div>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {projectLabels.filter(pl => !card.labels?.find(cl => cl.id === pl.id)).map(label => (
+                                                <SelectItem key={label.id} value={label.id}>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: label.color }} />
+                                                        {label.title}
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                            {projectLabels.length === 0 && (
+                                                <div className="px-2 py-1.5 text-xs text-zinc-500 italic">No project labels found</div>
+                                            )}
+                                            <SelectItem value="create_new" className="text-blue-500 font-medium border-t mt-1">
+                                                + Create New Label
                                             </SelectItem>
-                                        ))}
-                                        {projectLabels.length === 0 && (
-                                            <div className="px-2 py-1.5 text-xs text-zinc-500 italic">No project labels found</div>
-                                        )}
-                                        <SelectItem value="create_new" className="text-blue-500 font-medium border-t mt-1">
-                                            + Create New Label
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Members</Label>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {card.members?.map(member => (
+                                        <div 
+                                            key={member.id} 
+                                            className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 rounded-full pl-1 pr-2 py-1 border border-zinc-200 dark:border-zinc-700"
+                                            title={member.name || member.email}
+                                        >
+                                            <Avatar className="h-5 w-5">
+                                                {member.avatarUrl && (
+                                                    <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} crossOrigin="anonymous" />
+                                                )}
+                                                <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-[8px] text-white">
+                                                    {(member.name || member.email)[0].toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <button 
+                                                onClick={() => removeMemberFromCard(card.id, member.id)}
+                                                className="hover:text-red-500 transition-colors"
+                                            >
+                                                <GoX className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    <Select 
+                                        value="" 
+                                        onValueChange={(val) => {
+                                            const member = projectMembers.find(m => m.id === val);
+                                            if (member && !card.members?.find(m => m.id === val)) {
+                                                assignMemberToCard(card.id, {
+                                                    id: member.id,
+                                                    name: member.name || '',
+                                                    email: member.email,
+                                                    avatarUrl: member.avatarUrl
+                                                });
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger className="w-auto h-7 px-3 text-xs bg-zinc-100 dark:bg-zinc-800 border-dashed hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
+                                            <div className="flex items-center gap-1.5 min-w-[80px] justify-center"><GoPlus /> Add Member</div>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {projectMembers.filter(pm => !card.members?.find(cm => cm.id === pm.id)).map(member => (
+                                                <SelectItem key={member.id} value={member.id}>
+                                                    <div className="flex items-center gap-2">
+                                                        <Avatar className="h-4 w-4">
+                                                            {member.avatarUrl && (
+                                                                <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} crossOrigin="anonymous" />
+                                                            )}
+                                                            <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-[6px] text-white">
+                                                                {(member.name || member.email)[0].toUpperCase()}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <span className="text-xs">{member.name || member.email}</span>
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                            {projectMembers.length === 0 && (
+                                                <div className="px-2 py-1.5 text-xs text-zinc-500 italic">No members found</div>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
 
                             {/* Create Label Inline Form */}
                             {isCreatingLabel && (
-                                <div className="mt-2 p-3 border rounded-md bg-zinc-50 dark:bg-zinc-900/50 flex flex-col gap-3 shadow-sm">
+                                <div className="md:col-span-2 mt-2 p-3 border rounded-md bg-zinc-50 dark:bg-zinc-900/50 flex flex-col gap-3 shadow-sm">
                                     <div className="flex items-center justify-between">
                                         <h4 className="text-sm font-medium">Create Project Label</h4>
                                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsCreatingLabel(false)}>

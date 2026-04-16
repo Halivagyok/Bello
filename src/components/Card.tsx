@@ -5,6 +5,8 @@ import { GoCheck, GoClock, GoListUnordered, GoLocation } from "react-icons/go";
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { CardDetailsDialog } from './CardDetailsDialog';
 import { format } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { stringToColor } from '../utils/colors';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -125,7 +127,7 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify
                         {card.content}
                     </div>
                     
-                    {(card.description || card.dueDate || card.location) && (
+                    {(card.description || card.dueDate || card.location || (card.members && card.members.length > 0)) && (
                         <div className="flex flex-col items-start gap-1.5 mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
                             {card.description && (
                                 <div className="flex items-center gap-1.5" title="This card has a description.">
@@ -146,6 +148,22 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify
                                 <div className="flex items-center gap-1.5 w-full" title={`Location: ${card.location}`}>
                                     <GoLocation className="w-3.5 h-3.5 shrink-0" />
                                     <span className="truncate">{card.location}</span>
+                                </div>
+                            )}
+                            {card.members && card.members.length > 0 && (
+                                <div className="flex items-center justify-between w-full mt-1">
+                                    <div className="flex -space-x-1.5 overflow-hidden">
+                                        {card.members.map(member => (
+                                            <Avatar key={member.id} className="h-5 w-5 border-2 border-white dark:border-zinc-900 ring-1 ring-zinc-200 dark:ring-zinc-800" title={member.name || member.email}>
+                                                {member.avatarUrl && (
+                                                    <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} crossOrigin="anonymous" />
+                                                )}
+                                                <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-[8px] text-white">
+                                                    {(member.name || 'U')[0].toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>

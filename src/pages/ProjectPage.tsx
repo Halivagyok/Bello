@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useStore, client } from '../store';
+import { useStore, client, type Card as StoreCard } from '../store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -25,6 +25,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/components/ui/tabs"
 import { 
     ArrowLeft, 
     Users, 
@@ -36,9 +42,13 @@ import {
     User as UserIcon,
     Eye,
     Lock,
-    Globe
+    Globe,
+    Calendar,
+    CheckCircle2,
+    Clock
 } from 'lucide-react';
 import { AlertDialog } from '../components/AlertDialog';
+import { CardDetailsDialog } from '../components/CardDetailsDialog';
 import { stringToColor } from '../utils/colors';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -48,10 +58,12 @@ export default function ProjectDetails() {
     const navigate = useNavigate();
     const boards = useStore(state => state.boards);
     const projects = useStore(state => state.projects);
+    const projectCards = useStore(state => state.projectCards);
     const createBoard = useStore(state => state.createBoard);
     const fetchBoards = useStore(state => state.fetchBoards);
     const fetchProjects = useStore(state => state.fetchProjects);
     const fetchProject = useStore(state => state.fetchProject);
+    const fetchProjectCards = useStore(state => state.fetchProjectCards);
 
     const inviteUserToProject = useStore(state => state.inviteUserToProject);
     const subscribeToProject = useStore(state => state.subscribeToProject);
@@ -66,6 +78,9 @@ export default function ProjectDetails() {
     const [inviteRole, setInviteRole] = useState('member');
     const [newTitle, setNewTitle] = useState('');
     const [newVisibility, setNewVisibility] = useState<string>('workspace');
+    
+    const [selectedCard, setSelectedCard] = useState<StoreCard | null>(null);
+    const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
 
     // Alert Dialog States
     const [alertDialog, setAlertDialog] = useState<{
@@ -91,16 +106,35 @@ export default function ProjectDetails() {
 
         if (projectId) {
             fetchProject(projectId);
+            fetchProjectCards(projectId);
             subscribeToProject(projectId);
 
             return () => {
                 unsubscribeFromProject(projectId);
             };
         }
-    }, [fetchBoards, fetchProjects, fetchProject, projectId, subscribeToProject, unsubscribeFromProject, connectSocket]);
+    }, [fetchBoards, fetchProjects, fetchProject, fetchProjectCards, projectId, subscribeToProject, unsubscribeFromProject, connectSocket]);
 
     const project = projects.find(p => p.id === projectId);
     const projectBoards = boards.filter(b => b.projectId === projectId);
+
+    // Filter cards
+    const myTasks = useMemo(() => {
+        if (!user) return [];
+        return projectCards.filter(card => 
+            card.members?.some(m => m.id === user.id || (m as any).userId === user.id)
+        );
+    }, [projectCards, user]);
+
+    const dueSoonTasks = useMemo(() => {
+        const soon = new Date();
+        soon.setDate(soon.getDate() + 7);
+        return projectCards.filter(card => {
+            if (!card.dueDate || card.completed) return false;
+            const due = new Date(card.dueDate);
+            return due <= soon;
+        }).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+    }, [projectCards]);
 
     const handleCreateBoard = async () => {
         if (!newTitle.trim() || !projectId) return;
@@ -170,6 +204,68 @@ export default function ProjectDetails() {
         }
     };
 
+    const renderCardItem = (card: StoreCard) => {
+        const board = boards.find(b => b.id === card.boardId);
+        return (
+            <Card 
+                key={card.id} 
+                className="group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm"
+                onClick={() => {
+                    setSelectedCard(card);
+                    setIsCardDialogOpen(true);
+                }}
+            >
+                <CardContent className="p-4 flex flex-col gap-3">
+                    <div className="flex justify-between items-start gap-2">
+                        <h4 className="font-semibold text-sm line-clamp-2">{card.content}</h4>
+                        {card.completed && <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />}
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1.5">
+                        {card.labels?.map(label => (
+                            <div 
+                                key={label.id} 
+                                className="px-1.5 py-0.5 text-[10px] font-bold rounded-sm text-white"
+                                style={{ backgroundColor: label.color }}
+                            >
+                                {label.title}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                            {board && (
+                                <Badge variant="secondary" className="h-5 px-1.5 font-normal text-[10px] bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400 border-blue-100 dark:border-blue-900">
+                                    {board.title}
+                                </Badge>
+                            )}
+                            {card.dueDate && (
+                                <span className={`flex items-center gap-1 ${new Date(card.dueDate) < new Date() && !card.completed ? 'text-red-500 font-bold' : ''}`}>
+                                    <Clock className="w-3 h-3" />
+                                    {new Date(card.dueDate).toLocaleDateString()}
+                                </span>
+                            )}
+                        </div>
+                        
+                        <div className="flex -space-x-2 overflow-hidden">
+                            {card.members?.map(member => (
+                                <Avatar key={member.id} className="h-5 w-5 border-2 border-white dark:border-zinc-900 ring-1 ring-zinc-200 dark:ring-zinc-800">
+                                    {member.avatarUrl && (
+                                        <AvatarImage src={`${API_URL}/uploads/${member.avatarUrl}`} crossOrigin="anonymous" />
+                                    )}
+                                    <AvatarFallback style={{ backgroundColor: stringToColor(member.name || member.email) }} className="text-[8px] text-white">
+                                        {(member.name || 'U')[0].toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                            ))}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    };
+
     if (!project) {
         return <div className="p-8 text-center text-muted-foreground">Loading or Project Not Found...</div>;
     }
@@ -220,51 +316,105 @@ export default function ProjectDetails() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {/* Create New Board Card */}
-                {isOwnerOrAdmin && (
-                    <Card 
-                        className="group cursor-pointer border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-all bg-muted/30"
-                        onClick={() => setOpen(true)}
-                    >
-                        <CardContent className="h-[120px] p-4 flex flex-col items-center justify-center gap-2">
-                            <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                            <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">Create new board</span>
-                        </CardContent>
-                    </Card>
-                )}
+            <Tabs defaultValue="boards" className="w-full">
+                <TabsList className="bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl mb-6">
+                    <TabsTrigger value="boards" className="gap-2 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm">
+                        <Layout className="w-4 h-4" />
+                        Boards
+                    </TabsTrigger>
+                    <TabsTrigger value="my-tasks" className="gap-2 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm">
+                        <CheckCircle2 className="w-4 h-4" />
+                        My Tasks
+                        {myTasks.length > 0 && (
+                            <Badge variant="secondary" className="ml-1 h-5 min-w-5 flex items-center justify-center p-0 text-[10px]">
+                                {myTasks.length}
+                            </Badge>
+                        )}
+                    </TabsTrigger>
+                    <TabsTrigger value="due-soon" className="gap-2 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm">
+                        <Calendar className="w-4 h-4" />
+                        Due Soon
+                        {dueSoonTasks.length > 0 && (
+                            <Badge variant="destructive" className="ml-1 h-5 min-w-5 flex items-center justify-center p-0 text-[10px]">
+                                {dueSoonTasks.length}
+                            </Badge>
+                        )}
+                    </TabsTrigger>
+                </TabsList>
 
-                {/* Existing Boards */}
-                {projectBoards.map(board => (
-                    <Card 
-                        key={board.id} 
-                        className="group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all border border-[#0079bf]/20 dark:border-[#0079bf]/20 overflow-hidden bg-[#0079bf]/10 dark:bg-[#0079bf]/10 backdrop-blur-md"
-                        onClick={() => navigate(`/boards/${board.id}`)}
-                    >
-                        <CardContent 
-                            className="h-full min-h-[120px] p-4 flex flex-col justify-between relative"
-                        >
-                            <div className="absolute inset-0 bg-transparent group-hover:bg-black/5 dark:group-hover:bg-white/5 transition-colors" />
-                            <div className="flex justify-between items-start relative z-10 text-slate-900 dark:text-blue-50">
-                                <h3 className="font-bold text-lg leading-tight line-clamp-2 flex items-center gap-2">
-                                    <Layout className="w-4 h-4" />
-                                    {board.title}
-                                </h3>
-                                <Avatar className="w-6 h-6 border border-white/40 shrink-0">
-                                    {board.ownerAvatarUrl && (
-                                        <AvatarImage src={`${API_URL}/uploads/${board.ownerAvatarUrl}`} crossOrigin="anonymous" />
-                                    )}
-                                    <AvatarFallback                                        style={{ backgroundColor: stringToColor(board.ownerName || board.ownerId) }}
-                                        className="text-[8px] text-white font-bold"
-                                    >
-                                        {(board.ownerName || 'U')[0].toUpperCase()}
-                                    </AvatarFallback>
-                                </Avatar>
+                <TabsContent value="boards">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {/* Create New Board Card */}
+                        {isOwnerOrAdmin && (
+                            <Card 
+                                className="group cursor-pointer border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-all bg-muted/30"
+                                onClick={() => setOpen(true)}
+                            >
+                                <CardContent className="h-[120px] p-4 flex flex-col items-center justify-center gap-2">
+                                    <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                                    <span className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">Create new board</span>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Existing Boards */}
+                        {projectBoards.map(board => (
+                            <Card 
+                                key={board.id} 
+                                className="group cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all border border-[#0079bf]/20 dark:border-[#0079bf]/20 overflow-hidden bg-[#0079bf]/10 dark:bg-[#0079bf]/10 backdrop-blur-md"
+                                onClick={() => navigate(`/boards/${board.id}`)}
+                            >
+                                <CardContent 
+                                    className="h-full min-h-[120px] p-4 flex flex-col justify-between relative"
+                                >
+                                    <div className="absolute inset-0 bg-transparent group-hover:bg-black/5 dark:group-hover:bg-white/5 transition-colors" />
+                                    <div className="flex justify-between items-start relative z-10 text-slate-900 dark:text-blue-50">
+                                        <h3 className="font-bold text-lg leading-tight line-clamp-2 flex items-center gap-2">
+                                            <Layout className="w-4 h-4" />
+                                            {board.title}
+                                        </h3>
+                                        <Avatar className="w-6 h-6 border border-white/40 shrink-0">
+                                            {board.ownerAvatarUrl && (
+                                                <AvatarImage src={`${API_URL}/uploads/${board.ownerAvatarUrl}`} crossOrigin="anonymous" />
+                                            )}
+                                            <AvatarFallback 
+                                                style={{ backgroundColor: stringToColor(board.ownerName || board.ownerId) }}
+                                                className="text-[8px] text-white font-bold"
+                                            >
+                                                {(board.ownerName || 'U')[0].toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="my-tasks">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {myTasks.map(renderCardItem)}
+                        {myTasks.length === 0 && (
+                            <div className="col-span-full py-12 text-center text-muted-foreground bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+                                <CheckCircle2 className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                                <p>No tasks assigned to you in this project.</p>
                             </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+                        )}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="due-soon">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {dueSoonTasks.map(renderCardItem)}
+                        {dueSoonTasks.length === 0 && (
+                            <div className="col-span-full py-12 text-center text-muted-foreground bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+                                <Calendar className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                                <p>No upcoming deadlines in this project.</p>
+                            </div>
+                        )}
+                    </div>
+                </TabsContent>
+            </Tabs>
 
             {/* Create Board Dialog */}
             <Dialog open={open} onOpenChange={(val) => !val && (setOpen(false), setNewTitle(''))}>
@@ -457,6 +607,12 @@ export default function ProjectDetails() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <CardDetailsDialog 
+                card={selectedCard}
+                open={isCardDialogOpen}
+                onOpenChange={setIsCardDialogOpen}
+            />
 
             <AlertDialog 
                 open={alertDialog.open}

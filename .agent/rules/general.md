@@ -1,5 +1,5 @@
 ---
-trigger: always_on
+trigger: manual
 ---
 
 You are an expert Frontend Engineer specialized in React, Vite, and MUI.

@@ -16,8 +16,6 @@ export interface User {
     email: string;
     name?: string;
     avatarUrl?: string | null;
-    timeFormat?: '12h' | '24h';
-    dateFormat?: string;
     isAdmin?: boolean;
     isBanned?: boolean;
 }
@@ -70,9 +68,11 @@ export interface Card {
     locationLat?: number | null;
     locationLng?: number | null;
     listId: string;
+    boardId?: string;
     position: number;
     completed?: boolean;
     labels?: Label[];
+    members?: { id: string; name: string; email: string; avatarUrl?: string | null }[];
 }
 
 export interface List {
@@ -92,6 +92,7 @@ interface BoardState {
     user: User | null;
     boards: Board[];
     projects: Project[];
+    projectCards: Card[];
     recentBoards: Board[];
     activeBoardId: string | null;
     lists: List[];
@@ -155,6 +156,7 @@ interface BoardState {
     // Project Actions
     fetchProjects: () => Promise<void>;
     fetchProject: (projectId: string) => Promise<void>;
+    fetchProjectCards: (projectId: string) => Promise<Card[]>;
     createProject: (title: string, description?: string) => Promise<void>;
     projectBoardPage: number;
     inviteUserToProject: (projectId: string, email: string, role?: string) => Promise<void>;
@@ -180,6 +182,8 @@ interface BoardState {
     deleteProjectLabel: (labelId: string) => Promise<void>;
     assignLabelToCard: (cardId: string, label: Label) => Promise<void>;
     removeLabelFromCard: (cardId: string, labelId: string) => Promise<void>;
+    assignMemberToCard: (cardId: string, user: { id: string; name: string; email: string; avatarUrl?: string | null }) => Promise<void>;
+    removeMemberFromCard: (cardId: string, userId: string) => Promise<void>;
     searchCards: (q: string, dueSoon: boolean) => Promise<Card[]>;
 
     // Board Filter System
@@ -200,6 +204,7 @@ export const useStore = create<BoardState>((set, get) => ({
     user: null,
     boards: [],
     projects: [],
+    projectCards: [],
     recentBoards: [],
     activeBoardId: null,
     lists: [],
@@ -322,6 +327,10 @@ export const useStore = create<BoardState>((set, get) => ({
                             get().navigateToBoards();
                         });
                     }
+                    const activeProjectId = get().activeProjectId;
+                    if (activeProjectId) {
+                        get().fetchProjectCards(activeProjectId);
+                    }
                 }
                 if (data.type === 'project-update') {
                     // Check if we are viewing a project using store state
@@ -333,6 +342,7 @@ export const useStore = create<BoardState>((set, get) => ({
                             set({ activeProjectId: null });
                             get().navigateToBoards();
                         });
+                        get().fetchProjectCards(activeProjectId);
                     }
                 }
                 if (data.type === 'user-update') {
@@ -379,6 +389,7 @@ export const useStore = create<BoardState>((set, get) => ({
             get().fetchProject(activeProjectId).catch(() => {
                 get().navigateToBoards();
             });
+            get().fetchProjectCards(activeProjectId);
         }
     },
 
@@ -478,7 +489,7 @@ export const useStore = create<BoardState>((set, get) => ({
         } catch (e) {
             console.error('Logout failed:', e);
         }
-        set({ user: null, activeBoardId: null, lists: [], boards: [], projects: [], recentBoards: [], boardName: 'Loading...', currentUserRole: null });
+        set({ user: null, activeBoardId: null, lists: [], boards: [], projects: [], projectCards: [], recentBoards: [], boardName: 'Loading...', currentUserRole: null });
     },
 
     fetchBoards: async () => {
@@ -558,7 +569,7 @@ export const useStore = create<BoardState>((set, get) => ({
                     boardName: data.title,
                     activeMembers: data.activeMembers || [],
                     activeBoardOwnerId: data.ownerId,
-                    activeProjectId: data.projectId,
+                    activeProjectId: data.projectId || null,
                     currentUserRole: data.currentUserRole,
                     // reset filters on new board
                     ...(isNewBoard ? { boardFilterQuery: '', boardFilterDue: 'all' as BoardFilterDueOption, boardFilterStatus: 'all' as BoardFilterStatusOption, boardFilterLabels: [] } : {})
@@ -705,17 +716,25 @@ export const useStore = create<BoardState>((set, get) => ({
 
     addCard: async (listId, content) => {
         const oldLists = get().lists;
+        const oldProjectCards = get().projectCards;
         const list = oldLists.find(l => l.id === listId);
         if (!list) return;
 
         const lastCard = list.cards[list.cards.length - 1];
         const position = lastCard ? lastCard.position + 1000 : 1000;
-        const newCard = { id: `temp-card-${Date.now()}`, content, listId, position };
+        const newCard: Card = { 
+            id: `temp-card-${Date.now()}`, 
+            content, 
+            listId, 
+            position, 
+            boardId: list.boardId 
+        };
 
         set((state) => ({
             lists: state.lists.map(l =>
                 l.id === listId ? { ...l, cards: [...l.cards, newCard] } : l
-            )
+            ),
+            projectCards: [...state.projectCards, newCard]
         }));
 
         try {
@@ -728,10 +747,13 @@ export const useStore = create<BoardState>((set, get) => ({
                         ...l,
                         cards: l.cards.map(c => c.id === newCard.id ? { ...c, ...data } : c)
                     } : l
+                ),
+                projectCards: state.projectCards.map(c => 
+                    c.id === newCard.id ? { ...c, ...data } : c
                 )
             }));
         } catch (e) {
-            set({ lists: oldLists });
+            set({ lists: oldLists, projectCards: oldProjectCards });
             console.error('Add Card failed:', e);
         }
     },
@@ -819,6 +841,7 @@ export const useStore = create<BoardState>((set, get) => ({
 
     updateCard: async (cardId, updates) => {
         const oldLists = get().lists;
+        const oldProjectCards = get().projectCards;
 
         // Optimistic Update
         set(state => ({
@@ -827,13 +850,16 @@ export const useStore = create<BoardState>((set, get) => ({
                 cards: list.cards.map(card =>
                     card.id === cardId ? { ...card, ...updates } : card
                 )
-            }))
+            })),
+            projectCards: state.projectCards.map(card =>
+                card.id === cardId ? { ...card, ...updates } : card
+            )
         }));
 
         try {
             await client.cards[cardId].patch(updates);
         } catch (e) {
-            set({ lists: oldLists });
+            set({ lists: oldLists, projectCards: oldProjectCards });
             console.error('Update Card failed:', e);
             throw e;
         }
@@ -841,19 +867,21 @@ export const useStore = create<BoardState>((set, get) => ({
 
     deleteCard: async (cardId) => {
         const oldLists = get().lists;
+        const oldProjectCards = get().projectCards;
 
         // Optimistic Update
         set(state => ({
             lists: state.lists.map(list => ({
                 ...list,
                 cards: list.cards.filter(card => card.id !== cardId)
-            }))
+            })),
+            projectCards: state.projectCards.filter(card => card.id !== cardId)
         }));
 
         try {
             await client.cards[cardId].delete();
         } catch (e) {
-            set({ lists: oldLists });
+            set({ lists: oldLists, projectCards: oldProjectCards });
             console.error('Delete Card failed:', e);
             throw e;
         }
@@ -861,6 +889,7 @@ export const useStore = create<BoardState>((set, get) => ({
 
     toggleCardCompletion: async (cardId, completed) => {
         const oldLists = get().lists;
+        const oldProjectCards = get().projectCards;
 
         // Optimistic Update
         set(state => ({
@@ -869,13 +898,16 @@ export const useStore = create<BoardState>((set, get) => ({
                 cards: list.cards.map(card =>
                     card.id === cardId ? { ...card, completed } : card
                 )
-            }))
+            })),
+            projectCards: state.projectCards.map(card =>
+                card.id === cardId ? { ...card, completed } : card
+            )
         }));
 
         try {
             await client.cards[cardId].patch({ completed });
         } catch (e) {
-            set({ lists: oldLists });
+            set({ lists: oldLists, projectCards: oldProjectCards });
             console.error('Toggle Completion failed:', e);
         }
     },
@@ -1070,6 +1102,19 @@ export const useStore = create<BoardState>((set, get) => ({
         } catch (e) {
             console.error('Fetch Project failed:', e);
             throw e;
+        }
+    },
+
+    fetchProjectCards: async (projectId: string) => {
+        try {
+            const { data, error } = await client.projects[projectId].cards.get();
+            if (error) throw error;
+            const fetchedCards = data as Card[];
+            set({ projectCards: fetchedCards });
+            return fetchedCards;
+        } catch (e) {
+            console.error('Fetch Project Cards failed:', e);
+            return [];
         }
     },
 
@@ -1297,8 +1342,8 @@ export const useStore = create<BoardState>((set, get) => ({
         set(state => ({
             lists: state.lists.map(list => ({
                 ...list,
-                cards: list.cards.map(card => 
-                    card.id === cardId 
+                cards: list.cards.map(card =>
+                    card.id === cardId
                         ? { ...card, labels: card.labels?.filter(l => l.id !== labelId) }
                         : card
                 )
@@ -1313,8 +1358,61 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
-    searchCards: async (q, dueSoon) => {
+    assignMemberToCard: async (cardId, user) => {
+        const oldLists = get().lists;
+        const oldProjectCards = get().projectCards;
+        set(state => ({
+            lists: state.lists.map(list => ({
+                ...list,
+                cards: list.cards.map(card =>
+                    card.id === cardId
+                        ? { ...card, members: [...(card.members || []), user] }
+                        : card
+                )
+            })),
+            projectCards: state.projectCards.map(card =>
+                card.id === cardId
+                    ? { ...card, members: [...(card.members || []), user] }
+                    : card
+            )
+        }));
         try {
+            const { error } = await client.cards[cardId].members.post({ userId: user.id });
+            if (error) throw error;
+        } catch (e) {
+            set({ lists: oldLists, projectCards: oldProjectCards });
+            console.error('Assign Member Error', e);
+        }
+    },
+
+    removeMemberFromCard: async (cardId, userId) => {
+        const oldLists = get().lists;
+        const oldProjectCards = get().projectCards;
+        set(state => ({
+            lists: state.lists.map(list => ({
+                ...list,
+                cards: list.cards.map(card =>
+                    card.id === cardId
+                        ? { ...card, members: card.members?.filter(m => m.id !== userId) }
+                        : card
+                )
+            })),
+            projectCards: state.projectCards.map(card =>
+                card.id === cardId
+                    ? { ...card, members: card.members?.filter(m => m.id !== userId) }
+                    : card
+            )
+        }));
+        try {
+            const { error } = await client.cards[cardId].members[userId].delete();
+            if (error) throw error;
+        } catch (e) {
+            set({ lists: oldLists, projectCards: oldProjectCards });
+            console.error('Remove Member Error', e);
+        }
+    },
+
+    searchCards: async (q, dueSoon) => {        try {
             const query: any = {};
             if (q) query.q = q;
             if (dueSoon) query.dueSoon = 'true';
