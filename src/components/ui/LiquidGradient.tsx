@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/theme-provider";
+import { useStore } from "@/store";
 
 interface LiquidGradientProps {
   colors?: [string, string, string];
@@ -12,14 +13,20 @@ interface LiquidGradientProps {
 }
 
 export function LiquidGradient({
-  colors = ["#75DDFA", "#1893CC", "#DBEAFE"],
-  darkColors = ["#0284C7", "#082f49", "#0F172A"],
+  colors: propColors,
+  darkColors: propDarkColors,
   speed = 15,
   intensity = 1.2,
   className,
 }: LiquidGradientProps) {
   const [isClient, setIsClient] = useState(false);
   const { theme } = useTheme();
+  const showSpecialBackground = useStore(state => state.showSpecialBackground);
+  const storeColors = useStore(state => state.specialBackgroundColors);
+  const storeDarkColors = useStore(state => state.specialBackgroundDarkColors);
+
+  const colors = propColors || storeColors;
+  const darkColors = propDarkColors || storeDarkColors;
 
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -42,11 +49,13 @@ export function LiquidGradient({
       mouseY.set(e.clientY - top);
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
+    if (showSpecialBackground) {
+      window.addEventListener("mousemove", handleMouseMove);
+    }
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [mouseX, mouseY]);
+  }, [mouseX, mouseY, showSpecialBackground]);
 
-  if (!isClient) return null;
+  if (!isClient || !showSpecialBackground) return null;
 
   const isDark = 
     theme === "dark" || 

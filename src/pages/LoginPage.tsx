@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useStore } from '../store';
 import { Button } from "@/components/ui/button"
 import { ShaderBackground } from "@/components/ui/ShaderBackground";
+import { GoHome } from 'react-icons/go';
 import {
     Card,
     CardContent,
@@ -17,7 +19,7 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs"
-import { Layout, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 
@@ -84,9 +86,19 @@ export default function Auth() {
     return (
         <div className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden p-4">
             <ShaderBackground />
+
+            {/* Back to Home Button */}
+            <div className="absolute top-8 left-8 z-50">
+                <Button variant="ghost" className="text-white hover:bg-white/10 gap-2 font-bold" asChild>
+                    <Link to="/">
+                        <GoHome className="w-4 h-4" />
+                        Back to Home
+                    </Link>
+                </Button>
+            </div>
             <div className="flex items-center gap-2 mb-8 animate-in fade-in slide-in-from-top-4 duration-1000 z-10">
-                <div className="bg-white p-2 rounded-xl">
-                    <Layout className="w-8 h-8 text-black" />
+                <div className="bg-white/10 p-2 rounded-xl border border-white/20 shadow-inner backdrop-blur-md">
+                    <svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='white' strokeWidth='2.5' strokeLinecap='round' strokeLinejoin='round'><rect width='18' height='18' x='3' y='3' rx='2'/><path d='M3 9h18'/><path d='M9 21V9'/></svg>
                 </div>
                 <h1 className="text-4xl font-black tracking-tighter text-white">Bello</h1>
             </div>

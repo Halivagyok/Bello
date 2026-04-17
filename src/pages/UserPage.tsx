@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
+import { useTheme } from '@/components/theme-provider';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
-import { GoPerson, GoMail, GoImage, GoCheck, GoTrash, GoCopy, GoUpload, GoLock, GoSync, GoAlert } from 'react-icons/go';
+import { GoPerson, GoMail, GoImage, GoCheck, GoTrash, GoCopy, GoUpload, GoLock, GoSync, GoAlert, GoStack } from 'react-icons/go';
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { AvatarCropDialog } from '../components/AvatarCropDialog';
 import { AlertDialog } from '../components/AlertDialog';
@@ -22,6 +23,45 @@ export default function UserPage() {
     const fetchUserImages = useStore(state => state.fetchUserImages);
     const uploadImage = useStore(state => state.uploadImage);
     const deleteImage = useStore(state => state.deleteImage);
+    const showSpecialBackground = useStore(state => state.showSpecialBackground);
+    const setShowSpecialBackground = useStore(state => state.setShowSpecialBackground);
+    const specialBackgroundColors = useStore(state => state.specialBackgroundColors);
+    const setSpecialBackgroundColors = useStore(state => state.setSpecialBackgroundColors);
+    const specialBackgroundDarkColors = useStore(state => state.specialBackgroundDarkColors);
+    const setSpecialBackgroundDarkColors = useStore(state => state.setSpecialBackgroundDarkColors);
+    const { theme } = useTheme();
+
+    const isDarkMode = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    const getLuminance = (hex: string) => {
+        const rgb = hex.replace(/^#/, '').match(/.{2}/g)?.map(x => parseInt(x, 16));
+        if (!rgb) return 0;
+        return (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+    };
+
+    const updateBgColor = (index: number, color: string) => {
+        const lum = getLuminance(color);
+        // If dark mode, don't allow too light (lum > 0.6)
+        // If light mode, don't allow too dark (lum < 0.4)
+        if (isDarkMode && lum > 0.6) {
+            alert("Color too light for dark mode! Please choose a darker shade.");
+            return;
+        }
+        if (!isDarkMode && lum < 0.4) {
+            alert("Color too dark for light mode! Please choose a lighter shade.");
+            return;
+        }
+
+        if (isDarkMode) {
+            const newColors = [...specialBackgroundDarkColors] as [string, string, string];
+            newColors[index] = color;
+            setSpecialBackgroundDarkColors(newColors);
+        } else {
+            const newColors = [...specialBackgroundColors] as [string, string, string];
+            newColors[index] = color;
+            setSpecialBackgroundColors(newColors);
+        }
+    };
 
     const [name, setName] = useState(user?.name || '');
     const [email, setEmail] = useState(user?.email || '');
@@ -356,6 +396,62 @@ export default function UserPage() {
                             </CardFooter>
                         </Card>
                     </form>
+
+                    {/* Preferences Zone */}
+                    <Card className="overflow-hidden border border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/40 backdrop-blur-md">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <GoStack className="w-5 h-5" /> Appearance Preferences
+                            </CardTitle>
+                            <CardDescription>Customize how the application looks and feels.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="flex items-center justify-between p-4 rounded-xl bg-black/5 dark:bg-white/5 border border-white/10">
+                                <div className="space-y-0.5">
+                                    <p className="text-sm font-medium">Special Background</p>
+                                    <p className="text-xs text-zinc-500">Enable the interactive blurry blob effect.</p>
+                                </div>
+                                <Button 
+                                    variant={showSpecialBackground ? "default" : "outline"} 
+                                    size="sm"
+                                    onClick={() => setShowSpecialBackground(!showSpecialBackground)}
+                                    className="transition-all"
+                                >
+                                    {showSpecialBackground ? "Enabled" : "Disabled"}
+                                </Button>
+                            </div>
+
+                            {showSpecialBackground && (
+                                <div className="space-y-4">
+                                    <Label className="text-xs uppercase tracking-wider text-zinc-500 font-bold">
+                                        Background Colors ({isDarkMode ? "Dark Mode" : "Light Mode"})
+                                    </Label>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        {(isDarkMode ? specialBackgroundDarkColors : specialBackgroundColors).map((color, idx) => (
+                                            <div key={idx} className="space-y-2">
+                                                <p className="text-[10px] text-zinc-500 font-medium">Layer {idx + 1}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <div 
+                                                        className="w-10 h-10 rounded-lg border-2 border-white/20 shadow-sm shrink-0" 
+                                                        style={{ backgroundColor: color }}
+                                                    />
+                                                    <input 
+                                                        type="color" 
+                                                        value={color}
+                                                        onChange={(e) => updateBgColor(idx, e.target.value)}
+                                                        className="w-full h-8 bg-transparent border-0 cursor-pointer"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-zinc-400 italic">
+                                        Tip: Light colors are filtered in dark mode and vice versa to maintain readability.
+                                    </p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
                     {/* Danger Zone */}
                     <Card className="overflow-hidden border border-red-500/20 dark:border-red-500/20 bg-red-50/10 dark:bg-red-950/10 backdrop-blur-md">

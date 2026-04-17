@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useStore } from './store';
 
 import LoginPage from './pages/LoginPage';
+import LandingPage from './pages/LandingPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
@@ -78,7 +79,7 @@ export const App = () => {
 
       <Route path="/boards/:boardId" element={<BoardPage />} />
 
-      <Route path="/" element={<Navigate to={user ? "/boards" : "/login"} />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

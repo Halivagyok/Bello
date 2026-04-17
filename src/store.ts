@@ -12,6 +12,12 @@ export interface User {
     avatarUrl?: string | null;
     isAdmin?: boolean;
     isBanned?: boolean;
+    preferences?: {
+        showSpecialBackground?: boolean;
+        specialBackgroundColors?: [string, string, string];
+        specialBackgroundDarkColors?: [string, string, string];
+        hideBoardTasksOnWeekends?: boolean;
+    } | null;
 }
 
 export interface Board {
@@ -65,6 +71,7 @@ export interface Card {
     boardId?: string;
     position: number;
     completed?: boolean;
+    dueDateSetAt?: number | string | Date | null;
     labels?: Label[];
     members?: { id: string; name: string; email: string; avatarUrl?: string | null }[];
 }
@@ -182,6 +189,8 @@ interface BoardState {
 
     // User Actions
     updateUser: (updates: Partial<User>) => Promise<void>;
+    updatePreferences: (updates: Partial<User['preferences']>) => Promise<void>;
+    applyUserPreferences: (user: User) => void;
     changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
     forgotPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
     resetPassword: (token: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -224,6 +233,18 @@ interface BoardState {
     setBoardFilterStatus: (status: BoardFilterStatusOption) => void;
     toggleBoardFilterLabel: (labelId: string) => void;
     clearBoardFilters: () => void;
+
+    // Appearance
+    showSpecialBackground: boolean;
+    setShowSpecialBackground: (show: boolean) => void;
+    specialBackgroundColors: [string, string, string];
+    setSpecialBackgroundColors: (colors: [string, string, string]) => void;
+    specialBackgroundDarkColors: [string, string, string];
+    setSpecialBackgroundDarkColors: (colors: [string, string, string]) => void;
+
+    // Calendar
+    hideBoardTasksOnWeekends: boolean;
+    setHideBoardTasksOnWeekends: (hide: boolean) => void;
 }
 
 // 3. Create Store
@@ -243,6 +264,30 @@ export const useStore = create<BoardState>((set, get) => ({
     authLoading: true,
     socket: null,
     socketRetryCount: 0,
+
+    // Appearance
+    showSpecialBackground: true,
+    setShowSpecialBackground: (show: boolean) => {
+        set({ showSpecialBackground: show });
+        get().updatePreferences({ showSpecialBackground: show });
+    },
+    specialBackgroundColors: ["#75DDFA", "#1893CC", "#DBEAFE"],
+    setSpecialBackgroundColors: (colors) => {
+        set({ specialBackgroundColors: colors });
+        get().updatePreferences({ specialBackgroundColors: colors });
+    },
+    specialBackgroundDarkColors: ["#0284C7", "#082f49", "#0F172A"],
+    setSpecialBackgroundDarkColors: (colors) => {
+        set({ specialBackgroundDarkColors: colors });
+        get().updatePreferences({ specialBackgroundDarkColors: colors });
+    },
+
+    // Calendar
+    hideBoardTasksOnWeekends: false,
+    setHideBoardTasksOnWeekends: (hide: boolean) => {
+        set({ hideBoardTasksOnWeekends: hide });
+        get().updatePreferences({ hideBoardTasksOnWeekends: hide });
+    },
 
 
     // Board Filter initial state
@@ -270,6 +315,32 @@ export const useStore = create<BoardState>((set, get) => ({
     projectBoardPage: 0,
 
     setProjectBoardPage: (page: number) => set({ projectBoardPage: page }),
+
+    applyUserPreferences: (user: User) => {
+        if (!user.preferences) return;
+        const prefs = user.preferences;
+        if (prefs.showSpecialBackground !== undefined) set({ showSpecialBackground: prefs.showSpecialBackground });
+        if (prefs.specialBackgroundColors) set({ specialBackgroundColors: prefs.specialBackgroundColors });
+        if (prefs.specialBackgroundDarkColors) set({ specialBackgroundDarkColors: prefs.specialBackgroundDarkColors });
+        if (prefs.hideBoardTasksOnWeekends !== undefined) set({ hideBoardTasksOnWeekends: prefs.hideBoardTasksOnWeekends });
+    },
+
+    updatePreferences: async (updates: Partial<User['preferences']>) => {
+        const currentUser = get().user;
+        if (!currentUser) return;
+
+        const newPrefs = { ...(currentUser.preferences || {}), ...updates };
+        try {
+            const { data, error } = await client.auth.me.patch({ preferences: newPrefs });
+            if (error) throw error;
+            if (data?.user) {
+                set({ user: data.user });
+                get().applyUserPreferences(data.user);
+            }
+        } catch (e) {
+            console.error('Failed to update preferences:', e);
+        }
+    },
 
     updateUser: async (updates: Partial<User>) => {
         try {
@@ -504,6 +575,7 @@ export const useStore = create<BoardState>((set, get) => ({
             const { data } = await client.auth.me.get();
             if (data?.user) {
                 set({ user: data.user });
+                get().applyUserPreferences(data.user);
                 // Load projects from local storage on auth check
                 get().fetchProjects();
                 get().connectSocket();
@@ -525,6 +597,7 @@ export const useStore = create<BoardState>((set, get) => ({
             if (error) throw new Error(error.value as any);
             if (data?.user) {
                 set({ user: data.user });
+                get().applyUserPreferences(data.user);
                 get().fetchProjects();
                 get().connectSocket();
             }
@@ -542,6 +615,7 @@ export const useStore = create<BoardState>((set, get) => ({
             if (error) throw new Error(error.value as any);
             if (data?.user) {
                 set({ user: data.user });
+                get().applyUserPreferences(data.user);
                 get().fetchProjects();
                 get().connectSocket();
             }
@@ -551,7 +625,6 @@ export const useStore = create<BoardState>((set, get) => ({
             set({ authLoading: false });
         }
     },
-
     logout: async () => {
         try {
             await client.auth.logout.post();

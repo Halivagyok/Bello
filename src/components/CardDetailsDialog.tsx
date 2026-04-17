@@ -316,10 +316,10 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                     
                     {/* Labels & Members Section */}
                     {activeProjectId && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label>Labels</Label>
-                                <div className="flex flex-wrap items-center gap-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-2">
+                            <div className="space-y-3">
+                                <Label className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Labels</Label>
+                                <div className="flex flex-wrap items-center gap-2 p-2 bg-zinc-50/50 dark:bg-white/5 rounded-xl border border-white/10 min-h-[48px]">
                                     {card.labels?.map(label => (
                                         <div 
                                             key={label.id} 
@@ -373,9 +373,9 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label>Members</Label>
-                                <div className="flex flex-wrap items-center gap-2">
+                            <div className="space-y-3">
+                                <Label className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Members</Label>
+                                <div className="flex flex-wrap items-center gap-2 p-2 bg-zinc-50/50 dark:bg-white/5 rounded-xl border border-white/10 min-h-[48px]">
                                     {card.members?.map(member => (
                                         <div 
                                             key={member.id} 
@@ -708,8 +708,9 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
         </Dialog>
 
         <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
-            <DialogContent className="sm:max-w-[700px] rounded-xl border-white/20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-2xl">
-                <DialogHeader>
+            <DialogContent className="sm:max-w-[700px] rounded-xl border-white/20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-2xl p-6 sm:p-8">
+                <DialogHeader className="mb-4">
+
                     <DialogTitle className="text-2xl font-black">Select Image</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-6 py-4">

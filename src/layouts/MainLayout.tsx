@@ -1,7 +1,7 @@
 import { useStore } from '../store';
 import { useNavigate, Outlet, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, ShieldCheck, Layout, Calendar } from 'lucide-react';
+import { LogOut, ShieldCheck, Calendar } from 'lucide-react';
 import { ModeToggle } from '@/components/mode-toggle';
 import {
     Avatar,
@@ -45,8 +45,8 @@ export default function MainLayout() {
             <header className="border-b bg-card/60 backdrop-blur-md text-card-foreground px-4 sm:px-6 h-16 flex items-center justify-between sticky top-0 z-50 shadow-sm relative">
                 <div className="flex items-center gap-6">
                     <Link to="/boards" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-                        <div className="bg-primary p-1.5 rounded-lg">
-                            <Layout className="w-5 h-5 text-primary-foreground" />
+                        <div className="bg-primary/10 p-1.5 rounded-lg border border-primary/20">
+                            <svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='3' strokeLinecap='round' strokeLinejoin='round' className="text-primary"><rect width='18' height='18' x='3' y='3' rx='2'/><path d='M3 9h18'/><path d='M9 21V9'/></svg>
                         </div>
                         <span className="text-xl font-bold tracking-tight hidden sm:inline">Bello</span>
                     </Link>

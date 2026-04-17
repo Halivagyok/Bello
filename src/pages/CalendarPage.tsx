@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useStore, type PersonalTask } from '../store';
 import { Button } from '@/components/ui/button';
 import { format, isValid } from 'date-fns';
@@ -24,11 +24,11 @@ import {
     Edit2,
     CheckCircle2,
     Circle,
-    Clock,
     RotateCcw,
     MapPin,
     Image as ImageIcon,
-    ExternalLink
+    ExternalLink,
+    Coffee
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog } from '@/components/AlertDialog';
@@ -40,6 +40,7 @@ const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 
 
 export default function CalendarPage() {
     const personalTasks = useStore(state => state.personalTasks);
+    const user = useStore(state => state.user);
     const boardTasks = useStore(state => state.boardTasks);
     const fetchPersonalTasks = useStore(state => state.fetchPersonalTasks);
     const fetchBoardTasks = useStore(state => state.fetchBoardTasks);
@@ -51,20 +52,10 @@ export default function CalendarPage() {
     const userImages = useStore(state => state.userImages);
     const fetchUserImages = useStore(state => state.fetchUserImages);
     const uploadImage = useStore(state => state.uploadImage);
+    const hideBoardTasksOnWeekends = useStore(state => state.hideBoardTasksOnWeekends);
+    const setHideBoardTasksOnWeekends = useStore(state => state.setHideBoardTasksOnWeekends);
 
     const datePickerRef = useRef<HTMLInputElement>(null);
-
-    const formatTime = (timeStr: string | null | undefined) => {
-        if (!timeStr) return '';
-        // if (user?.timeFormat === '12h') {
-        //     const [hours, minutes] = timeStr.split(':');
-        //     const h = parseInt(hours);
-        //     const ampm = h >= 12 ? 'PM' : 'AM';
-        //     const h12 = h % 12 || 12;
-        //     return `${h12}:${minutes} ${ampm}`;
-        // }
-        return timeStr; // Default is 24h as stored
-    };
 
     const formatDate = (date: Date) => {
         return format(date, 'MMMM d, yyyy');
@@ -105,12 +96,11 @@ export default function CalendarPage() {
 
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     const dayOfWeek = selectedDate.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
     useEffect(() => {
         fetchPersonalTasks(dateStr);
-        if (showBoardTasks) {
-            fetchBoardTasks(dateStr);
-        }
+        fetchBoardTasks(dateStr);
 
         const interval = setInterval(() => {
             const now = new Date();
@@ -125,14 +115,14 @@ export default function CalendarPage() {
             }
         }, 10000); // Check every 10s for better accuracy
         return () => clearInterval(interval);
-    }, [fetchPersonalTasks, fetchBoardTasks, dateStr, showBoardTasks]);
+    }, [fetchPersonalTasks, fetchBoardTasks, dateStr]);
 
     const handlePrevDay = () => {
         const d = new Date(selectedDate);
         d.setDate(d.getDate() - 1);
         const newDateStr = format(d, 'yyyy-MM-dd');
         setSelectedDate(d);
-        if (showBoardTasks) fetchBoardTasks(newDateStr);
+        fetchBoardTasks(newDateStr);
     };
 
     const handleNextDay = () => {
@@ -140,14 +130,14 @@ export default function CalendarPage() {
         d.setDate(d.getDate() + 1);
         const newDateStr = format(d, 'yyyy-MM-dd');
         setSelectedDate(d);
-        if (showBoardTasks) fetchBoardTasks(newDateStr);
+        fetchBoardTasks(newDateStr);
     };
 
     const handleToday = () => {
         const d = new Date();
         const newDateStr = format(d, 'yyyy-MM-dd');
         setSelectedDate(d);
-        if (showBoardTasks) fetchBoardTasks(newDateStr);
+        fetchBoardTasks(newDateStr);
     };
 
     const openCreateDialog = () => {
@@ -196,7 +186,7 @@ export default function CalendarPage() {
             }
             setIsDialogOpen(false);
             fetchPersonalTasks(dateStr);
-            if (showBoardTasks) fetchBoardTasks(dateStr);
+            fetchBoardTasks(dateStr);
         } catch (err) {
             console.error(err);
         }
@@ -209,7 +199,7 @@ export default function CalendarPage() {
             async () => {
                 await deletePersonalTask(id);
                 fetchPersonalTasks(dateStr);
-                if (showBoardTasks) fetchBoardTasks(dateStr);
+                fetchBoardTasks(dateStr);
             },
             'destructive'
         );
@@ -277,7 +267,7 @@ export default function CalendarPage() {
                                             if (e.target.value) {
                                                 const d = new Date(e.target.value);
                                                 setSelectedDate(d);
-                                                if (showBoardTasks) fetchBoardTasks(e.target.value);
+                                                fetchBoardTasks(e.target.value);
                                             }
                                         }}
                                         style={{ colorScheme: 'dark' }}
@@ -302,15 +292,20 @@ export default function CalendarPage() {
                                 <span className="text-sm font-bold">{formatDate(selectedDate)}</span>
                             </div>
                             {(() => {
-                                const boardDisplayTasksCount = showBoardTasks ? boardTasks.length : 0;
+                                const boardDisplayTasksCount = boardTasks.length;
                                 const totalCount = relevantTasks.length + boardDisplayTasksCount;
-                                const completedCount = relevantTasks.filter(t => t.completed).length + (showBoardTasks ? boardTasks.filter(t => t.completed).length : 0);
+                                const completedCount = relevantTasks.filter(t => t.completed).length + boardTasks.filter(bt => bt.completed).length;
 
                                 return (
                                     <>
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-muted-foreground">Total for today</span>
-                                            <span className="text-sm font-bold">{totalCount}</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-sm font-bold">{totalCount}</span>
+                                                {boardTasks.length > 0 && !showBoardTasks && (
+                                                    <span className="text-[10px] text-muted-foreground">({boardTasks.length} from boards)</span>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-muted-foreground">Completed</span>
@@ -319,7 +314,7 @@ export default function CalendarPage() {
                                     </>
                                 );
                             })()}
-                            <div className="pt-4 border-t border-primary/10 mt-4">
+                            <div className="pt-4 border-t border-primary/10 mt-4 space-y-2">
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -334,6 +329,19 @@ export default function CalendarPage() {
                                         {boardTasks.length}
                                     </Badge>
                                 </Button>
+
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={`w-full justify-between px-2 h-9 rounded-lg transition-all ${hideBoardTasksOnWeekends ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'hover:bg-primary/5 text-muted-foreground'}`}
+                                    onClick={() => setHideBoardTasksOnWeekends(!hideBoardTasksOnWeekends)}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Coffee className="w-4 h-4" />
+                                        <span className="text-xs font-bold uppercase tracking-wider">Hide on Weekends</span>
+                                    </div>
+                                    <div className={`w-2 h-2 rounded-full ${hideBoardTasksOnWeekends ? 'bg-amber-500' : 'bg-zinc-300 dark:bg-zinc-700'}`} />
+                                </Button>
                             </div>
                         </div>
                     </div>
@@ -342,18 +350,38 @@ export default function CalendarPage() {
                 {/* Tasks List */}
                 <div className="lg:col-span-2 space-y-4">
                     {(() => {
-                        const boardDisplayTasks = showBoardTasks ? boardTasks.map(bt => {
-                            let d: Date | null = null;
-                            if (bt.dueDate) {
-                                const parsed = new Date(bt.dueDate);
-                                if (isValid(parsed)) {
-                                    // If year is < 1980, it's likely a seconds-based timestamp from SQLite
-                                    d = parsed.getFullYear() < 1980 ? new Date(parsed.getTime() * 1000) : parsed;
+                        const skipBoardTasks = showBoardTasks && hideBoardTasksOnWeekends && isWeekend;
+                        const boardDisplayTasks = (showBoardTasks && !skipBoardTasks) ? boardTasks.filter(bt => {
+                            const isMember = bt.members?.some((m: any) => m.id === user?.id);
+                            
+                            if (!bt.dueDate) return isMember;
+                            
+                            const parsed = new Date(bt.dueDate);
+                            if (!isValid(parsed)) return isMember;
+                            
+                            const d = parsed.getFullYear() < 1980 ? new Date(parsed.getTime() * 1000) : parsed;
+                            const taskDueDateStr = format(d, 'yyyy-MM-dd');
+                            
+                            // User requirement: show task on every day until its due date
+                            const startTs = bt.dueDateSetAt || (bt as any).createdAt;
+                            let taskStartDateStr = '';
+                            if (startTs) {
+                                const parsedStart = new Date(startTs);
+                                if (isValid(parsedStart)) {
+                                    const startDate = parsedStart.getFullYear() < 1980 ? new Date(parsedStart.getTime() * 1000) : parsedStart;
+                                    taskStartDateStr = format(startDate, 'yyyy-MM-dd');
                                 }
                             }
-
-                            // Show time if it exists
-                            const formattedDueTime = (d && isValid(d)) ? format(d, 'HH:mm') : null;
+                            const isAfterOrOnStart = !taskStartDateStr || dateStr >= taskStartDateStr;
+                            const isBeforeOrOnDue = dateStr <= taskDueDateStr;
+                            return isAfterOrOnStart && isBeforeOrOnDue;
+                        }).map(bt => {
+                            let formattedDueTime = null;
+                            if (bt.dueDate) {
+                                const parsed = new Date(bt.dueDate);
+                                const d = parsed.getFullYear() < 1980 ? new Date(parsed.getTime() * 1000) : parsed;
+                                formattedDueTime = format(d, 'HH:mm');
+                            }
 
                             return {
                                 ...bt,
@@ -370,7 +398,7 @@ export default function CalendarPage() {
                         const allDisplayTasks = [
                             ...relevantTasks.map(t => ({ ...t, isBoardTask: false })),
                             ...boardDisplayTasks
-                        ].sort((a, b) => {
+                        ].sort((a: any, b: any) => {
                             const timeA = a.dueTime || '99:99';
                             const timeB = b.dueTime || '99:99';
                             return timeA.localeCompare(timeB);
@@ -398,166 +426,124 @@ export default function CalendarPage() {
                             </motion.div>
                         );
 
-                        if (allDisplayTasks.length === 0) {
-                            return (
-                                <div className="space-y-4 w-full">
-                                    {isToday && renderTimeIndicator('empty-indicator')}
-                                    <div className="text-center py-24 bg-white/10 dark:bg-black/10 backdrop-blur-sm rounded-[2rem] border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-6 shadow-inner">
-                                        <div className="bg-primary/5 p-8 rounded-full border border-primary/10 animate-pulse">
-                                            <CheckCircle2 className="w-12 h-12 text-primary opacity-30" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <h3 className="text-2xl font-bold text-zinc-900 dark:text-white">Clear Schedule</h3>
-                                            <p className="text-muted-foreground max-w-xs mx-auto">You have no tasks scheduled for this day. Perfect time to start something new!</p>
-                                        </div>
-                                        <Button variant="outline" size="lg" onClick={openCreateDialog} className="mt-4 rounded-2xl border-primary/20 hover:bg-primary hover:text-white transition-all font-bold">
-                                            <Plus className="w-5 h-5 mr-2" />
-                                            Schedule a Task
-                                        </Button>
-                                    </div>
-                                </div>
-                            );
-                        }
-
                         let indicatorRendered = false;
 
                         return (
-                            <div className="grid gap-4 w-full relative">
-                                <AnimatePresence mode="popLayout">
-                                    {allDisplayTasks.flatMap((task, index) => {
-                                        const taskTime = task.dueTime || '99:99';
-                                        const nextTask = allDisplayTasks[index + 1];
-                                        const nextTaskTime = nextTask?.dueTime || '99:99';
-                                        const elements = [];
+                            <div className="space-y-4 relative">
+                                <AnimatePresence initial={false}>
+                                    {allDisplayTasks.length === 0 ? (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="text-center py-24 bg-white/10 dark:bg-black/10 backdrop-blur-sm rounded-[2rem] border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-6 shadow-inner"
+                                        >
+                                            <div className="w-24 h-24 rounded-full bg-primary/5 flex items-center justify-center animate-pulse">
+                                                <CalendarIcon className="w-10 h-10 text-primary opacity-40" />
+                                            </div>
+                                            <div>
+                                                <h5 className="text-xl font-bold">Clear Schedule</h5>
+                                                <p className="text-muted-foreground text-sm max-w-[200px] mx-auto mt-1">No tasks planned for this day. Enjoy your free time!</p>
+                                            </div>
+                                            <Button variant="outline" size="sm" className="rounded-xl font-bold" onClick={openCreateDialog}>
+                                                Add Something?
+                                            </Button>
+                                        </motion.div>
+                                    ) : (
+                                        allDisplayTasks.map((task: any) => {
+                                            const showIndicatorNow = isToday && !indicatorRendered && (!task.dueTime || task.dueTime >= nowStr);
+                                            if (showIndicatorNow) indicatorRendered = true;
 
-                                        if (!indicatorRendered && isToday && index === 0 && taskTime > nowStr) {
-                                            elements.push(renderTimeIndicator('indicator-start'));
-                                            indicatorRendered = true;
-                                        }
-
-                                        elements.push(
-                                            <motion.div
-                                                key={task.id}
-                                                layout
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, scale: 0.95 }}
-                                                className={`group relative flex flex-col gap-0 rounded-[1.5rem] border transition-all duration-300 overflow-hidden ${task.completed ? 'bg-white/5 border-transparent opacity-60 grayscale-[0.5]' : 'bg-white/60 dark:bg-black/40 border-white/20 hover:border-primary/50 shadow-lg hover:shadow-xl'}`}
-                                            >
-
-                                                {(task as any).imageUrl && (
-                                                    <div className="w-full h-32 overflow-hidden bg-black/5">
-                                                        <img
-                                                            src={(task as any).imageUrl.startsWith('http') ? (task as any).imageUrl : `${API_URL}/uploads/${(task as any).imageUrl}`}
-                                                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                                                        />
-                                                    </div>
-                                                )}
-                                                <div className="flex items-center gap-6 p-6">
-                                                    <button
-                                                        onClick={() => {
-                                                            if (task.isBoardTask) {
-                                                                toggleCardCompletion(task.id, !task.completed);
-                                                            } else {
-                                                                togglePersonalTask(task.id, dateStr);
-                                                            }
-                                                        }}
-                                                        className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 border-2 ${task.completed ? 'bg-primary border-primary text-white' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-transparent hover:border-primary'}`}
+                                            return (
+                                                <React.Fragment key={task.id}>
+                                                    {showIndicatorNow && renderTimeIndicator(`indicator-${task.id}`)}
+                                                    <motion.div
+                                                        layout
+                                                        initial={{ opacity: 0, x: -10 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        className={`group relative flex flex-col gap-0 rounded-[1.5rem] border transition-all duration-300 overflow-hidden ${task.completed ? 'bg-white/5 border-transparent opacity-60 grayscale-[0.5]' : 'bg-white/60 dark:bg-black/40 border-white/20 hover:border-primary/50 shadow-lg hover:shadow-xl'}`}
                                                     >
-                                                        <CheckCircle2 className={`w-5 h-5 ${task.completed ? 'opacity-100' : 'opacity-0'}`} />
-                                                    </button>
-
-                                                    <div className="flex-1 min-w-0" onClick={() => {
-                                                        if (task.isBoardTask) {
-                                                            toggleCardCompletion(task.id, !task.completed);
-                                                        } else {
-                                                            togglePersonalTask(task.id, dateStr);
-                                                        }
-                                                    }}>
-                                                        <div className="flex items-center gap-3">
-                                                            <h3 className={`text-xl font-bold truncate transition-all ${task.completed ? 'line-through text-muted-foreground' : 'text-zinc-900 dark:text-white'}`}>
-                                                                {task.title}
-                                                            </h3>
-                                                            {task.isBoardTask && (
-                                                                <Badge variant="outline" className="text-[10px] uppercase font-black tracking-tighter border-primary/30 text-primary">
-                                                                    Board Task
-                                                                </Badge>
-                                                            )}
-                                                            {task.dueTime && (
-                                                                <Badge variant="secondary" className="gap-1.5 px-2 py-0.5 rounded-lg bg-primary/10 text-primary border-none text-xs font-bold whitespace-nowrap">
-                                                                    <Clock className="w-3.5 h-3.5" />
-                                                                    {formatTime(task.dueTime)}
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                        {(task as any).location && (
-                                                            <div className="flex items-center gap-1.5 mt-1 text-primary">
-                                                                <MapPin className="w-3.5 h-3.5" />
-                                                                <span className="text-xs font-bold truncate">{(task as any).location}</span>
-                                                            </div>
-                                                        )}
-                                                        {task.description && (
-                                                            <p className={`text-sm mt-1.5 line-clamp-2 leading-relaxed ${task.completed ? 'text-muted-foreground/60' : 'text-muted-foreground'}`}>
-                                                                {task.description}
-                                                            </p>
-                                                        )}
-                                                        {!task.isBoardTask && (task as any).daysOfWeek && (
-                                                            <div className="flex gap-1.5 mt-4">
-                                                                {(task as any).daysOfWeek?.split(',').map((d: string) => (
-                                                                    <span key={d} className={`text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase transition-colors ${Number(d) === dayOfWeek ? 'bg-primary text-white' : 'bg-black/5 dark:bg-white/5 text-muted-foreground/40'}`}>
-                                                                        {DAYS[Number(d)].substring(0, 3)}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                        {!task.isBoardTask && !(task as any).daysOfWeek && (
-                                                            <div className="flex gap-1.5 mt-4">
-                                                                <span className="text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase bg-zinc-100 dark:bg-zinc-800 text-muted-foreground">
-                                                                    One-time
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                                                        {task.isBoardTask && (task as any).boardId && (
-                                                            <Button
-                                                                variant="secondary"
-                                                                size="icon"
-                                                                className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-white/20"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    window.history.pushState({}, '', `/boards/${(task as any).boardId}`);
-                                                                    window.dispatchEvent(new Event('popstate'));
+                                                        <div className="flex items-center gap-5 p-5">
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (task.isBoardTask) toggleCardCompletion(task.id, !task.completed);
+                                                                    else togglePersonalTask(task.id, dateStr);
                                                                 }}
-                                                                title="Go to Board"
+                                                                className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all active:scale-90 border-2 ${task.completed ? 'bg-primary border-primary text-white' : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-transparent hover:border-primary'}`}
                                                             >
-                                                                <ExternalLink className="w-4 h-4" />
-                                                            </Button>
-                                                        )}
-                                                        {!task.isBoardTask && (
-                                                            <>
-                                                                <Button variant="secondary" size="icon" className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-white/20" onClick={(e) => { e.stopPropagation(); openEditDialog(task as any); }}>
-                                                                    <Edit2 className="w-4 h-4" />
-                                                                </Button>
-                                                                <Button variant="destructive" size="icon" className="h-10 w-10 rounded-xl shadow-lg shadow-destructive/20" onClick={(e) => { e.stopPropagation(); handleDelete(task.id); }}>
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </Button>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        );
+                                                                <CheckCircle2 className="w-5 h-5" />
+                                                            </button>
 
-                                        if (!indicatorRendered && isToday && taskTime <= nowStr && nextTaskTime > nowStr) {
-                                            elements.push(renderTimeIndicator('indicator-mid'));
-                                            indicatorRendered = true;
-                                        }
+                                                            <div className="flex-1 min-w-0" onClick={() => !task.isBoardTask && openEditDialog(task as any)}>
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    {task.isBoardTask && (
+                                                                        <div className="px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-500 text-[8px] font-black uppercase tracking-tighter border border-blue-500/20">
+                                                                            Board
+                                                                        </div>
+                                                                    )}
+                                                                    <span className="text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded-full">
+                                                                        {task.dueTime || 'Anytime'}
+                                                                    </span>
+                                                                </div>
+                                                                <h4 className={`text-lg font-bold truncate ${task.completed ? 'line-through text-muted-foreground' : 'text-zinc-900 dark:text-white'}`}>
+                                                                    {task.title}
+                                                                </h4>
+                                                                {task.description && (
+                                                                    <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{task.description}</p>
+                                                                )}
 
-                                        return elements;
-                                    })}
-                                    {!indicatorRendered && isToday && renderTimeIndicator('indicator-end')}
+                                                                <div className="flex flex-wrap items-center gap-3 mt-3">
+                                                                    {task.location && (
+                                                                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-bold bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-md">
+                                                                            <MapPin className="w-3 h-3" />
+                                                                            {task.location}
+                                                                        </div>
+                                                                    )}
+                                                                    {!task.isBoardTask && (
+                                                                        <div className="flex items-center gap-1">
+                                                                            {task.daysOfWeek ? (
+                                                                                (task.daysOfWeek as string).split(',').map((d: string) => (
+                                                                                    <span key={d} className={`text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase transition-colors ${Number(d) === dayOfWeek ? 'bg-primary text-white' : 'bg-black/5 dark:bg-white/5 text-muted-foreground/40'}`}>
+                                                                                        {DAYS[Number(d)].substring(0, 3)}
+                                                                                    </span>
+                                                                                ))
+                                                                            ) : (
+                                                                                <span className="text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase bg-zinc-100 dark:bg-zinc-800 text-muted-foreground">
+                                                                                    One-time
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                {task.isBoardTask ? (
+                                                                    <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-white/20" onClick={() => window.open(`/boards/${task.boardId}`, '_blank')}>
+                                                                        <ExternalLink className="w-4 h-4" />
+                                                                    </Button>
+                                                                ) : (
+                                                                    <>
+                                                                        <Button variant="secondary" size="icon" className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-800 shadow-sm border border-white/20" onClick={(e) => { e.stopPropagation(); openEditDialog(task as any); }}>
+                                                                            <Edit2 className="w-4 h-4" />
+                                                                        </Button>
+                                                                        <Button variant="destructive" size="icon" className="h-10 w-10 rounded-xl shadow-lg shadow-destructive/20" onClick={(e) => { e.stopPropagation(); handleDelete(task.id); }}>
+                                                                            <Trash2 className="w-4 h-4" />
+                                                                        </Button>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        {task.imageUrl && (
+                                                            <div className="w-full h-32 overflow-hidden border-t border-white/10">
+                                                                <img src={task.imageUrl.startsWith('http') ? task.imageUrl : `${API_URL}/uploads/${task.imageUrl}`} className="w-full h-full object-cover" />
+                                                            </div>
+                                                        )}
+                                                    </motion.div>
+                                                </React.Fragment>
+                                            );
+                                        })
+                                    )}
+                                    {isToday && allDisplayTasks.length > 0 && !indicatorRendered && renderTimeIndicator('indicator-bottom')}
                                 </AnimatePresence>
                             </div>
                         );
@@ -566,13 +552,14 @@ export default function CalendarPage() {
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[600px] rounded-[2rem] border-white/20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
-                    <DialogHeader>
+                <DialogContent className="sm:max-w-[600px] rounded-[2rem] border-white/20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-2xl max-h-[90vh] overflow-y-auto custom-scrollbar p-6 sm:p-8">
+                    <DialogHeader className="mb-6">
+
                         <DialogTitle className="text-2xl font-black">{editingTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-6 py-4">
+                    <form onSubmit={handleSubmit} className="space-y-8 py-4">
                         <div className="space-y-3">
-                            <Label htmlFor="title" className="text-sm font-bold uppercase tracking-widest opacity-70">Task Title</Label>
+                            <Label htmlFor="title" className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Task Title</Label>
                             <Input
                                 id="title"
                                 placeholder="e.g., Morning Yoga"
@@ -584,7 +571,7 @@ export default function CalendarPage() {
                             />
                         </div>
                         <div className="space-y-3">
-                            <Label htmlFor="description" className="text-sm font-bold uppercase tracking-widest opacity-70">Description</Label>
+                            <Label htmlFor="description" className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Description</Label>
                             <Textarea
                                 id="description"
                                 placeholder="Any extra details?"
@@ -595,26 +582,26 @@ export default function CalendarPage() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
                             <div className="space-y-3">
-                                <Label htmlFor="dueTime" className="text-sm font-bold uppercase tracking-widest opacity-70 flex justify-between">
+                                <Label htmlFor="dueTime" className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60 flex justify-between">
                                     <span>Due Time</span>
-                                    <span className="text-[10px] text-primary">({'24h'} display)</span>
+                                    <span className="text-[10px] text-primary lowercase tracking-normal">({'24h'} display)</span>
                                 </Label>
                                 <TimeInput
                                     value={dueTime}
                                     onChange={setDueTime}
-                                    className="h-14 rounded-2xl bg-black/5 dark:bg-white/5 border-none font-bold focus-visible:ring-primary"
+                                    className="h-14 rounded-2xl bg-black/5 dark:bg-white/5 border-none font-bold focus-visible:ring-primary w-full"
                                 />
                             </div>
                             <div className="space-y-3">
-                                <Label htmlFor="location" className="text-sm font-bold uppercase tracking-widest opacity-70">Location</Label>
+                                <Label htmlFor="location" className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Location</Label>
                                 <div className="relative">
                                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                                     <Input
                                         id="location"
                                         placeholder="Add a location"
-                                        className="h-14 pl-12 rounded-2xl bg-black/5 dark:bg-white/5 border-none font-medium focus-visible:ring-primary"
+                                        className="h-14 pl-12 rounded-2xl bg-black/5 dark:bg-white/5 border-none font-medium focus-visible:ring-primary w-full"
                                         value={location}
                                         onChange={(e) => setLocation(e.target.value)}
                                     />
@@ -623,10 +610,10 @@ export default function CalendarPage() {
                         </div>
 
                         <div className="space-y-3">
-                            <Label className="text-sm font-bold uppercase tracking-widest opacity-70">Image</Label>
+                            <Label className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Image</Label>
                             <div className="flex gap-4">
                                 {imageUrl ? (
-                                    <div className="relative w-full aspect-video rounded-2xl overflow-hidden group">
+                                    <div className="relative w-full aspect-video rounded-2xl overflow-hidden group border border-white/10 shadow-sm">
                                         <img src={imageUrl.startsWith('http') ? imageUrl : `${API_URL}/uploads/${imageUrl}`} className="w-full h-full object-cover" />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                             <Button type="button" variant="secondary" size="sm" onClick={() => setIsGalleryOpen(true)}>Change</Button>
@@ -637,37 +624,38 @@ export default function CalendarPage() {
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        className="w-full h-32 rounded-2xl border-dashed border-2 hover:bg-primary/5 hover:border-primary/50 transition-all flex flex-col gap-2"
+                                        className="w-full h-32 rounded-2xl border-dashed border-2 bg-black/5 dark:bg-white/5 border-white/10 hover:bg-primary/5 hover:border-primary/50 transition-all flex flex-col gap-2"
                                         onClick={() => {
                                             fetchUserImages();
                                             setIsGalleryOpen(true);
                                         }}
                                     >
                                         <ImageIcon className="w-8 h-8 text-muted-foreground" />
-                                        <span className="text-xs font-bold uppercase tracking-widest opacity-60">Add Task Image</span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Add Task Image</span>
                                     </Button>
                                 )}
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-sm font-bold uppercase tracking-widest opacity-70">Occurrence</Label>
-                                <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl">
+                        <div className="space-y-4 pt-2">
+                            <div className="space-y-3">
+                                <Label className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Occurrence</Label>
+                                <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl w-full border border-white/10">
                                     <Button
                                         type="button"
                                         size="sm"
                                         variant="ghost"
-                                        className={`h-8 px-4 rounded-lg text-[10px] font-black uppercase transition-all ${!isRepeating ? 'bg-white dark:bg-zinc-800 shadow-sm' : 'opacity-50'}`}
+                                        className={`h-9 px-4 rounded-lg text-[10px] font-black uppercase transition-all flex-1 ${!isRepeating ? 'bg-white dark:bg-zinc-800 shadow-sm text-primary' : 'opacity-50'}`}
                                         onClick={() => setIsRepeating(false)}
                                     >
                                         One-time
                                     </Button>
+                                    <div className="w-px h-5 bg-zinc-300 dark:bg-zinc-700 self-center mx-1 opacity-20" />
                                     <Button
                                         type="button"
                                         size="sm"
                                         variant="ghost"
-                                        className={`h-8 px-4 rounded-lg text-[10px] font-black uppercase transition-all ${isRepeating ? 'bg-white dark:bg-zinc-800 shadow-sm' : 'opacity-50'}`}
+                                        className={`h-9 px-4 rounded-lg text-[10px] font-black uppercase transition-all flex-1 ${isRepeating ? 'bg-white dark:bg-zinc-800 shadow-sm text-primary' : 'opacity-50'}`}
                                         onClick={() => setIsRepeating(true)}
                                     >
                                         Repeating
@@ -676,19 +664,29 @@ export default function CalendarPage() {
                             </div>
 
                             {isRepeating ? (
-                                <div className="flex flex-wrap gap-2.5">
-                                    {DAYS.map((day, index) => (
-                                        <Button
-                                            key={day}
-                                            type="button"
-                                            variant={selectedDays.includes(index) ? 'default' : 'secondary'}
-                                            size="sm"
-                                            className={`h-11 px-4 rounded-xl text-xs font-black transition-all ${selectedDays.includes(index) ? 'bg-primary shadow-lg shadow-primary/30 ring-2 ring-primary ring-offset-2' : 'bg-black/5 dark:bg-white/5 hover:bg-black/10'}`}
-                                            onClick={() => toggleDay(index)}
-                                        >
-                                            {day.substring(0, 3).toUpperCase()}
-                                        </Button>
-                                    ))}
+                                <div className="p-1 rounded-2xl bg-black/5 dark:bg-white/5 border border-white/5 w-full">
+                                    <div className="flex justify-between items-center px-4 py-3 border-b border-white/5">
+                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Repeat Every Week On</p>
+                                        <div className="flex items-center gap-1.5 bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                            <RotateCcw className="w-3 h-3" />
+                                            <span className="text-[10px] font-bold">Weekly</span>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-7 gap-1 p-2">
+                                        {DAYS.map((day, index) => (
+                                            <Button
+                                                key={day}
+                                                type="button"
+                                                variant={selectedDays.includes(index) ? 'default' : 'secondary'}
+                                                size="sm"
+                                                className={`h-11 px-0 rounded-xl text-[10px] font-black transition-all ${selectedDays.includes(index) ? 'bg-primary shadow-lg shadow-primary/30 ring-2 ring-primary ring-offset-2' : 'bg-transparent hover:bg-black/10'}`}
+                                                onClick={() => toggleDay(index)}
+                                                title={day}
+                                            >
+                                                {day.substring(0, 3).toUpperCase()}
+                                            </Button>
+                                        ))}
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center gap-3">
