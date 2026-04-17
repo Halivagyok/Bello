@@ -19,6 +19,8 @@ vi.mock('react-router-dom', async () => {
     };
 });
 
+import userEvent from '@testing-library/user-event';
+
 describe('Login Component', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -31,18 +33,38 @@ describe('Login Component', () => {
         expect(screen.getByLabelText('Password')).toBeInTheDocument();
     });
 
-    it('submits form correctly on valid inputs', async () => {
+    it('submits form correctly on valid inputs via userEvent', async () => {
         mockLogin.mockResolvedValueOnce(undefined);
+        const user = userEvent.setup();
 
         render(<BrowserRouter><LoginPage /></BrowserRouter>);
         
-        fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@example.com' } });
-        fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'ValidPass123!' } });
+        await user.type(screen.getByLabelText('Email'), 'test@example.com');
+        await user.type(screen.getByLabelText('Password'), 'ValidPass123!');
         
-        fireEvent.submit(screen.getByRole('button', { name: /Login/i }));
+        await user.click(screen.getByRole('button', { name: /Login/i }));
 
         await waitFor(() => {
             expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'ValidPass123!');
+        });
+    });
+
+    it('can toggle to signup form using userEvent click', async () => {
+        const user = userEvent.setup();
+        render(<BrowserRouter><LoginPage /></BrowserRouter>);
+
+        // It starts with Login
+        expect(screen.getByRole('button', { name: /Login/i })).toBeInTheDocument();
+
+        // Click the toggle button to 'Sign up'
+        const toggleButton = screen.getByText(/Sign up/i, { selector: 'button' });
+        await user.click(toggleButton);
+
+        // It should now show Create an account UI and the Login toggle
+        await waitFor(() => {
+            expect(screen.getByText(/Create an account/i)).toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: /Login/i })).not.toBeInTheDocument(); // The main submit button is now Create Account
+            expect(screen.getByRole('button', { name: /Create Account/i })).toBeInTheDocument();
         });
     });
 });

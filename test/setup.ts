@@ -24,3 +24,11 @@ Object.defineProperty(window, 'ResizeObserver', {
     configurable: true,
     value: ResizeObserverMock
 });
+
+const originalConsoleWarn = console.warn;
+console.warn = (...args) => {
+    if (typeof args[0] === 'string' && args[0].includes('THREE.WARNING: Multiple instances')) {
+        return;
+    }
+    originalConsoleWarn(...args);
+};

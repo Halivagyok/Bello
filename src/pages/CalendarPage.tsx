@@ -552,7 +552,7 @@ export default function CalendarPage() {
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[600px] rounded-[2rem] border-white/20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-2xl max-h-[90vh] overflow-y-auto custom-scrollbar p-6 sm:p-8">
+                <DialogContent aria-describedby={undefined} className="sm:max-w-[600px] rounded-[2rem] border-white/20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-2xl max-h-[90vh] overflow-y-auto custom-scrollbar p-6 sm:p-8">
                     <DialogHeader className="mb-6">
 
                         <DialogTitle className="text-2xl font-black">{editingTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>

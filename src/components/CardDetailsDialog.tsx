@@ -303,6 +303,7 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
             <DialogContent 
                 className="sm:max-w-[700px] max-h-[95vh] overflow-y-auto"
                 onKeyDown={handleKeyDown}
+                aria-describedby={undefined}
             >
                 <DialogHeader>
                     <DialogTitle>Card Details</DialogTitle>
