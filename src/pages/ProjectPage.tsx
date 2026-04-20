@@ -45,7 +45,8 @@ import {
     Globe,
     Calendar,
     CheckCircle2,
-    Clock
+    Clock,
+    LayoutTemplate
 } from 'lucide-react';
 import { AlertDialog } from '../components/AlertDialog';
 import { CardDetailsDialog } from '../components/CardDetailsDialog';
@@ -78,6 +79,7 @@ export default function ProjectDetails() {
     const [inviteRole, setInviteRole] = useState('member');
     const [newTitle, setNewTitle] = useState('');
     const [newVisibility, setNewVisibility] = useState<string>('workspace');
+    const [newTemplate, setNewTemplate] = useState<string>('empty');
     
     const [selectedCard, setSelectedCard] = useState<StoreCard | null>(null);
     const [isCardDialogOpen, setIsCardDialogOpen] = useState(false);
@@ -138,9 +140,10 @@ export default function ProjectDetails() {
 
     const handleCreateBoard = async () => {
         if (!newTitle.trim() || !projectId) return;
-        await createBoard(newTitle, projectId, newVisibility as 'private'|'workspace'|'public');
+        await createBoard(newTitle, projectId, newVisibility as 'private'|'workspace'|'public', newTemplate);
         setNewTitle('');
         setNewVisibility('workspace');
+        setNewTemplate('empty');
         setOpen(false);
     };
 
@@ -417,7 +420,7 @@ export default function ProjectDetails() {
             </Tabs>
 
             {/* Create Board Dialog */}
-            <Dialog open={open} onOpenChange={(val) => !val && (setOpen(false), setNewTitle(''))}>
+            <Dialog open={open} onOpenChange={(val) => !val && (setOpen(false), setNewTitle(''), setNewTemplate('empty'))}>
                 <DialogContent>
                     <form onSubmit={(e) => { e.preventDefault(); handleCreateBoard(); }}>
                         <DialogHeader>
@@ -457,6 +460,46 @@ export default function ProjectDetails() {
                                             <div className="flex items-center gap-2">
                                                 <Globe className="w-4 h-4 text-green-500" />
                                                 <span>Public</span>
+                                            </div>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="template">Template</Label>
+                                <Select value={newTemplate} onValueChange={setNewTemplate}>
+                                    <SelectTrigger id="template">
+                                        <SelectValue placeholder="Select template" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="empty">
+                                            <div className="flex items-center gap-2">
+                                                <LayoutTemplate className="w-4 h-4 text-zinc-400" />
+                                                <span>Empty Board</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="kanban">
+                                            <div className="flex items-center gap-2">
+                                                <LayoutTemplate className="w-4 h-4 text-blue-500" />
+                                                <span>Kanban (To Do, Doing, Done)</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="weekly">
+                                            <div className="flex items-center gap-2">
+                                                <LayoutTemplate className="w-4 h-4 text-indigo-500" />
+                                                <span>Weekly Planner</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="project">
+                                            <div className="flex items-center gap-2">
+                                                <LayoutTemplate className="w-4 h-4 text-purple-500" />
+                                                <span>Project Setup</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="brainstorming">
+                                            <div className="flex items-center gap-2">
+                                                <LayoutTemplate className="w-4 h-4 text-orange-500" />
+                                                <span>Brainstorming</span>
                                             </div>
                                         </SelectItem>
                                     </SelectContent>

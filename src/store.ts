@@ -145,7 +145,7 @@ interface BoardState {
 
     // Board Actions
     fetchBoards: () => Promise<void>;
-    createBoard: (title: string, projectId?: string, visibility?: 'private' | 'workspace' | 'public') => Promise<Board | null>;
+    createBoard: (title: string, projectId?: string, visibility?: 'private' | 'workspace' | 'public', template?: string) => Promise<Board | null>;
     fetchBoard: (boardId: string, silent?: boolean) => Promise<void>;
     deleteBoard: (boardId: string) => Promise<void>;
     updateMemberRole: (userId: string, role: string) => Promise<void>;
@@ -663,9 +663,9 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
-    createBoard: async (title, projectId, visibility) => {
+    createBoard: async (title, projectId, visibility, template) => {
         try {
-            const { data, error } = await client.boards.post({ title, projectId, visibility });
+            const { data, error } = await client.boards.post({ title, projectId, visibility, template });
             if (error) throw error;
             if (data) {
                 const newBoard = data as Board;

@@ -43,7 +43,8 @@ import {
     Lock,
     Globe,
     ArrowLeft,
-    Plus
+    Plus,
+    LayoutTemplate
 } from 'lucide-react';
 import { AlertDialog } from './AlertDialog';
 import { GlobalSearch } from './GlobalSearch';
@@ -79,6 +80,7 @@ export default function TopBar() {
     const [inviteRole, setInviteRole] = useState('member');
     const [newBoardTitle, setNewBoardTitle] = useState('');
     const [newBoardVisibility, setNewBoardVisibility] = useState<string>('workspace');
+    const [newBoardTemplate, setNewBoardTemplate] = useState<string>('empty');
     const [editBoardTitle, setEditBoardTitle] = useState('');
     const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
@@ -182,9 +184,10 @@ export default function TopBar() {
 
     const handleCreateBoard = async () => {
         if (!newBoardTitle.trim() || !activeProjectId) return;
-        await createBoard(newBoardTitle, activeProjectId, newBoardVisibility as 'private' | 'workspace' | 'public');
+        await createBoard(newBoardTitle, activeProjectId, newBoardVisibility as 'private' | 'workspace' | 'public', newBoardTemplate);
         setNewBoardTitle('');
         setNewBoardVisibility('workspace');
+        setNewBoardTemplate('empty');
         setCreateBoardOpen(false);
     };
 
@@ -525,6 +528,46 @@ export default function TopBar() {
                                             <div className="flex items-center gap-2">
                                                 <Globe className="w-4 h-4 text-green-500" />
                                                 <span>Public</span>
+                                            </div>
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="template">Template</Label>
+                                <Select value={newBoardTemplate} onValueChange={setNewBoardTemplate}>
+                                    <SelectTrigger id="template">
+                                        <SelectValue placeholder="Select template" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="empty">
+                                            <div className="flex items-center gap-2">
+                                                <LayoutTemplate className="w-4 h-4 text-zinc-400" />
+                                                <span>Empty Board</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="kanban">
+                                            <div className="flex items-center gap-2">
+                                                <LayoutTemplate className="w-4 h-4 text-blue-500" />
+                                                <span>Kanban (To Do, Doing, Done)</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="weekly">
+                                            <div className="flex items-center gap-2">
+                                                <LayoutTemplate className="w-4 h-4 text-indigo-500" />
+                                                <span>Weekly Planner</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="project">
+                                            <div className="flex items-center gap-2">
+                                                <LayoutTemplate className="w-4 h-4 text-purple-500" />
+                                                <span>Project Setup</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="brainstorming">
+                                            <div className="flex items-center gap-2">
+                                                <LayoutTemplate className="w-4 h-4 text-orange-500" />
+                                                <span>Brainstorming</span>
                                             </div>
                                         </SelectItem>
                                     </SelectContent>
