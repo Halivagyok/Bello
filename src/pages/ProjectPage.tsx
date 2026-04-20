@@ -71,6 +71,17 @@ export default function ProjectDetails() {
     const unsubscribeFromProject = useStore(state => state.unsubscribeFromProject);
     const connectSocket = useStore(state => state.connectSocket);
     const user = useStore(state => state.user);
+    const deleteProject = useStore(state => state.deleteProject);
+
+    const handleDeleteProject = async () => {
+        if (!projectId) return;
+        try {
+            await deleteProject(projectId);
+            navigate('/boards');
+        } catch (e) {
+            console.error('Failed to delete project:', e);
+        }
+    };
 
     const [open, setOpen] = useState(false);
     const [membersOpen, setMembersOpen] = useState(false);
@@ -314,6 +325,22 @@ export default function ProjectDetails() {
                         >
                             <UserPlus className="w-4 h-4" />
                             Invite
+                        </Button>
+                    )}
+                    {(project.ownerId === user?.id || user?.isAdmin) && (
+                        <Button 
+                            variant="destructive"
+                            size="sm" 
+                            className="gap-2"
+                            onClick={() => showAlert(
+                                "Delete Project", 
+                                "Are you sure you want to delete this project? This action cannot be undone and will delete all boards inside.",
+                                handleDeleteProject,
+                                "destructive"
+                            )}
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
                         </Button>
                     )}
                 </div>

@@ -38,6 +38,7 @@ export interface Project {
     description?: string;
     ownerId: string;
     boardIds: string[];
+    visibility?: 'private' | 'workspace' | 'public';
     members?: { id: string; name: string; email: string; role: string; isAdmin?: boolean; avatarUrl?: string | null }[];
 }
 
@@ -178,7 +179,8 @@ interface BoardState {
     fetchProjects: () => Promise<void>;
     fetchProject: (projectId: string) => Promise<void>;
     fetchProjectCards: (projectId: string) => Promise<Card[]>;
-    createProject: (title: string, description?: string) => Promise<void>;
+    createProject: (title: string, description?: string, visibility?: 'private' | 'workspace' | 'public') => Promise<void>;
+    deleteProject: (projectId: string) => Promise<void>;
     projectBoardPage: number;
     inviteUserToProject: (projectId: string, email: string, role?: string) => Promise<void>;
     assignBoardToProject: (boardId: string, projectId: string) => Promise<void>;
@@ -810,6 +812,8 @@ export const useStore = create<BoardState>((set, get) => ({
             lists: [...state.lists, { id: newId, title, position, cards: [], boardId }]
         }));
 
+        if (!get().user) return;
+
         try {
             const { data, error } = await client.boards[boardId].lists.post({ title, position });
             if (error) throw error;
@@ -831,6 +835,8 @@ export const useStore = create<BoardState>((set, get) => ({
             lists: state.lists.filter(l => l.id !== listId)
         }));
 
+        if (!get().user) return;
+
         try {
             await client.lists[listId].delete();
         } catch (e) {
@@ -847,6 +853,8 @@ export const useStore = create<BoardState>((set, get) => ({
                 list.id === listId ? { ...list, title } : list
             )
         }));
+
+        if (!get().user) return;
 
         try {
             await client.lists[listId].patch({ title });
@@ -878,6 +886,8 @@ export const useStore = create<BoardState>((set, get) => ({
             ),
             projectCards: [...state.projectCards, newCard]
         }));
+
+        if (!get().user) return;
 
         try {
             const { data, error } = await client.cards.post({ content, listId, position });
@@ -920,6 +930,8 @@ export const useStore = create<BoardState>((set, get) => ({
         moved.position = newPosition;
 
         set({ lists: sorted });
+
+        if (!get().user) return;
 
         try {
             await client.lists[moved.id].patch({ position: newPosition });
@@ -968,6 +980,8 @@ export const useStore = create<BoardState>((set, get) => ({
         const destList = newLists.find(l => l.id === destListId);
         const movedCard = destList?.cards[destIndex];
 
+        if (!get().user) return;
+
         if (movedCard && !movedCard.id.startsWith('temp')) {
             try {
                 await client.cards[movedCard.id].patch({
@@ -998,6 +1012,8 @@ export const useStore = create<BoardState>((set, get) => ({
             )
         }));
 
+        if (!get().user) return;
+
         try {
             await client.cards[cardId].patch(updates);
         } catch (e) {
@@ -1019,6 +1035,8 @@ export const useStore = create<BoardState>((set, get) => ({
             })),
             projectCards: state.projectCards.filter(card => card.id !== cardId)
         }));
+
+        if (!get().user) return;
 
         try {
             await client.cards[cardId].delete();
@@ -1049,6 +1067,8 @@ export const useStore = create<BoardState>((set, get) => ({
                 bt.id === cardId ? { ...bt, completed } : bt
             )
         }));
+
+        if (!get().user) return;
 
         try {
             await client.cards[cardId].patch({ completed });
@@ -1253,9 +1273,9 @@ export const useStore = create<BoardState>((set, get) => ({
         }
     },
 
-    createProject: async (title, description) => {
+    createProject: async (title, description, visibility) => {
         try {
-            const { data, error } = await client.projects.post({ title, description });
+            const { data, error } = await client.projects.post({ title, description, visibility });
             if (error) throw error;
             if (data) {
                 set(state => ({
@@ -1264,6 +1284,23 @@ export const useStore = create<BoardState>((set, get) => ({
             }
         } catch (e) {
             console.error('Create Project failed:', e);
+        }
+    },
+
+    deleteProject: async (projectId) => {
+        try {
+            const { error } = await client.projects[projectId].delete();
+            if (error) throw error;
+            set(state => ({
+                projects: state.projects.filter(p => p.id !== projectId)
+            }));
+            if (get().activeProjectId === projectId) {
+                set({ activeProjectId: null });
+                get().navigateToBoards();
+            }
+        } catch (e) {
+            console.error('Delete Project failed:', e);
+            throw e;
         }
     },
 

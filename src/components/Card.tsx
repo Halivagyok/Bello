@@ -202,7 +202,7 @@ export default function Card({ card, index }: CardProps) {
     
     const [detailsOpen, setDetailsOpen] = useState(false);
 
-    const isViewer = !user || currentUserRole === 'viewer';
+    const isViewer = user ? currentUserRole === 'viewer' : false;
 
     const list = lists.find(l => l.id === card.listId);
     const rolePriority: Record<string, number> = { 'owner': 4, 'admin': 3, 'member': 2, 'viewer': 1 };
@@ -211,7 +211,8 @@ export default function Card({ card, index }: CardProps) {
     const ownerMember = (activeMembers || []).find(m => m.id === list?.ownerId);
     const ownerPrio = (activeBoardOwnerId && list?.ownerId === activeBoardOwnerId) ? 5 : (rolePriority[ownerMember?.role || 'member'] || 0);
 
-    const canModify = (user?.isAdmin) || 
+    const canModify = !user || 
+                      (user?.isAdmin) || 
                       (user?.id === activeBoardOwnerId) ||
                       (myRoleVal >= 3 && myRoleVal >= ownerPrio) || // Higher or equal to owner
                       (list?.ownerId === user?.id) ||

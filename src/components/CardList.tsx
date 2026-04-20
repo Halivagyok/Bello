@@ -61,7 +61,7 @@ export default function CardList({ list, index }: CardListProps) {
     const sortCards = useStore((state) => state.sortCards);
     const user = useStore(state => state.user);
     const currentUserRole = useStore(state => state.currentUserRole);
-    const isViewer = !user || currentUserRole === 'viewer';
+    const isViewer = user ? currentUserRole === 'viewer' : false;
     const activeMembers = useStore(state => state.activeMembers);
     const activeBoardOwnerId = useStore(state => state.activeBoardOwnerId);
 
@@ -99,7 +99,8 @@ export default function CardList({ list, index }: CardListProps) {
     // 2. Board admin can always edit
     // 3. List owner can always edit
     // 4. Other members can only edit if their role >= owner's role
-    const canModify = (user?.isAdmin) || 
+    const canModify = !user || 
+                      (user?.isAdmin) || 
                       (user?.id === activeBoardOwnerId) ||
                       (myRoleVal >= 3 && myRoleVal >= ownerPrio) ||
                       (list.ownerId === user?.id) ||

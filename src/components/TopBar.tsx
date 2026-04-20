@@ -107,7 +107,7 @@ export default function TopBar() {
     const myRoleVal = (activeBoardOwnerId && user?.id === activeBoardOwnerId) ? 5 : (rolePriority[currentUserRole || 'member'] || 0);
 
     const isOwnerOrAdmin = !!user && (myRoleVal >= 3 || user.isAdmin);
-    const isViewer = !user || currentUserRole === 'viewer';
+    const isViewer = user ? currentUserRole === 'viewer' : false;
 
     const handleRenameBoard = async () => {
         if (!activeBoardId || !editBoardTitle.trim()) return;
