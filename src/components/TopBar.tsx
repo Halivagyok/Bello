@@ -287,7 +287,7 @@ export default function TopBar() {
 
                 <div className="flex items-center justify-between overflow-visible pb-1 relative w-full gap-2">
                     {!isMobileSearchOpen && (
-                        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 transition-colors text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20" onClick={() => navigate('/boards')}>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 transition-colors text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-white/10 dark:hover:bg-white/20" onClick={() => navigate(user ? '/boards' : '/login?tab=signup')}>
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                     )}

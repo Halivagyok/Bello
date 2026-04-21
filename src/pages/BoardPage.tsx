@@ -142,7 +142,7 @@ export default function Board() {
             <aside className="hidden lg:flex w-[260px] transition-all duration-300 shrink-0 border-r border-white/10 bg-black/15 backdrop-blur-sm flex-col p-4">
                 <div 
                     className="flex items-center gap-2 mb-8 px-2 cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => navigate('/boards')}
+                    onClick={() => navigate(user ? '/boards' : '/login?tab=signup')}
                 >
                     <Layout className="w-6 h-6 text-zinc-900 dark:text-white shrink-0" />
                     <span className="text-xl font-bold text-zinc-900 dark:text-white tracking-tight">Bello</span>
@@ -152,7 +152,7 @@ export default function Board() {
                     <Button
                         variant="ghost"
                         className="w-full justify-center lg:justify-start gap-2 font-medium px-0 lg:px-4 text-zinc-900 bg-black/5 hover:bg-black/10 dark:text-white dark:bg-transparent dark:hover:bg-white/10"
-                        onClick={() => navigate('/boards')}
+                        onClick={() => navigate(user ? '/boards' : '/login?tab=signup')}
                         title="Back to Boards"
                     >
                         <ArrowLeft className="w-4 h-4 shrink-0" />

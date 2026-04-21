@@ -11,7 +11,7 @@ export default function LandingPage() {
   const demoBoardId = "8722f9a8-7033-4c1a-b144-87ec9d707eda";
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-background selection:bg-primary/30">
+    <div className="relative min-h-[100dvh] md:h-screen w-full overflow-x-hidden overflow-y-auto bg-background selection:bg-primary/30 flex flex-col pt-8 md:pt-0">
       {/* Background Effect */}
       <div className="absolute inset-0 z-0">
         <LiquidGradient />
@@ -32,36 +32,36 @@ export default function LandingPage() {
             <Link to="/login">Sign In</Link>
           </Button>
           <Button asChild className="rounded-full px-6 shadow-xl shadow-primary/20">
-            <Link to="/login">Get Started</Link>
+            <Link to="/login?tab=signup">Get Started</Link>
           </Button>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <main className="relative z-10 flex flex-col items-center justify-center px-6 pt-20 pb-32 text-center md:px-12 md:pt-32">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center md:px-12 w-full max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="max-w-4xl"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 mb-8 text-primary text-sm font-medium">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 mb-6 text-primary text-sm font-medium">
             <GoZap className="w-4 h-4" />
             <span>Next Generation Project Management</span>
           </div>
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 leading-tight">
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
             Work together, <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">
               faster than ever.
             </span>
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
             Bello brings all your tasks, teammates, and tools together in one place.
             Stay organized and keep your projects moving forward.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button size="lg" asChild className="h-14 px-8 rounded-2xl text-lg shadow-2xl shadow-primary/30">
-              <Link to="/login">Start building for free</Link>
+              <Link to="/login?tab=signup">Start building for free</Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="h-14 px-8 rounded-2xl text-lg bg-white/50 dark:bg-zinc-800/50 backdrop-blur border-primary/20 hover:bg-white/80 dark:hover:bg-zinc-800/80">
               <Link to={`/boards/${demoBoardId}`}>Try Live Demo</Link>
@@ -71,7 +71,7 @@ export default function LandingPage() {
 
         {/* Floating Mockup Preview - Mini Board Demo */}
         {/* Features Grid */}
-        <section className="mt-40 grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-6xl">
+        <section className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mx-auto">
           {[
             { title: "Visual Boards", desc: "Drag and drop your way to productivity with intuitive Trello-like boards.", icon: GoProject },
             { title: "Real-time Sync", desc: "Collaborate seamlessly with your team with instant updates across all devices.", icon: GoSync },
@@ -83,35 +83,20 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1 }}
-              className="p-8 rounded-3xl border border-white/10 bg-white/30 dark:bg-zinc-900/30 backdrop-blur-md text-left group hover:bg-white/40 dark:hover:bg-zinc-900/40 transition-all"
+              className="p-6 rounded-3xl border border-white/10 bg-white/30 dark:bg-zinc-900/30 backdrop-blur-md text-left group hover:bg-white/40 dark:hover:bg-zinc-900/40 transition-all flex flex-col justify-center"
             >
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <feature.icon className="w-6 h-6" />
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <feature.icon className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-              <p className="text-muted-foreground">{feature.desc}</p>
+              <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
             </motion.div>
           ))}
         </section>
 
-        {/* Privacy Section */}
-
-        {/* CTA Section */}
-        <section className="mt-40 mb-20 w-full max-w-4xl p-12 rounded-[3rem] bg-primary text-primary-foreground relative overflow-hidden shadow-2xl shadow-primary/40">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl" />
-          <div className="relative z-10 flex flex-col items-center text-center">
-            <h2 className="text-4xl font-bold mb-6">Ready to transform your workflow?</h2>
-            <p className="text-primary-foreground/80 text-lg mb-10 max-w-md">
-              Join thousands of teams already using Bello to build their dreams.
-            </p>
-            <Button size="lg" variant="secondary" asChild className="h-14 px-10 rounded-2xl text-lg font-bold">
-              <Link to="/login">Get Started for Free</Link>
-            </Button>
-          </div>
-        </section>
       </main>
 
-      <footer className="relative z-10 px-6 py-12 md:px-12 border-t border-white/10 text-center text-muted-foreground text-sm">
+      <footer className="relative z-10 px-6 py-6 md:px-12 border-t border-white/10 text-center text-muted-foreground text-sm flex-shrink-0">
         <p>&copy; 2026 Bello. Built with love for modern teams.</p>
       </footer>
     </div>

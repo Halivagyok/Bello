@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../store';
 import { Button } from "@/components/ui/button"
 import { ShaderBackground } from "@/components/ui/ShaderBackground";
@@ -31,7 +31,9 @@ export default function Auth() {
     const [name, setName] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState('login');
+    const location = useLocation();
+    const queryTab = new URLSearchParams(location.search).get('tab');
+    const [activeTab, setActiveTab] = useState(queryTab === 'signup' ? 'signup' : 'login');
     const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [forgotEmail, setForgotEmail] = useState('');
     const [forgotSuccess, setForgotSuccess] = useState('');
