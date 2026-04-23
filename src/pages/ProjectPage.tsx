@@ -448,7 +448,7 @@ export default function ProjectDetails() {
 
             {/* Create Board Dialog */}
             <Dialog open={open} onOpenChange={(val) => !val && (setOpen(false), setNewTitle(''), setNewTemplate('empty'))}>
-                <DialogContent>
+                <DialogContent aria-describedby={undefined}>
                     <form onSubmit={(e) => { e.preventDefault(); handleCreateBoard(); }}>
                         <DialogHeader>
                             <DialogTitle>Create Board in {project.title}</DialogTitle>
@@ -543,7 +543,7 @@ export default function ProjectDetails() {
 
             {/* Invite Dialog */}
             <Dialog open={inviteOpen} onOpenChange={(val) => !val && (setInviteOpen(false), setInviteEmail(''), setInviteRole('member'))}>
-                <DialogContent>
+                <DialogContent aria-describedby={undefined}>
                     <form onSubmit={(e) => { e.preventDefault(); handleInvite(); }}>
                         <DialogHeader>
                             <DialogTitle>Invite to Project</DialogTitle>

@@ -420,7 +420,7 @@ export default function CardList({ list, index }: CardListProps) {
 
                     {/* Duplicate List Dialog */}
                     <Dialog open={openDuplicate} onOpenChange={(val) => !val && setOpenDuplicate(false)}>
-                        <DialogContent>
+                        <DialogContent aria-describedby={undefined}>
                             <form onSubmit={(e) => { e.preventDefault(); handleDuplicate(); }}>
                                 <DialogHeader>
                                     <DialogTitle>Duplicate List</DialogTitle>

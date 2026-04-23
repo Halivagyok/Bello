@@ -726,7 +726,7 @@ export default function CalendarPage() {
             </Dialog>
 
             <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
-                <DialogContent className="sm:max-w-[700px] rounded-[2rem] border-white/20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-2xl">
+                <DialogContent aria-describedby={undefined} className="sm:max-w-[700px] rounded-2xl border-white/20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-2xl">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-black">Select Image</DialogTitle>
                     </DialogHeader>

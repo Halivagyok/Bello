@@ -407,7 +407,7 @@ export default function TopBar() {
 
             {/* Board Settings Dialog */}
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-                <DialogContent>
+                <DialogContent aria-describedby={undefined}>
                     <form onSubmit={(e) => { e.preventDefault(); handleRenameBoard(); }}>
                         <DialogHeader>
                             <DialogTitle>Board Settings</DialogTitle>
@@ -447,7 +447,7 @@ export default function TopBar() {
 
             {/* Invite Dialog */}
             <Dialog open={inviteOpen} onOpenChange={(open) => !open && (setInviteOpen(false), setEmail(''), setInviteRole('member'))}>
-                <DialogContent>
+                <DialogContent aria-describedby={undefined}>
                     <form onSubmit={(e) => { e.preventDefault(); handleInvite(); }}>
                         <DialogHeader>
                             <DialogTitle>Invite to Workspace: {project?.title}</DialogTitle>
@@ -489,7 +489,7 @@ export default function TopBar() {
 
             {/* Create Board Dialog */}
             <Dialog open={createBoardOpen} onOpenChange={(open) => !open && (setCreateBoardOpen(false), setNewBoardTitle(''))}>
-                <DialogContent>
+                <DialogContent aria-describedby={undefined}>
                     <form onSubmit={(e) => { e.preventDefault(); handleCreateBoard(); }}>
                         <DialogHeader>
                             <DialogTitle>Create New Board</DialogTitle>

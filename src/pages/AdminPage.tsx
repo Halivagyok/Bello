@@ -394,7 +394,7 @@ export default function AdminPage() {
 
             {/* Edit Name Dialog */}
             <Dialog open={editOpen} onOpenChange={(val) => !val && setEditOpen(false)}>
-                <DialogContent>
+                <DialogContent aria-describedby={undefined}>
                     <form onSubmit={(e) => { e.preventDefault(); saveName(); }}>
                         <DialogHeader>
                             <DialogTitle>Edit User Name</DialogTitle>

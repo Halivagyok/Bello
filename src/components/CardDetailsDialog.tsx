@@ -714,7 +714,7 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
         </Dialog>
 
         <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
-            <DialogContent className="sm:max-w-[700px] rounded-xl border-white/20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-2xl p-6 sm:p-8">
+            <DialogContent aria-describedby={undefined} className="sm:max-w-[700px] rounded-xl border-white/20 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-2xl p-6 sm:p-8">
                 <DialogHeader className="mb-4">
 
                     <DialogTitle className="text-2xl font-black">Select Image</DialogTitle>
