@@ -159,7 +159,7 @@ The core kanban board experience. This is where the actual task management happe
 Clicking a card opens a detailed dialog/modal with comprehensive editing capabilities.
 
 <!-- TODO: Screenshot -->
-![Card Details](./docs/screenshots/card-details.png)
+<img src="./docs/screenshots/card-details.png" alt="Card Details" width="500">
 
 **Key elements:**
 - **Title** — Editable inline
@@ -301,15 +301,21 @@ Bello is designed with a **mobile-first responsive approach** using Tailwind CSS
 <!-- TODO: Screenshot -->
 ![Desktop View](./docs/screenshots/responsive-desktop.png)
 
-### Mobile View
+### Mobile Views
 
-<!-- TODO: Screenshot -->
-![Mobile View](./docs/screenshots/responsive-mobile.png)
-
-### Board View on Mobile
-
-<!-- TODO: Screenshot -->
-![Mobile Board View](./docs/screenshots/responsive-mobile-board.png)
+<!-- TODO: Screenshots -->
+<table>
+  <tr>
+    <td align="center"><strong>Login</strong></td>
+    <td align="center"><strong>Dashboard</strong></td>
+    <td align="center"><strong>Board View</strong></td>
+  </tr>
+  <tr>
+    <td><img src="./docs/screenshots/responsive-mobile-login.png" alt="Mobile Login" width="300"></td>
+    <td><img src="./docs/screenshots/responsive-mobile.png" alt="Mobile View" width="300"></td>
+    <td><img src="./docs/screenshots/responsive-mobile-board.png" alt="Mobile Board View" width="300"></td>
+  </tr>
+</table>
 
 ---
 
