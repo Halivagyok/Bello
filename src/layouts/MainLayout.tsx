@@ -49,7 +49,7 @@ export default function MainLayout() {
             <header className="border-b bg-card/60 backdrop-blur-md text-card-foreground px-4 sm:px-6 h-16 flex items-center justify-between sticky top-0 z-50 shadow-sm relative">
                 <div className="flex items-center gap-4 sm:gap-6">
                     <Link to="/boards" className={`flex items-center gap-2 transition-all ${isBoardsActive ? 'opacity-100 scale-105' : 'opacity-70 hover:opacity-100'}`}>
-                        <div className={`p-1.5 rounded-lg border transition-all ${isBoardsActive ? 'bg-primary text-zinc-900 border-primary shadow-lg shadow-primary/20' : 'bg-primary/20 border-primary/20 text-white'}`}>
+                        <div className={`p-1.5 rounded-lg border transition-all ${isBoardsActive ? 'bg-primary text-white dark:text-zinc-900 border-primary shadow-lg shadow-primary/20' : 'bg-primary/10 border-primary/20 text-zinc-900 dark:text-white'}`}>
                             <svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='3' strokeLinecap='round' strokeLinejoin='round'><rect width='18' height='18' x='3' y='3' rx='2'/><path d='M3 9h18'/><path d='M9 21V9'/></svg>
                         </div>
                         <span className="text-xl font-bold tracking-tight hidden sm:inline">Bello</span>
@@ -68,17 +68,17 @@ export default function MainLayout() {
                 <div className="flex items-center gap-2 sm:gap-4">
                     <div 
                         onClick={() => navigate('/profile')}
-                        className="flex items-center gap-2 px-1.5 py-1.5 md:px-3 md:py-1.5 rounded-full bg-muted/50 cursor-pointer hover:bg-muted transition-colors border border-white/10"
+                        className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
                     >
-                        <Avatar className="w-6 h-6 md:w-6 md:h-6">
+                        <Avatar className="w-8 h-8 md:w-9 md:h-9 border-2 border-white/20 shadow-sm">
                             {user?.avatarUrl && (
                                 <AvatarImage src={`${API_URL}/uploads/${user.avatarUrl}`} crossOrigin="anonymous" />
                             )}
-                            <AvatarFallback style={{ backgroundColor: stringToColor(user?.name || user?.email || 'User') }} className="text-[10px] text-white">
+                            <AvatarFallback style={{ backgroundColor: stringToColor(user?.name || user?.email || 'User') }} className="text-[10px] text-white font-bold">
                                 {(user?.name || user?.email || 'U')[0].toUpperCase()}
                             </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm font-medium hidden md:inline">{user?.name || user?.email}</span>
+                        <span className="text-sm font-bold ml-2 hidden md:inline">{user?.name || user?.email}</span>
                     </div>
 
                     <div className="flex items-center gap-1 sm:gap-2">

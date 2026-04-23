@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { format, isValid } from 'date-fns';
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -492,7 +493,9 @@ export default function CalendarPage() {
                                                                     {task.title}
                                                                 </h4>
                                                                 {task.description && (
-                                                                    <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{task.description}</p>
+                                                                    <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5 prose prose-sm dark:prose-invert max-w-none prose-p:leading-tight prose-p:m-0">
+                                                                        <ReactMarkdown>{task.description}</ReactMarkdown>
+                                                                    </div>
                                                                 )}
 
                                                                 <div className="flex flex-wrap items-center gap-3 mt-3">

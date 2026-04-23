@@ -301,26 +301,26 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
         <>
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent 
-                className="sm:max-w-[700px] max-h-[95vh] overflow-y-auto"
+                className="w-[95vw] sm:max-w-[700px] max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl sm:rounded-3xl"
                 onKeyDown={handleKeyDown}
                 aria-describedby={undefined}
             >
                 <DialogHeader>
-                    <DialogTitle>Card Details</DialogTitle>
+                    <DialogTitle className="text-xl sm:text-2xl font-black">Card Details</DialogTitle>
                 </DialogHeader>
-                <div className="grid gap-6 py-4">
+                <div className="grid gap-4 sm:gap-6 py-4">
                     {/* Basic Info */}
                     <div className="grid gap-2">
-                        <Label htmlFor="content">Title</Label>
-                        <Input id="content" value={content} onChange={(e) => setContent(e.target.value)} />
+                        <Label htmlFor="content" className="text-xs font-bold uppercase tracking-wider opacity-60 ml-1">Title</Label>
+                        <Input id="content" value={content} onChange={(e) => setContent(e.target.value)} className="h-11 sm:h-10 text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-primary" />
                     </div>
                     
                     {/* Labels & Members Section */}
                     {activeProjectId && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                             <div className="space-y-3">
                                 <Label className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Labels</Label>
-                                <div className="flex flex-wrap items-center gap-2 p-2 bg-zinc-50/50 dark:bg-white/5 rounded-xl border border-white/10 min-h-[48px]">
+                                <div className="flex flex-wrap items-center gap-2 p-2 bg-zinc-50/50 dark:bg-white/5 rounded-xl border border-zinc-200 dark:border-white/10 min-h-[48px]">
                                     {card.labels?.map(label => (
                                         <div 
                                             key={label.id} 
@@ -351,7 +351,7 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                                             }
                                         }}
                                     >
-                                        <SelectTrigger className="w-auto h-7 px-3 text-xs bg-zinc-100 dark:bg-zinc-800 border-dashed hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
+                                        <SelectTrigger className="w-auto h-8 px-3 text-xs bg-white dark:bg-zinc-800 border-dashed hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
                                             <div className="flex items-center gap-1.5 min-w-[80px] justify-center"><GoPlus /> Add Label</div>
                                         </SelectTrigger>
                                         <SelectContent>
@@ -376,11 +376,11 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
 
                             <div className="space-y-3">
                                 <Label className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Members</Label>
-                                <div className="flex flex-wrap items-center gap-2 p-2 bg-zinc-50/50 dark:bg-white/5 rounded-xl border border-white/10 min-h-[48px]">
+                                <div className="flex flex-wrap items-center gap-2 p-2 bg-zinc-50/50 dark:bg-white/5 rounded-xl border border-zinc-200 dark:border-white/10 min-h-[48px]">
                                     {card.members?.map(member => (
                                         <div 
                                             key={member.id} 
-                                            className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 rounded-full pl-1 pr-2 py-1 border border-zinc-200 dark:border-zinc-700"
+                                            className="flex items-center gap-2 bg-white dark:bg-zinc-800 rounded-full pl-1 pr-2 py-1 border border-zinc-200 dark:border-zinc-700 shadow-sm"
                                             title={member.name || member.email}
                                         >
                                             <Avatar className="h-5 w-5">
@@ -414,7 +414,7 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                                             }
                                         }}
                                     >
-                                        <SelectTrigger className="w-auto h-7 px-3 text-xs bg-zinc-100 dark:bg-zinc-800 border-dashed hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
+                                        <SelectTrigger className="w-auto h-8 px-3 text-xs bg-white dark:bg-zinc-800 border-dashed hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors">
                                             <div className="flex items-center gap-1.5 min-w-[80px] justify-center"><GoPlus /> Add Member</div>
                                         </SelectTrigger>
                                         <SelectContent>
@@ -443,52 +443,53 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
 
                             {/* Create Label Inline Form */}
                             {isCreatingLabel && (
-                                <div className="md:col-span-2 mt-2 p-3 border rounded-md bg-zinc-50 dark:bg-zinc-900/50 flex flex-col gap-3 shadow-sm">
+                                <div className="sm:col-span-2 mt-2 p-3 border rounded-xl bg-zinc-50 dark:bg-zinc-950 flex flex-col gap-3 shadow-inner">
                                     <div className="flex items-center justify-between">
-                                        <h4 className="text-sm font-medium">Create Project Label</h4>
+                                        <h4 className="text-sm font-bold uppercase tracking-widest opacity-60">Create Project Label</h4>
                                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsCreatingLabel(false)}>
                                             <GoX className="w-4 h-4" />
                                         </Button>
                                     </div>
-                                    <div className="flex gap-2 items-end">
+                                    <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
                                         <div className="flex-1 space-y-1.5">
-                                            <Label className="text-xs">Title</Label>
+                                            <Label className="text-xs ml-1">Title</Label>
                                             <Input 
                                                 value={newLabelTitle} 
                                                 onChange={e => setNewLabelTitle(e.target.value)} 
-                                                className="h-8 text-sm"
+                                                className="h-10 text-base sm:text-sm bg-white dark:bg-zinc-900"
                                                 placeholder="e.g. Bug, Feature"
                                                 autoFocus
                                             />
                                         </div>
-                                        <div className="space-y-1.5 shrink-0">
-                                            <Label className="text-xs">Color</Label>
-                                            <div className="flex items-center gap-1">
-                                                <input 
-                                                    type="color" 
-                                                    value={newLabelColor} 
-                                                    onChange={e => setNewLabelColor(e.target.value)}
-                                                    className="w-8 h-8 p-0 border-0 rounded cursor-pointer overflow-hidden"
-                                                />
+                                        <div className="flex items-center gap-3">
+                                            <div className="space-y-1.5 shrink-0">
+                                                <Label className="text-xs ml-1">Color</Label>
+                                                <div className="flex items-center gap-1">
+                                                    <input 
+                                                        type="color" 
+                                                        value={newLabelColor} 
+                                                        onChange={e => setNewLabelColor(e.target.value)}
+                                                        className="w-10 h-10 p-1 border-2 border-white/10 rounded-xl cursor-pointer bg-white dark:bg-zinc-900"
+                                                    />
+                                                </div>
                                             </div>
+                                            <Button 
+                                                className="h-10 flex-1 sm:flex-none mt-auto"
+                                                disabled={!newLabelTitle.trim()}
+                                                onClick={async () => {
+                                                    if (!activeProjectId || !newLabelTitle.trim()) return;
+                                                    const lbl = await createProjectLabel(activeProjectId, newLabelTitle.trim(), newLabelColor);
+                                                    if (lbl) {
+                                                        setProjectLabels(prev => [...prev, lbl]);
+                                                        assignLabelToCard(card.id, lbl);
+                                                        setIsCreatingLabel(false);
+                                                        setNewLabelTitle('');
+                                                    }
+                                                }}
+                                            >
+                                                Create
+                                            </Button>
                                         </div>
-                                        <Button 
-                                            size="sm" 
-                                            className="h-8 shrink-0"
-                                            disabled={!newLabelTitle.trim()}
-                                            onClick={async () => {
-                                                if (!activeProjectId || !newLabelTitle.trim()) return;
-                                                const lbl = await createProjectLabel(activeProjectId, newLabelTitle.trim(), newLabelColor);
-                                                if (lbl) {
-                                                    setProjectLabels(prev => [...prev, lbl]);
-                                                    assignLabelToCard(card.id, lbl);
-                                                    setIsCreatingLabel(false);
-                                                    setNewLabelTitle('');
-                                                }
-                                            }}
-                                        >
-                                            Create
-                                        </Button>
                                     </div>
                                 </div>
                             )}
@@ -496,15 +497,15 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                     )}
                     
                     <div className="grid gap-2">
-                        <div className="flex justify-between items-center">
-                            <Label htmlFor="description">Description (Markdown Supported)</Label>
-                            <Button variant="ghost" size="sm" onClick={() => setPreviewMarkdown(!previewMarkdown)}>
+                        <div className="flex justify-between items-center mb-1">
+                            <Label htmlFor="description" className="text-xs font-bold uppercase tracking-wider opacity-60 ml-1">Description</Label>
+                            <Button variant="ghost" size="sm" onClick={() => setPreviewMarkdown(!previewMarkdown)} className="h-7 text-xs font-bold uppercase tracking-widest text-primary">
                                 {previewMarkdown ? "Edit" : "Preview"}
                             </Button>
                         </div>
                         <div className="relative w-full">
                             {previewMarkdown ? (
-                                <div className="min-h-[100px] p-3 rounded-md border bg-zinc-50 dark:bg-zinc-900 prose prose-sm dark:prose-invert max-w-none">
+                                <div className="min-h-[120px] p-3 rounded-xl border border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-zinc-900 prose prose-sm dark:prose-invert max-w-none shadow-inner">
                                     <ReactMarkdown>{description || '_No description provided._'}</ReactMarkdown>
                                 </div>
                             ) : (
@@ -514,7 +515,7 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     placeholder="Add a more detailed description..."
-                                    className="min-h-[100px] resize-none overflow-hidden"
+                                    className="min-h-[120px] resize-none overflow-hidden text-base sm:text-sm bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-xl focus:ring-primary"
                                 />
                             )}
                         </div>
@@ -522,58 +523,60 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
 
                     {/* Image Section - Drag & Drop */}
                     <div className="grid gap-2">
-                        <Label>Cover Image</Label>
+                        <Label className="text-xs font-bold uppercase tracking-wider opacity-60 ml-1">Cover Image</Label>
                         <div 
                             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
                             onDragLeave={() => setDragging(false)}
                             onDrop={handleDrop}
                             className={`
-                                relative rounded-lg border-2 border-dashed transition-all overflow-hidden aspect-video flex flex-col items-center justify-center gap-2
-                                ${dragging ? "border-primary bg-primary/5" : "border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50"}
+                                relative rounded-2xl border-2 border-dashed transition-all flex flex-col items-center justify-center gap-2 min-h-[200px] py-6
+                                ${dragging ? "border-primary bg-primary/5" : "border-zinc-200 dark:border-white/10 bg-zinc-50 dark:bg-zinc-900/50 shadow-inner"}
                             `}
                         >
                             {displayImageUrl ? (
-                                <>
+                                <div className="w-full h-full min-h-[160px] relative rounded-xl overflow-hidden">
                                     <img src={displayImageUrl} alt="Cover" className="w-full h-full object-cover" />
                                     <div className="absolute top-2 right-2 flex gap-2">
-                                        <Button size="icon" variant="destructive" onClick={() => setImageUrl('')}>
+                                        <Button size="icon" variant="destructive" onClick={() => setImageUrl('')} className="rounded-full h-9 w-9 shadow-lg">
                                             <GoTrash className="w-4 h-4" />
                                         </Button>
                                     </div>
-                                </>
+                                </div>
                             ) : (
                                 <>
-                                    <div className="p-4 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-500">
-                                        <GoEye className="w-6 h-6" />
+                                    <div className="p-4 rounded-full bg-zinc-200 dark:bg-zinc-800 text-zinc-500 mb-1">
+                                        <GoUpload className="w-6 h-6" />
                                     </div>
-                                    <div className="text-center">
-                                        <p className="text-sm font-medium">Drag & Drop Image</p>
-                                        <p className="text-xs text-zinc-500 mb-2">or upload from your device</p>
-                                    <div className="flex gap-2">
-                                        <Button 
-                                            type="button" 
-                                            variant="outline" 
-                                            size="sm"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                document.getElementById('cover-image-upload')?.click();
-                                            }}
-                                        >
-                                            Upload File
-                                        </Button>
-                                        <Button 
-                                            type="button" 
-                                            variant="outline" 
-                                            size="sm"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                fetchUserImages();
-                                                setIsGalleryOpen(true);
-                                            }}
-                                        >
-                                            Choose from Gallery
-                                        </Button>
-                                    </div>
+                                    <div className="text-center px-4">
+                                        <p className="text-sm font-bold uppercase tracking-tight">Drop Image Here</p>
+                                        <p className="text-xs text-zinc-500 mb-4 opacity-60">Max size: 5MB</p>
+                                        <div className="flex flex-col sm:flex-row gap-2 items-center justify-center">
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                size="sm"
+                                                className="h-10 w-full sm:w-auto rounded-xl font-bold uppercase tracking-widest text-[10px] px-6"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    document.getElementById('cover-image-upload')?.click();
+                                                }}
+                                            >
+                                                Upload File
+                                            </Button>
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                size="sm"
+                                                className="h-10 w-full sm:w-auto rounded-xl font-bold uppercase tracking-widest text-[10px] px-6"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    fetchUserImages();
+                                                    setIsGalleryOpen(true);
+                                                }}
+                                            >
+                                                Open Gallery
+                                            </Button>
+                                        </div>
                                     </div>
                                     <input 
                                         id="cover-image-upload"
@@ -588,74 +591,77 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                     </div>
 
                     {/* Due Date Section */}
-                    <div className="grid gap-4 p-4 border rounded-lg bg-zinc-50 dark:bg-zinc-900/50">
+                    <div className="grid gap-4 p-4 border rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 shadow-inner border-zinc-200 dark:border-white/10">
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 font-medium text-sm">
-                                <GoClock className="w-4 h-4" /> Due Date Configuration
+                            <div className="flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest opacity-60">
+                                <GoClock className="w-4 h-4" /> Due Date
                             </div>
                             {(dueDate || dueTime) && (
-                                <Button variant="ghost" size="sm" onClick={clearDueDate} className="h-7 px-2 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 gap-1">
+                                <Button variant="ghost" size="sm" onClick={clearDueDate} className="h-7 px-2 text-[10px] font-black uppercase text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 gap-1">
                                     <GoX className="w-3.5 h-3.5" /> Clear
                                 </Button>
                             )}
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="grid gap-2">
-                                <Label>Mode</Label>
+                                <Label className="text-[10px] font-bold uppercase tracking-wider opacity-40 ml-1">Mode</Label>
                                 <Select value={dueDateMode} onValueChange={(v: any) => setDueDateMode(v)}>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="h-10 sm:h-9 bg-white dark:bg-zinc-900 rounded-xl">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="full">Date & Time</SelectItem>
                                         <SelectItem value="date-only">Date Only</SelectItem>
-                                        <SelectItem value="time-only">Time Only (Today)</SelectItem>
+                                        <SelectItem value="time-only">Time (Today)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             
-                            {(dueDateMode === 'full' || dueDateMode === 'date-only') && (
-                                <div className="grid gap-2">
-                                    <Label>Date</Label>
-                                    <DateInput value={dueDate} onChange={setDueDate} />
-                                </div>
-                            )}
-                            
-                            {(dueDateMode === 'full' || dueDateMode === 'time-only') && (
-                                <div className="grid gap-2">
-                                    <Label>Time</Label>
-                                    <TimeInput value={dueTime} onChange={setDueTime} />
-                                </div>
-                            )}
+                            <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 sm:col-span-1">
+                                {(dueDateMode === 'full' || dueDateMode === 'date-only') && (
+                                    <div className="grid gap-2 flex-1">
+                                        <Label className="text-[10px] font-bold uppercase tracking-wider opacity-40 ml-1">Date</Label>
+                                        <DateInput value={dueDate} onChange={setDueDate} />
+                                    </div>
+                                )}
+                                
+                                {(dueDateMode === 'full' || dueDateMode === 'time-only') && (
+                                    <div className="grid gap-2 flex-1">
+                                        <Label className="text-[10px] font-bold uppercase tracking-wider opacity-40 ml-1">Time</Label>
+                                        <TimeInput value={dueTime} onChange={setDueTime} />
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
                     {/* Location Section */}
-                    <div className="grid gap-4 p-4 border rounded-lg bg-zinc-50 dark:bg-zinc-900/50">
+                    <div className="grid gap-4 p-4 border rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 shadow-inner border-zinc-200 dark:border-white/10">
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 font-medium text-sm">
+                            <div className="flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest opacity-60">
                                 <GoLocation className="w-4 h-4" /> Location
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                                 {location && (
-                                    <Button variant="ghost" size="sm" onClick={clearLocation} className="h-7 px-2 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 gap-1">
+                                    <Button variant="ghost" size="sm" onClick={clearLocation} className="h-7 px-2 text-[10px] font-black uppercase text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 gap-1">
                                         <GoX className="w-3.5 h-3.5" /> Clear
                                     </Button>
                                 )}
-                                <Button variant="ghost" size="sm" onClick={() => setShowMap(!showMap)}>
-                                    {showMap ? "Hide Map" : "Show Map"}
+                                <Button variant="ghost" size="sm" onClick={() => setShowMap(!showMap)} className="h-7 text-[10px] font-black uppercase tracking-widest text-primary">
+                                    {showMap ? "Hide Map" : "Map View"}
                                 </Button>
                             </div>
                         </div>
                         
                         <div className="grid gap-2">
-                            <Label htmlFor="location">Address / Name <span className="text-[10px] text-zinc-400 font-normal ml-1">(Format: City, Street, Number)</span></Label>
+                            <Label htmlFor="location" className="text-[10px] font-bold uppercase tracking-wider opacity-40 ml-1">Address / Name</Label>
                             <div className="flex gap-2">
                                 <Input 
                                     id="location" 
                                     value={location} 
                                     onChange={(e) => setLocation(e.target.value)} 
-                                    placeholder="e.g. Budapest, Deák Ferenc tér"
+                                    placeholder="e.g. Budapest, Deák tér"
+                                    className="h-10 sm:h-9 text-base sm:text-sm bg-white dark:bg-zinc-900 rounded-xl"
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && !location.trim()) {
                                             clearLocation();
@@ -665,16 +671,15 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                                     }}
                                     onBlur={handleGeocode}
                                 />
-                                <Button size="icon" variant="outline" onClick={handleGeocode} disabled={geocoding} title="Locate on map">
+                                <Button size="icon" variant="outline" onClick={handleGeocode} disabled={geocoding} title="Locate on map" className="h-10 w-10 sm:h-9 sm:w-9 rounded-xl shrink-0">
                                     <GoSearch className={`w-4 h-4 ${geocoding ? "animate-pulse" : ""}`} />
                                 </Button>
                             </div>
                         </div>
 
                         {showMap && (
-                            <div className="grid gap-2">
-                                <Label>Select on Map</Label>
-                                <div className="h-[250px] rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 z-0">
+                            <div className="grid gap-2 animate-in fade-in duration-300">
+                                <div className="h-[200px] sm:h-[250px] rounded-2xl overflow-hidden border border-zinc-200 dark:border-white/10 z-0">
                                     <MapContainer center={mapPosition} zoom={locationLat !== null ? 15 : 12} style={{ height: '100%', width: '100%' }}>
                                         <TileLayer
                                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -689,18 +694,18 @@ export function CardDetailsDialog({ card, open, onOpenChange }: CardDetailsDialo
                                         />
                                     </MapContainer>
                                 </div>
-                                <p className="text-[10px] text-zinc-500 text-right italic">Click map to adjust location manually</p>
+                                <p className="text-[9px] text-zinc-500 text-center italic opacity-60">Tap map to set precise coordinate</p>
                             </div>
                         )}
                     </div>
                 </div>
-                <DialogFooter className="flex justify-between items-center">
-                    <Button variant="destructive" onClick={handleDelete} disabled={loading} className="gap-2">
+                <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center mt-2">
+                    <Button variant="destructive" onClick={handleDelete} disabled={loading} className="w-full sm:w-auto order-2 sm:order-1 h-11 sm:h-10 rounded-xl font-bold uppercase tracking-widest text-[10px] gap-2">
                         <GoTrash className="w-4 h-4" /> Delete Card
                     </Button>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                        <Button onClick={handleSave} disabled={loading}>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto order-1 sm:order-2">
+                        <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-11 sm:h-10 rounded-xl font-bold uppercase tracking-widest text-[10px]">Cancel</Button>
+                        <Button onClick={handleSave} disabled={loading} className="h-11 sm:h-10 rounded-xl font-black uppercase tracking-widest text-[11px] px-8 shadow-lg shadow-primary/20">
                             {loading ? 'Saving...' : 'Save Changes'}
                         </Button>
                     </div>

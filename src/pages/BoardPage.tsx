@@ -132,12 +132,10 @@ export default function Board() {
     };
 
     return (
-        <div className={`h-screen flex overflow-hidden relative ${!isDesktop ? 'bg-gradient-to-br from-[#0079bf] to-[#5067c5] dark:from-[#0c2b4e] dark:to-[#1d546c]' : ''}`}>
-            {isDesktop && (
-                <div className="absolute inset-0 -z-10">
-                    <LiquidGradient />
-                </div>
-            )}
+        <div className="h-screen flex overflow-hidden relative">
+            <div className="absolute inset-0 -z-10 pointer-events-none">
+                <LiquidGradient />
+            </div>
             {/* Sidebar */}
             <aside className="hidden lg:flex w-[260px] transition-all duration-300 shrink-0 border-r border-white/10 bg-black/15 backdrop-blur-sm flex-col p-4">
                 <div 
