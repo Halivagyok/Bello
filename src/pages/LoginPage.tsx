@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../store';
 import { Button } from "@/components/ui/button"
@@ -34,6 +34,12 @@ export default function Auth() {
     const location = useLocation();
     const queryTab = new URLSearchParams(location.search).get('tab');
     const [activeTab, setActiveTab] = useState(queryTab === 'signup' ? 'signup' : 'login');
+
+    useEffect(() => {
+        if (queryTab === 'signup' || queryTab === 'login') {
+            setActiveTab(queryTab);
+        }
+    }, [queryTab]);
     const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [forgotEmail, setForgotEmail] = useState('');
     const [forgotSuccess, setForgotSuccess] = useState('');
@@ -99,8 +105,8 @@ export default function Auth() {
                 </Button>
             </div>
             <div className="flex items-center gap-2 mb-8 animate-in fade-in slide-in-from-top-4 duration-1000 z-10">
-                <div className="bg-white/10 p-2 rounded-xl border border-white/20 shadow-inner backdrop-blur-md">
-                    <svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='white' strokeWidth='2.5' strokeLinecap='round' strokeLinejoin='round'><rect width='18' height='18' x='3' y='3' rx='2'/><path d='M3 9h18'/><path d='M9 21V9'/></svg>
+                <div className="bg-white/10 p-2 rounded-xl border border-white/20 shadow-inner backdrop-blur-md text-white dark:text-zinc-900">
+                    <svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2.5' strokeLinecap='round' strokeLinejoin='round'><rect width='18' height='18' x='3' y='3' rx='2'/><path d='M3 9h18'/><path d='M9 21V9'/></svg>
                 </div>
                 <h1 className="text-4xl font-black tracking-tighter text-white">Bello</h1>
             </div>

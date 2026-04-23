@@ -213,6 +213,10 @@ export default function CalendarPage() {
 
     // Filter tasks that match the selected day of week
     const relevantTasks = personalTasks.filter(task => {
+        // Don't show if task was created after selected date
+        const createdDateStr = format(new Date(task.createdAt), 'yyyy-MM-dd');
+        if (dateStr < createdDateStr) return false;
+
         if (!task.daysOfWeek) return true;
         return task.daysOfWeek.split(',').map(Number).includes(dayOfWeek);
     });
@@ -501,11 +505,20 @@ export default function CalendarPage() {
                                                                     {!task.isBoardTask && (
                                                                         <div className="flex items-center gap-1">
                                                                             {task.daysOfWeek ? (
-                                                                                (task.daysOfWeek as string).split(',').map((d: string) => (
-                                                                                    <span key={d} className={`text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase transition-colors ${Number(d) === dayOfWeek ? 'bg-primary text-white' : 'bg-black/5 dark:bg-white/5 text-muted-foreground/40'}`}>
-                                                                                        {DAYS[Number(d)].substring(0, 3)}
-                                                                                    </span>
-                                                                                ))
+                                                                                (() => {
+                                                                                    const days = (task.daysOfWeek as string).split(',').map(Number);
+                                                                                    if (days.length === 7) return (
+                                                                                        <span className="text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase bg-primary text-white">Daily</span>
+                                                                                    );
+                                                                                    if (days.length > 4) return (
+                                                                                        <span className="text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase bg-primary text-white">Multi-day</span>
+                                                                                    );
+                                                                                    return days.map((d: number) => (
+                                                                                        <span key={d} className={`text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase transition-colors ${d === dayOfWeek ? 'bg-primary text-white' : 'bg-black/5 dark:bg-white/5 text-muted-foreground/40'}`}>
+                                                                                            {DAYS[d].substring(0, 3)}
+                                                                                        </span>
+                                                                                    ));
+                                                                                })()
                                                                             ) : (
                                                                                 <span className="text-[10px] px-2 py-0.5 rounded-md font-black tracking-widest uppercase bg-zinc-100 dark:bg-zinc-800 text-muted-foreground">
                                                                                     One-time
@@ -650,7 +663,7 @@ export default function CalendarPage() {
                                     >
                                         One-time
                                     </Button>
-                                    <div className="w-px h-5 bg-zinc-300 dark:bg-zinc-700 self-center mx-1 opacity-20" />
+                                    <div className="w-px h-5 bg-zinc-300 dark:bg-zinc-700 self-center mx-3 opacity-20" />
                                     <Button
                                         type="button"
                                         size="sm"
@@ -672,7 +685,7 @@ export default function CalendarPage() {
                                             <span className="text-[10px] font-bold">Weekly</span>
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-7 gap-1 p-2">
+                                    <div className="grid grid-cols-7 gap-3 p-4">
                                         {DAYS.map((day, index) => (
                                             <Button
                                                 key={day}

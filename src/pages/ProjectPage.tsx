@@ -307,11 +307,11 @@ export default function ProjectDetails() {
                     </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                     <Button 
                         variant="outline" 
                         size="sm" 
-                        className="gap-2"
+                        className="gap-2 w-full sm:w-auto"
                         onClick={() => setMembersOpen(true)}
                     >
                         <Users className="w-4 h-4" />
@@ -320,7 +320,7 @@ export default function ProjectDetails() {
                     {isOwnerOrAdmin && (
                         <Button 
                             size="sm" 
-                            className="gap-2"
+                            className="gap-2 w-full sm:w-auto"
                             onClick={() => setInviteOpen(true)}
                         >
                             <UserPlus className="w-4 h-4" />
@@ -331,7 +331,7 @@ export default function ProjectDetails() {
                         <Button 
                             variant="destructive"
                             size="sm" 
-                            className="gap-2"
+                            className="gap-2 w-full sm:w-auto"
                             onClick={() => showAlert(
                                 "Delete Project", 
                                 "Are you sure you want to delete this project? This action cannot be undone and will delete all boards inside.",
@@ -347,12 +347,12 @@ export default function ProjectDetails() {
             </div>
 
             <Tabs defaultValue="boards" className="w-full">
-                <TabsList className="bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl mb-6">
-                    <TabsTrigger value="boards" className="gap-2 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm">
+                <TabsList className="bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl mb-6 flex-col sm:flex-row h-auto w-full">
+                    <TabsTrigger value="boards" className="gap-2 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm flex-1 justify-start sm:justify-center py-2 px-4">
                         <Layout className="w-4 h-4" />
                         Boards
                     </TabsTrigger>
-                    <TabsTrigger value="my-tasks" className="gap-2 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm">
+                    <TabsTrigger value="my-tasks" className="gap-2 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm flex-1 justify-start sm:justify-center py-2 px-4">
                         <CheckCircle2 className="w-4 h-4" />
                         My Tasks
                         {myTasks.length > 0 && (
@@ -361,7 +361,7 @@ export default function ProjectDetails() {
                             </Badge>
                         )}
                     </TabsTrigger>
-                    <TabsTrigger value="due-soon" className="gap-2 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm">
+                    <TabsTrigger value="due-soon" className="gap-2 rounded-lg data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:shadow-sm flex-1 justify-start sm:justify-center py-2 px-4">
                         <Calendar className="w-4 h-4" />
                         Due Soon
                         {dueSoonTasks.length > 0 && (
