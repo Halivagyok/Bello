@@ -574,24 +574,24 @@ export default function CalendarPage() {
                         <DialogTitle className="text-2xl font-black">{editingTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleSubmit} className="space-y-8 py-4">
-                        <div className="space-y-3">
-                            <Label htmlFor="title" className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Task Title</Label>
+                        <div className="space-y-2">
+                            <Label htmlFor="title" className="ml-1 mb-1 text-xs font-bold uppercase tracking-wider opacity-60">Task Title</Label>
                             <Input
                                 id="title"
                                 placeholder="e.g., Morning Yoga"
-                                className="h-14 rounded-2xl bg-black/5 dark:bg-white/5 border-none text-lg font-medium focus-visible:ring-primary"
+                                className="mt-2 h-14 rounded-2xl bg-black/5 dark:bg-white/5 border-none text-lg font-medium focus-visible:ring-primary"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 required
                                 autoFocus
                             />
                         </div>
-                        <div className="space-y-3">
-                            <Label htmlFor="description" className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Description</Label>
+                        <div className="space-y-2">
+                            <Label htmlFor="description" className="ml-1 mb-1 text-xs font-bold uppercase tracking-wider opacity-60">Description</Label>
                             <Textarea
                                 id="description"
                                 placeholder="Any extra details?"
-                                className="rounded-2xl bg-black/5 dark:bg-white/5 border-none resize-none focus-visible:ring-primary"
+                                className="mt-2 rounded-2xl bg-black/5 dark:bg-white/5 border-none resize-none focus-visible:ring-primary"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 rows={3}
@@ -599,20 +599,20 @@ export default function CalendarPage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
-                            <div className="space-y-3">
-                                <Label htmlFor="dueTime" className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60 flex justify-between">
+                            <div className="space-y-2">
+                                <Label htmlFor="dueTime" className="ml-1 mb-1 text-xs font-bold uppercase tracking-wider opacity-60 flex justify-between">
                                     <span>Due Time</span>
                                     <span className="text-[10px] text-primary lowercase tracking-normal">({'24h'} display)</span>
                                 </Label>
                                 <TimeInput
                                     value={dueTime}
                                     onChange={setDueTime}
-                                    className="h-14 rounded-2xl bg-black/5 dark:bg-white/5 border-none font-bold focus-visible:ring-primary w-full"
+                                    className="mt-2 h-14 rounded-2xl bg-black/5 dark:bg-white/5 border-none font-bold focus-visible:ring-primary w-full"
                                 />
                             </div>
-                            <div className="space-y-3">
-                                <Label htmlFor="location" className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Location</Label>
-                                <div className="relative">
+                            <div className="space-y-2">
+                                <Label htmlFor="location" className="ml-1 mb-1 text-xs font-bold uppercase tracking-wider opacity-60">Location</Label>
+                                <div className="relative mt-2">
                                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                                     <Input
                                         id="location"
@@ -625,9 +625,9 @@ export default function CalendarPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-3">
-                            <Label className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Image</Label>
-                            <div className="flex gap-4">
+                        <div className="space-y-2">
+                            <Label className="ml-1 mb-1 text-xs font-bold uppercase tracking-wider opacity-60">Image</Label>
+                            <div className="flex gap-4 mt-2">
                                 {imageUrl ? (
                                     <div className="relative w-full aspect-video rounded-2xl overflow-hidden group border border-white/10 shadow-sm">
                                         <img src={imageUrl.startsWith('http') ? imageUrl : `${API_URL}/uploads/${imageUrl}`} className="w-full h-full object-cover" />
@@ -654,9 +654,9 @@ export default function CalendarPage() {
                         </div>
 
                         <div className="space-y-4 pt-2">
-                            <div className="space-y-3">
-                                <Label className="ml-1 text-xs font-bold uppercase tracking-wider opacity-60">Occurrence</Label>
-                                <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl w-full border border-white/10">
+                            <div className="space-y-2">
+                                <Label className="ml-1 mb-1 text-xs font-bold uppercase tracking-wider opacity-60">Occurrence</Label>
+                                <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl w-full border border-white/10 mt-2">
                                     <Button
                                         type="button"
                                         size="sm"

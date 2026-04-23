@@ -85,6 +85,6 @@ describe('CalendarPage Component', () => {
     it('displays empty state fallback when no tasks exist', () => {
         render(<BrowserRouter><CalendarPage /></BrowserRouter>);
         
-        expect(screen.getByText(/No tasks scheduled for this day/i)).toBeInTheDocument();
+        expect(screen.getByText(/No tasks planned for this day/i)).toBeInTheDocument();
     });
 });

@@ -144,7 +144,7 @@ function CardInner({ card, isDragging, toggleCardCompletion, isViewer, canModify
                                 </div>
                             )}
                             {card.location && (
-                                <div className="flex items-center gap-1.5 w-full" title={`Location: ${card.location}`}>
+                                <div className="flex items-center gap-1.5 px-1.5 w-full" title={`Location: ${card.location}`}>
                                     <GoLocation className="w-3.5 h-3.5 shrink-0" />
                                     <span className="truncate">{card.location}</span>
                                 </div>
