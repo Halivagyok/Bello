@@ -53,7 +53,7 @@ describe('Card Component', () => {
 
         render(
             <Draggable draggableId="card-1" index={0}>
-                {(provided, snapshot) => (
+                {() => (
                     <Card
                         card={dummyCard}
                         index={0}

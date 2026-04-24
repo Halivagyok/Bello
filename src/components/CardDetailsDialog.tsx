@@ -17,7 +17,7 @@ import { stringToColor } from "../utils/colors";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { GoLocation, GoClock, GoTrash, GoEye, GoSearch, GoX, GoTag, GoPlus, GoUpload } from "react-icons/go";
+import { GoLocation, GoClock, GoTrash, GoSearch, GoX, GoTag, GoPlus, GoUpload } from "react-icons/go";
 import ReactMarkdown from 'react-markdown';
 import { DateInput } from "./ui/date-input";
 import { TimeInput } from "./ui/time-input";
