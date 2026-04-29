@@ -67,7 +67,21 @@ Built with **React + TypeScript** on the frontend and **Bun + Elysia** on the ba
 - **Team management** — Invite users via email, manage roles, and track activity through an admin dashboard
 - **Modern UX** — Dark/light mode, animated 3D gradient backgrounds, drag-and-drop reordering, and responsive mobile-first design
 
-The application targets small-to-medium teams, student groups, and individual power users who want a self-hosted alternative to commercial project management tools.
+## 🌐 Hosting & Deployment
+
+Bello is deployed using a modern, scalable stack:
+
+- **Frontend & Backend**: Hosted as **Docker** containers for consistency across environments.
+- **Reverse Proxy**: **Nginx Proxy Manager** handles SSL termination and routes traffic to the containers.
+- **DNS & Security**: **Cloudflare** provides DNS management, DDoS protection, and CDN capabilities.
+- **Real-time**: WebSocket support must be enabled in the proxy for collaborative features.
+
+### 📱 Device Permissions
+
+In production, the app may request:
+- **Location**: To set task locations on the map or use the "My Location" feature in Card Details.
+- **Clipboard**: To copy card links or gallery image URLs.
+- **Storage**: To upload/download attachments and profile pictures.
 
 ---
 

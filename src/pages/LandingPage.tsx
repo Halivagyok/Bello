@@ -6,8 +6,7 @@ import { GoZap, GoProject, GoOrganization, GoSync } from "react-icons/go";
 import { ModeToggle } from "@/components/mode-toggle";
 
 export default function LandingPage() {
-  //change if needed.
-  const demoBoardId = "8722f9a8-7033-4c1a-b144-87ec9d707eda";
+  const demoBoardId = import.meta.env.VITE_DEMO_BOARD_ID;
 
   return (
     <div className="relative min-h-[100dvh] md:h-screen w-full overflow-x-hidden overflow-y-auto bg-background selection:bg-primary/30 flex flex-col pt-8 md:pt-0">
