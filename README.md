@@ -14,7 +14,7 @@ Built with **React + TypeScript** on the frontend and **Bun + Elysia** on the ba
 [![Database](https://img.shields.io/badge/Database-SQLite_(LibSQL)-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://turso.tech/libsql)
 [![ORM](https://img.shields.io/badge/ORM-Drizzle-C5F74F?style=for-the-badge&logo=drizzle&logoColor=black)](https://orm.drizzle.team)
 
-🔗 **[Backend Repository](https://github.com/Halivagyok/Bello-Backend)**
+🌐 **[Live Site](https://projectbello.hu)** · 🔗 **[Backend Repository](https://github.com/Halivagyok/Bello-Backend)**
 
 </div>
 
